@@ -110,3 +110,109 @@
         This shoe is Black, size 12, and does have laces.
         This shoe is Red, size 8, and does not have laces.
       ```
+
+#### Comparing Information with `Equatable`
+
+- Imagine your team is building an employee directory app for your company. You're tasked with building the data model to represent all the employees, their job titles, and their phone numbers.
+
+  - ```swift
+      struct Employee {
+        var firstName: String
+        var lastName: String
+        var jobTitle: String
+        var phoneNumber: String
+      }
+       
+      struct Company {
+        var name: String
+        var employees: [Employee]
+      }
+    ```
+
+- While building the app, you're asked to build a feature that allows any employee to edit their own information and prevents them from editing anyone else's information. You'll accomplish this by displaying an Edit button when the user navigates to their own detail screen.
+- But how can you make sure it's the right employee? Each time the current employee navigates to an employee detail screen, you'll need to compare that employee to the employee whose information is displayed.
+- Imagine you have access to the current employee with a `Session.currentEmployee` variable, which returns an Employee instance matching the current user. The view controller in charge of displaying the employee detail screen has an employee property. When the app loads a new employee detail screen, you'll need to check whether Session.currentEmployee and employee are equal. If so, you'll enable the Edit button. If not, you'll hide the button.
+- You might consider writing something like the following:
+
+  - ```swift
+      let currentEmployee = Session.currentEmployee
+      // Employee(firstName: "Daren", lastName: "Estrada", jobTitle: "Product Manager", phoneNumber: "415-555-0692")
+
+      let selectedEmployee = Employee(firstName: "James", lastName: "Kittel", jobTitle: "Marketing Director", phoneNumber: "415-555-9293")
+       
+      if currentEmployee == selectedEmployee {
+        // Enable "Edit" button
+      }
+    ```
+
+- The code above is a good thought. The == operator checks whether two values are equal. But because Employee is a custom type, you must tell Swift exactly how to compare two instances for equality. You'll do this by adopting the Equatable protocol.
+- The Equatable protocol requires you to provide an implementation for the == operator on your custom type with a static == function that takes lhs (left-hand side) and rhs (right-hand side) parameters and returns a Bool that says whether the two values are equal:
+
+  - ```swift
+      struct Employee: Equatable {
+        var firstName: String
+        var lastName: String
+        var jobTitle: String
+        var phoneNumber: String
+       
+        static func ==(lhs: Employee, rhs: Employee) -> Bool {
+          // Logic that determines whether the value on the left-hand side and right-hand side are equal
+        }
+       
+      }
+    ```
+
+- Consider the example above with two employees. How might you determine whether the two employees are equal? The following code returns true if both the firstName and lastName values are the same for both employees:
+
+  - ```swift
+      struct Employee: Equatable {
+        var firstName: String
+        var lastName: String
+        var jobTitle: String
+        var phoneNumber: String
+       
+        static func ==(lhs: Employee, rhs: Employee) -> Bool {
+          return lhs.firstName == rhs.firstName && lhs.lastName == rhs.lastName
+        }
+      }
+    ```
+
+- That wasn't a bad start at implementing an equality check. But it breaks down quickly. Consider two different employees with the same name:
+
+  - ```swift
+      let currentEmployee = Employee(firstName: "James", lastName: "Kittel", jobTitle: "Industrial Designer", phoneNumber: "415-555-7766")
+      let selectedEmployee = Employee(firstName: "James", lastName: "Kittel", jobTitle: "Marketing Director", phoneNumber: "415-555-9293")
+       
+      if currentEmployee == selectedEmployee {
+        // Enable "Edit" button
+      }
+    ```
+
+- This code returns true, so the employees would be able to edit each other's information in the directory.
+- How can you design a better check to see whether two Employee instances are equal? You can update the == method to check for each property:
+
+  - ```swift
+      struct Employee: Equatable {
+        var firstName: String
+        var lastName: String
+        var jobTitle: String
+        var phoneNumber: String
+       
+        static func ==(lhs: Employee, rhs: Employee) -> Bool {
+            return lhs.firstName == rhs.firstName && lhs.lastName == rhs.lastName && lhs.jobTitle == rhs.jobTitle && lhs.phoneNumber == rhs.phoneNumber
+        }
+      }
+    ```
+
+- If you compare the first names, last names, job titles, and phone numbers, you'll get a more reliable result. As you grow as a programmer, you'll start to recognize these types of edge cases, and you'll learn how to account for them in your code.
+- Sometimes, the requirements of a protocol can be autogenerated for you. For example, if you specify that one of your types adopts Equatable and don't write your own == method, the Swift compiler will autogenerate an implementation that compares all the instance properties, like the one you just saw. So if all your == method is going to do is compare all the instance properties, you don't have to write it. The compiler will take care of it for you.
+- To use autogeneration, your type must be a `struct` or `enum` — classes do not support autogeneration. Also, each property's type must also conform to Equatable.
+
+  - ```swift
+      struct Employee: Equatable {
+        var firstName: String
+        var lastName: String
+        var jobTitle: String
+        var phoneNumber: String
+      }
+    ```
