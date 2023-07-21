@@ -216,3 +216,57 @@
         var phoneNumber: String
       }
     ```
+
+#### Sorting Information with `Comparable`
+
+- Now imagine you're tasked with displaying a list of all the employees, sorted alphabetically by last name. Your manager gives you a sample list of five employees so you can experiment with writing code that will sort the list in the correct order.
+- You start out with the following:
+
+  - ```swift
+      let employee1 = Employee(firstName: "Ben", lastName: "Stott", jobTitle: "Front Desk", phoneNumber: "415-555-7767")
+      let employee2 = Employee(firstName: "Vera", lastName: "Carr", jobTitle: "CEO", phoneNumber: "415-555-7768")
+      let employee3 = Employee(firstName: "Glenn", lastName: "Parker", jobTitle: "Senior Manager", phoneNumber: "415-555-7770")
+      let employee4 = Employee(firstName: "Stella", lastName: "Lee", jobTitle: "Accountant", phoneNumber: "415-555-7771")
+      let employee5 = Employee(firstName: "Daren", lastName: "Estrada", jobTitle: "Sales Lead", phoneNumber: "415-555-7772")
+       
+      let employees = [employee1, employee2, employee3, employee4, employee5]
+    ```
+
+- Note that the list above isn't in any particular order.
+- Swift provides a protocol named `Comparable`, that allows you to define how to sort objects using the <, <=, >, or >= operators.
+- `Comparable` has two requirements: It requires that the type also adopt the Equatable protocol, and it requires the type to implement the < operator, which returns a Bool for whether the left-hand value is less than the right-hand value.
+- In this case, you want to sort the employees alphabetically by last name. The String type is itself Comparable and uses the < operator to sort strings alphabetically, so you can implement the < function on Employee to return true if the last name of the left-hand value comes before the last name of the right-hand value alphabetically:
+
+  - ```swift
+      struct Employee: Equatable, Comparable {
+        var firstName: String
+        var lastName: String
+        var jobTitle: String
+        var phoneNumber: String
+       
+        static func < (lhs: Employee, rhs: Employee) -> Bool {
+            return lhs.lastName < rhs.lastName
+        }
+      }
+    ```
+
+- You can then use the `sorted(by:)` function to return the array of employees sorted by last name:
+
+  - ```swift
+      let employees = [employee1, employee2, employee3, employee4, employee5]
+       
+      let sortedEmployees = employees.sorted(by: <)
+       
+      for employee in sortedEmployees {
+        print(employee)
+      }
+
+      Console Output:
+      Employee(firstName: "Vera", lastName: "Carr", jobTitle: "CEO", phoneNumber: "415-555-7768")
+      Employee(firstName: "Daren", lastName: "Estrada", jobTitle: "Sales Lead", phoneNumber: "415-555-7772")
+      Employee(firstName: "Stella", lastName: "Lee", jobTitle: "Accountant", phoneNumber: "415-555-7771")
+      Employee(firstName: "Glenn", lastName: "Parker", jobTitle: "Senior Manager", phoneNumber: "415-555-7770")
+      Employee(firstName: "Ben", lastName: "Stott", jobTitle: "Front Desk", phoneNumber: "415-555-7767")
+    ```
+
+- Swift is smart. It can use both the == operator and the < operator that you defined for the Equatable and Comparable protocols to provide functionality for the !=, <=, >, and >= operators as well.
