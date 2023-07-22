@@ -308,3 +308,48 @@
     ```
 
 - The string printed to the console gives you a glimpse of how your object was converted into a different format but still represents the same information. By using Codable, you can easily convert your app's information to and from a variety of formats. The Codable protocol will come in handy in future lessons when you are saving user data or working with web services.
+
+#### Creating a Protocol
+
+- You've learned about four protocols defined in the Swift standard library, but you can also write your own protocols.
+- Remember how to define structures, classes, and enumerations? You define a protocol in a very similar way. Use the protocol keyword followed by the name you want to use, and then define the requirements in a set of curly braces.
+- When requiring a property, you must define whether the property is read-only or read/write. Read-only means you can get the variable, but you can't set it. Read/write means you can both get and set the value. If a property is read-only, you can implement it using a computed property. If it's read/write, it should be a regular property.
+- When requiring a method, you need to specify the name, parameters, and return type of the method.
+- The following code defines a FullyNamed protocol that requires a fullName property and a sayFullName() method. You can see that it looks similar to a type definition:
+
+  - ```swift
+      protocol FullyNamed {
+        var fullName: String { get }
+       
+        func sayFullName()
+      }
+    ```
+
+- Just like with the Swift protocols earlier in this lesson, your types can then adopt the protocol by adding a colon and appending the name of the protocol.
+
+  - ```swift
+      struct Person: FullyNamed {
+        var firstName: String
+        var lastName: String
+      }
+    ```
+
+- The compiler recognizes that the Person struct has adopted the protocol, but also recognizes that the struct doesn't yet meet the protocol's requirements. If you adopt a protocol but don't meet its requirements, you won't be able to build or run your code until you address the error.
+- Notice how simple it is to conform to the protocol in the following code. The Person struct is updated with a fullyNamed computed property and a sayFullName() function that prints the full name to the console.
+
+  - ```swift
+      struct Person: FullyNamed {
+        var firstName: String
+        var lastName: String
+       
+        var fullName: String {
+          return "\(firstName) \(lastName)"
+        }
+       
+        func sayFullName() {
+          print(fullName)
+        }
+      }
+    ```
+
+- You may have noticed that the syntax for adopting a protocol is similar to the syntax for declaring a subclass. That's not coincidental. Protocols and class inheritance are two ways to adopt a shared set of properties and functionality. In fact, you can use a protocol to provide a default implementation, just as a class can inherit an implementation from a superclass. You'll learn more about protocols and default implementations as you learn more about Swift.
