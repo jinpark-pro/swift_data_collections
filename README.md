@@ -267,6 +267,19 @@
       Employee(firstName: "Stella", lastName: "Lee", jobTitle: "Accountant", phoneNumber: "415-555-7771")
       Employee(firstName: "Glenn", lastName: "Parker", jobTitle: "Senior Manager", phoneNumber: "415-555-7770")
       Employee(firstName: "Ben", lastName: "Stott", jobTitle: "Front Desk", phoneNumber: "415-555-7767")
+
+
+      let sortedEmployees2 = employees.sorted(by:>)
+       
+      for employee in sortedEmployees2 {
+        print(employee)
+      }
+      Console Output:
+      Employee(firstName: "Ben", lastName: "Stott", jobTitle: "Front Desk", phoneNumber: "415-555-7767")
+      Employee(firstName: "Glenn", lastName: "Parker", jobTitle: "Senior Manager", phoneNumber: "415-555-7770")
+      Employee(firstName: "Stella", lastName: "Lee", jobTitle: "Accountant", phoneNumber: "415-555-7771")
+      Employee(firstName: "Daren", lastName: "Estrada", jobTitle: "Sales Lead", phoneNumber: "415-555-7772")
+      Employee(firstName: "Vera", lastName: "Carr", jobTitle: "CEO", phoneNumber: "415-555-7768")
     ```
 
 - Swift is smart. It can use both the == operator and the < operator that you defined for the Equatable and Comparable protocols to provide functionality for the !=, <=, >, and >= operators as well.
@@ -320,7 +333,9 @@
   - ```swift
       protocol FullyNamed {
         var fullName: String { get }
-       
+        // settable property
+        // var fullName: String { get set }
+
         func sayFullName()
       }
     ```
@@ -363,3 +378,177 @@
 - The delegate pattern is especially important for working with frameworks which have objects that define built-in functionality but require you to provide behavior specific to your app. UIKit and other iOS frameworks use delegation extensively. They provide objects such as `UIApplication`, `UITextField`, and `UITableView`, which use delegation to customize their behavior. For example, a `UIApplicationDelegate` can define how an app responds to remote notifications, a `UITextFieldDelegate` can validate text input, and a `UITableViewDelegate` can perform actions when a row is tapped.
 - You'll work more with the delegate pattern in future lessons.
 - Protocols are one of the more advanced Swift topics you'll use in this course. Don't be intimidated. You'll learn to master protocols as you use them while working your way through the course.
+
+#### Lab
+
+- App Exercise - Heart Rate Delegate
+- These exercises reinforce Swift concepts in the context of a fitness tracking app.
+- Your fitness tracking app will likely have a class dedicated to receiving information from the fitness tracking hardware. The HeartRateReceiver class below represents a very simplified example of what this may look like with monitoring heart rate. The function startHeartRateMonitoringExample will generate random heart rates and assign them to currentHR, simulating how an instance of HeartRateReceiver may pick up on new heart rate readings at specific intervals.
+- HeartRateViewController below is a view controller that will present the heart rate information to the user. Throughout the exercises below you'll use the delegate pattern to pass information from an instance of HeartRateReceiver to the view controller so that anytime new information is obtained it is presented to the user.
+
+  - ```swift
+      class HeartRateReceiver {
+          var currentHR: Int? {
+              didSet {
+                  if let currentHR = currentHR {
+                      print("The most recent heart rate reading is \(currentHR).")
+                  } else {
+                      print("Looks like we can't pick up a heart rate.")
+                  }
+              }
+          }
+
+          func startHeartRateMonitoringExample() {
+              for _ in 1...10 {
+                  let randomHR = 60 + Int(arc4random_uniform(UInt32(15)))
+                  currentHR = randomHR
+                  Thread.sleep(forTimeInterval: 2)
+              }
+          }
+      }
+
+      class HeartRateViewController: UIViewController {
+          var heartRateLabel: UILabel = UILabel()
+      }
+    ```
+
+- First, create an instance of HeartRateReceiver and call startHeartRateMonitoringExample. Notice that every two seconds currentHR get set and prints the new heart rate reading to the console.
+
+  - ```swift
+      let receiver1 = HeartRateReceiver()
+      receiver1.startHeartRateMonitoringExample()
+
+      console:
+      The most recent heart rate reading is 66.
+      The most recent heart rate reading is 72.
+      The most recent heart rate reading is 68.
+      The most recent heart rate reading is 70.
+      The most recent heart rate reading is 70.
+      The most recent heart rate reading is 71.
+      The most recent heart rate reading is 71.
+      The most recent heart rate reading is 60.
+      The most recent heart rate reading is 70.
+      The most recent heart rate reading is 62.
+    ```
+
+- In a real app, printing to the console does not show information to the user. You need a way of passing information from the `HeartRateReceiver` to the `HeartRateViewController`. To do this, create a protocol called `HeartRateReceiverDelegate` that requires a method `heartRateUpdated(to bpm:)` where `bpm` is of type `Int` and represents the new rate as _beats per minute_. Since playgrounds read from top to bottom and the two previously declared classes will need to use this protocol, you'll need to declare this protocol above the declaration of `HeartRateReceiver`.
+
+  - ```swift
+      protocol HeartRateReceiverDelegate {
+          func heartRateUpdated(to bpm: Int)
+      }
+    ```
+
+- Now make `HeartRateViewController` adopt the protocol you've just created. Inside the body of the required method you should set the text of `heartRateLabel` and print "The user has been shown a heart rate of <INSERT HEART RATE HERE>."
+
+  - ```swift
+      protocol HeartRateReceiverDelegate {
+          func heartRateUpdated(to bpm: Int)
+      }
+      class HeartRateViewController: UIViewController, HeartRateReceiverDelegate {
+          var heartRateLabel: UILabel = UILabel()
+
+          func heartRateUpdated(to bpm: Int) {
+              heartRateLabel.text = "The user has been shown a heart rate of \(bpm)"
+              print("The user has been shown a heart rate of \(bpm)")
+          }
+      }
+    ```
+
+- Now add a property called `delegate` to `HeartRateReceiver` that is of type `HeartRateReceiverDelegate?`. In the `didSet` of `currentHR` where `currentHR` is successfully unwrapped, call `heartRateUpdated(to bpm:)` on the `delegate` property.
+
+  - ```swift
+      class HeartRateReceiver {
+          var currentHR: Int? {
+              didSet {
+                  if let currentHR = currentHR {
+                      print("The most recent heart rate reading is \(currentHR).")
+                      delegate?.heartRateUpdated(to: currentHR)
+                  } else {
+                      print("Looks like we can't pick up a heart rate.")
+                  }
+              }
+          }
+          var delegate: HeartRateReceiverDelegate?
+
+          ...
+      }
+    ```
+
+- Finally, return to the line of code just after you initialized an instance of `HeartRateReceiver`. Initialize an instance of `HeartRateViewController`. Then, set the `delegate` property of your instance of `HeartRateReceiver` to be the instance of `HeartRateViewController` that you just created. Wait for your code to compile and observe what is printed to the console. Every time that `currentHR` gets set, you should see both a printout of the most recent heart rate, and the print statement stating that the heart rate was shown to the user.
+
+  - ```swift
+      let receiver2 = HeartRateReceiver()
+      let hrController = HeartRateViewController()
+      receiver2.delegate = hrController
+      receiver2.startHeartRateMonitoringExample()
+
+      Console:
+      The most recent heart rate reading is 61.
+      The user has been shown a heart rate of 61
+      The most recent heart rate reading is 61.
+      The user has been shown a heart rate of 61
+      The most recent heart rate reading is 68.
+      The user has been shown a heart rate of 68
+      The most recent heart rate reading is 64.
+      The user has been shown a heart rate of 64
+      The most recent heart rate reading is 64.
+      The user has been shown a heart rate of 64
+      The most recent heart rate reading is 63.
+      The user has been shown a heart rate of 63
+      The most recent heart rate reading is 64.
+      The user has been shown a heart rate of 64
+      The most recent heart rate reading is 67.
+      The user has been shown a heart rate of 67
+      The most recent heart rate reading is 62.
+      The user has been shown a heart rate of 62
+      The most recent heart rate reading is 70.
+      The user has been shown a heart rate of 70
+    ```
+
+- The final
+
+  - ```swift
+      class HeartRateReceiver {
+          var currentHR: Int? {
+              didSet {
+                  if let currentHR = currentHR {
+                      print("The most recent heart rate reading is \(currentHR).")
+                      delegate?.heartRateUpdated(to: currentHR)
+                  } else {
+                      print("Looks like we can't pick up a heart rate.")
+                  }
+              }
+          }
+
+          var delegate: HeartRateReceiverDelegate?
+
+          func startHeartRateMonitoringExample() {
+              for _ in 1...10 {
+                  let randomHR = 60 + Int(arc4random_uniform(UInt32(15)))
+                  currentHR = randomHR
+                  Thread.sleep(forTimeInterval: 2)
+              }
+          }
+      }
+
+      class HeartRateViewController: UIViewController, HeartRateReceiverDelegate {
+          var heartRateLabel: UILabel = UILabel()
+
+          func heartRateUpdated(to bpm: Int) {
+              heartRateLabel.text = "The user has been shown a heart rate of \(bpm)"
+              print("The user has been shown a heart rate of \(bpm)")
+          }
+      }
+      //let receiver1 = HeartRateReceiver()
+      //receiver1.startHeartRateMonitoringExample()
+
+      protocol HeartRateReceiverDelegate {
+          func heartRateUpdated(to bpm: Int)
+      }
+
+      let receiver2 = HeartRateReceiver()
+      let hrController = HeartRateViewController()
+      receiver2.delegate = hrController
+      receiver2.startHeartRateMonitoringExample()
+    ```
