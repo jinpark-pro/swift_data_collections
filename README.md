@@ -22,6 +22,11 @@
   - `Comparable`, which allows you to define how instances of the same type are sorted; and
   - `Codable`, which allows you to encode your type's properties as key/value pairs that can then be saved between app launches.
 - When you adopt a protocol in Swift, you're promising to implement all the methods required by that protocol. The compiler will check that everything's in order and won't build your program if anything is missing.
+- Why might you use protocols when building an app?
+  - To share attributes and functionality across different types
+  - To make custom types work well with system or debugging functionality
+  - To enforce similarity and provide type functionality
+  - To define events but delegate implementation to an instance of another type
 
 #### Printing Information with `CustomStringConvertible`
 
