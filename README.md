@@ -557,3 +557,22 @@
       receiver2.delegate = hrController
       receiver2.startHeartRateMonitoringExample()
     ```
+
+### Lesson 1.2 App Anatomy and Life Cycle
+
+- In this lesson, you'll learn more about the different life cycle states and the delegate hooks for executing logic as the app moves through each state.
+- Most iOS apps run when the user opens them, and they stop running when the user returns to the Home screen, uses the app switcher, or otherwise switches to a different app.
+- As a programmer, you have delegate methods, or hooks where you can execute code, at any of these events in your app's life cycle. For example, when the app launches, you may want to trigger a network call to fetch new data. When the app closes, you may want to save your user's progress. App and scene delegates also ensure your app works properly with iOS, multiple instances of your app, and with other iOS apps.
+- In this lesson, you'll examine the AppDelegate.swift and SceneDelegate.swift files that Xcode creates with every new project. This will help you learn the most common delegate methods that are called as the app transitions through its life cycle, such as when it moves from the foreground to the background.
+- But before digging into the code, you should understand the different stages of the app life cycle.
+- Before digging into the code, you should understand the different stages of the app life cycle.
+
+  | App State | Description |
+  | --------- | ----------- |
+  | Not running | The app has not been launched or has been terminated, either by the user or by the system. |
+  | Inactive | The app is running in the foreground but isn't receiving touch events. (It may be executing other code, though.) An app usually stays inactive only briefly as it transitions to a different state. |
+  | Active | The app is running in the foreground and receiving events. In the active state, an app has no special restrictions placed on it and should be responsive to the user. |
+  | Background | The app is executing code but is not visible onscreen. When the user quits an app, the system moves the app to the background state briefly before suspending it. At other times, the system may launch the app into the background (or wake up a suspended app) and give it time to handle specific tasks. For example, the systemm may wake an app so that it can process background downloads, certain types of location events, remote notifications, and other events. An app in the background state should do as little work as possible. |
+  | Suspended | The app is in memory but isn't executing code. The system will suspend apps that are in the background may purge suspended apps at any time, without waking them up, to make room for other apps. |
+
+  - <img src="./resources/app_life_cycle.png" alt="App Life Cycle" width="500" />
