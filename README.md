@@ -576,3 +576,52 @@
   | Suspended | The app is in memory but isn't executing code. The system will suspend apps that are in the background may purge suspended apps at any time, without waking them up, to make room for other apps. |
 
   - <img src="./resources/app_life_cycle.png" alt="App Life Cycle" width="500" />
+
+#### Break Down the App Delegate
+
+- Create a new project using the iOS App template and name it "AppLifeCycle." When creating the project, make sure the interface option is set to "Storyboard."
+- In the Project navigator, open AppDelegate, which defines the AppDelegate class. The AppDelegate class conforms to the UIApplicationDelegate protocol, which defines methods that serve as hooks into the different events in the app's life cycle.
+- Take a look at the methods included in the app delegate. Read through the comments to learn about what the methods do. Prior to iOS 13, the app delegate had a much larger role in the app life cycle. iOS 13 introduced the ability for apps to have multiple instances running on iPadOS, each of which is managed by a UISceneDelegate.
+- While it's possible to forgo using UISceneDelegate, falling back to using UIApplicationDelegate as it was prior to iOS 13, it's best to conform to any new design patterns that have been introduced. By doing so you'll be in a better position to handle any future features, devices, or deprecations — or simply to extend your app to support multiple scenes on iPad when you're ready. In this course, you'll adhere to scene - based life cycle semantics, but all your apps will only have a single scene — you won't do any work to explicitly support multiple scenes.
+
+- **Did Finish Launching**
+
+  - When your app has finished launching, the first method will be called, providing your first opportunity to run your own code in the app. This capability isn't duplicated in a scene delegate, so you'll need to use your app delegate to perform actions when your app is first launched.
+
+    - ```swift
+        func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+            // Override point for customization after application launch.
+
+            return true
+        }
+      ```
+
+  - The app delegate also manages scenes as they're connected and disconnected.
+
+- **Configuration For Connecting a Scene Session**
+
+  - The next function is called when a new scene session is being created. By default Xcode generates your project with an Info.plist that has the information necessary to create a default scene configuration, named “Default Configuration”, as evident in this implementation. This all you need to get started – supporting various scene configurations is an advanced topic that won't be covered here.
+
+    - ```swift
+        func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) ->
+          UISceneConfiguration {
+            // Called when a new scene session is being created.
+            // Use this method to select a configuration to create the new scene with.
+
+            return UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
+        }
+      ```
+
+- **Did Discard Scene Sessions**
+
+  - When a user discards an instance of your app on iPad, this method is called with information about that scene. It's possible you'll receive multiple scene sessions if the user discards multiple instances at the same time or if the action was taken while your app was suspended. It's up to you to decide what should happen in your app when this event occurs – keeping in mind what your users might reasonably expect to happen.
+
+    - ```swift
+        func application(_ application: UIApplication, didDiscardSceneSessions sceneSessions: Set<UISceneSession>) {
+            // Called when the user discards a scene session.
+            // If any sessions were discarded while the application was not running, this will be called shortly after didFinishLaunchingWithOptions.
+            // Use this method to release any resources that were specific to the discarded scenes, as they will not return.
+        }
+      ```
+
+  - There are other capabilities unique to the app delegate, but most basic lifecycle events can be handled by a scene delegate.
