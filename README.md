@@ -575,7 +575,7 @@
   | Background | The app is executing code but is not visible onscreen. When the user quits an app, the system moves the app to the background state briefly before suspending it. At other times, the system may launch the app into the background (or wake up a suspended app) and give it time to handle specific tasks. For example, the systemm may wake an app so that it can process background downloads, certain types of location events, remote notifications, and other events. An app in the background state should do as little work as possible. |
   | Suspended | The app is in memory but isn't executing code. The system will suspend apps that are in the background may purge suspended apps at any time, without waking them up, to make room for other apps. |
 
-  - <img src="./resources/app_life_cycle.png" alt="App Life Cycle" width="500" />
+  - <img src="./resources/app_delegate.png" alt="App Delegate" width="500" />
 
 #### Break Down the App Delegate
 
@@ -625,3 +625,82 @@
       ```
 
   - There are other capabilities unique to the app delegate, but most basic lifecycle events can be handled by a scene delegate.
+
+#### Break Down the Scene Delegate
+
+- In the Project navigator, open SceneDelegate. Your scene delegate is responsible for handling UI-level components during your app's life cycle. These methods will be called for all scenes that your app has created. You'll notice that each method receives a UIScene instance — this is the scene that the event occurred for.
+
+  - <img src="./resources/scene_delegate.png" alt="Scene Delegate" width="500" />
+
+- Read through the provided methods and their comments to learn about what the methods do. As always, you can Option-click a method's signature to see more information.
+
+- **Will Connect To**
+
+  - This method is called with a scene instance that is being connected to your app. This provides you with an opportunity to perform any necessary steps to prepare for the additional scene such as fetching data from your local persistence store or opening network connections.
+
+    - ```swift
+        func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+            // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
+            // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
+            // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
+
+            guard let _ = (scene as? UIWindowScene) else { return }
+        }
+      ```
+
+- **Scene Did Disconnect**
+
+  - This method, called when the scene has been removed from your app, is the best place to clean up and release any resources or to save files that were necessary for the scene. UIKit disconnects scenes when a user explicitly closes them in the app switcher and can disconnect scenes in the background state on behalf of the system to free up resources for other active applications. It's not as commonly overridden as sceneDidEnterBackground(_:) below. A scene is not guaranteed to be disconnected when the user switches to another app.
+
+    - ```swift
+        func sceneDidDisconnect(_ scene: UIScene) {
+            // Called as the scene is being released by the system.
+            // This occurs shortly after the scene enters the background, or when its session is discarded.
+            // Release any resources associated with this scene that can be re-created the next time the scene connects.
+            // The scene may re-connect later, as its session was not necessarily discarded (see `application:didDiscardSceneSessions` instead).
+        }
+      ```
+
+- **Scene Did Become Active**
+
+  - This method is called to let your scene know that it moved from the foreground inactive state to the foreground active state, which can occur when a user switches to your scene. Scenes can also return to the foreground active state if the user chooses to ignore an interruption, such as an incoming phone call or system alert, that temporarily sent the app into the inactive state.
+
+    - ```swift
+        func sceneDidBecomeActive(_ scene: UIScene) {
+            // Called when the scene has moved from an inactive state to an active state.
+            // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
+        }
+      ```
+
+- **Scene Will Resign Active**
+
+  - The next method is called when the scene is about to leave the foreground active state. This event can happen when the user has closed the scene or quit the app, but it's also called when the app is interrupted temporarily by a phone call or system alert.
+
+    - ```swift
+        func sceneWillResignActive(_ scene: UIScene) {
+            // Called when the scene will move from an active state to an inactive state.
+            // This may occur due to temporary interruptions (ex. an incoming phone call).
+        }
+      ```
+
+- **Scene Will Enter Foreground**
+
+  - This method is called as part of the transition from the background state to the foreground active state — immediately before sceneDidBecomeActive(_:). You can use this method to undo many of the changes made to your scene when it entered the background.
+
+    - ```swift
+        func sceneWillEnterForeground(_ scene: UIScene) {
+            // Called as the scene transitions from the background to the foreground.
+            // Use this method to undo the changes made on entering the background.
+        }
+      ```
+
+- **Scene Did Enter Background**
+
+  - The next method is called immediately after the sceneWillResignActive(_:) method, once the scene has actually entered the background state. This is the right time to spin down demanding processes and save the user's work or progress.
+
+    - ```swift
+        func sceneDidEnterBackground(_ scene: UIScene) {
+            // Called as the scene transitions from the foreground to the background.
+            // Use this method to save data, release shared resources, and store enough scene - specific state information to restore the scene back to its current state.
+        }
+      ```
