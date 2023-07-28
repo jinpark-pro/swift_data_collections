@@ -704,3 +704,30 @@
             // Use this method to save data, release shared resources, and store enough scene - specific state information to restore the scene back to its current state.
         }
       ```
+
+#### Try It Out
+
+- Add a print statement to each of the delegate methods in both AppDelegate and SceneDelegate that describes what happens to trigger the method. For example, print("Application did finish launching.") in the application`(_:didFinishLaunchingWithOptions:)` method, and print("Scene will resign active.") in `sceneWillResignActive(_:)`.
+- Run the app in Simulator. When you open the app, you'll see four messages print to the console:
+  - Application did finish launching.
+  - Scene will connect to session.
+  - Scene will enter foreground.
+  - Scene did become active.
+- Dismiss the app and return to the Home screen. You'll see two more messages print to the console:
+  - Scene will resign active.
+  - Scene did enter background.
+- Open the app switcher and reopen the app. You'll see another two messages print to the console:
+  - Scene will enter foreground.
+  - Scene did become active.
+- Open the app switcher again, then return to the app. You'll see two more messages print to the console:
+  - Scene will resign active.
+  - Scene did become active.
+- Take note of the various delegate methods and how you might use them when building your apps. As you can see from this exercise, they provide useful hooks to execute code at each app transition—even though you may not need to use all of them in every app you build.
+
+#### Which Method Should I Use?
+
+- You've learned about the many options for responding to different transitions in your app. For now, focus on three methods that will run when launching, reopening, or closing your app:
+  - `application(_:didFinishLaunchingWithOptions:)`
+  - `sceneDidBecomeActive(_:)`
+  - `sceneWillResignActive(_:)`
+- As you become more experienced and build more complex apps, you'll encounter situations where you'll want to take advantage of the other delegate methods.
