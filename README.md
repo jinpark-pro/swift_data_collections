@@ -731,3 +731,71 @@
   - `sceneDidBecomeActive(_:)`
   - `sceneWillResignActive(_:)`
 - As you become more experienced and build more complex apps, you'll encounter situations where you'll want to take advantage of the other delegate methods.
+
+#### Lab - App Event Count
+
+- **Objective**
+
+  - The objective of this lab is to create an app that provides a visual representation of the app life cycle. Your app will update labels on the view when different delegate methods are called.
+  - Create a new project called "AppEventCount" using the iOS App template. When creating the project, make sure the interface option is set to "Storyboard."
+
+- **Step 1 Add Event Counters to AppDelegate**
+
+  - Open AppDelegate and create two variables at the top to count the number of times the app has launched and the number of times it has created a configuration for connecting to a scene.
+
+    - ```swift
+        var launchCount = 0
+        var configurationForConnectingCount = 0​
+      ```
+
+  - Increment both of these counts by 1 within the corresponding methods.
+
+- **Step 2 Set Up Your View and View Controller**
+
+  - As with all apps created using the iOS App template, your app starts out with one view controller. Drag seven labels to it, one for each of the following seven AppDelegate and SceneDelegate life cycle methods. Set up constraints as necessary. Hint: Consider using a stack view.
+    - application(_:didFinishLaunchingWithOptions:)
+    - application(_:configurationForConnecting:options:)
+    - scene(_:willConnectTo:options:)
+    - sceneDidBecomeActive(_:)
+    - sceneWillResignActive(_:)
+    - sceneWillEnterForeground(_:)
+    - sceneDidEnterBackground(_:)
+  - You'll use the labels to display the number of times that each event has occurred. Create an outlet for each label, using descriptive names like `didFinishLaunchingLabel` and `didBecomeActiveLabel`.
+  - Also, for each label corresponding to the scene events (not AppDelegate events), create a variable to store a count of how many times its delegate method has been called. Set the initial value of each variable to 0, as in the following example:
+`var willConnectCount = 0`
+
+- **Step 3 Access Count vars From AppDelegate**
+
+  - To update your UI for the application(_:didFinishLaunchingWithOptions:) and application(_:configurationForConnecting:options:) calls, you'll need access to the two variables you created in AppDelegate. In ViewController, add the following variable: `var appDelegate = (UIApplication.shared.delegate as! AppDelegate)`
+  - This will allow you to access AppDelegate and your count variables within ViewController. Your AppDelegate instance is known as a singleton and can be accessed in this manner. Since you know what the type is, you can safely downcast it using `as! AppDelegate`.
+  - ​​While it may be convenient to access AppDelegate anywhere, making it tempting to fill it with information, it's a best practice to keep it focused on its responsibilities. In this case, you're accessing it for information that it is responsible for.
+  - Create an updateView() method that updates each label with its count. For the AppDelegate events, you'll access your variables via your new appDelegate variable, and for scene events, you'll use the instance variables that you created within ViewController. Update the labels in updateView(), as in the following example: `launchLabel.text = "The App has launched \(appDelegate.launchCount) time(s)"`
+
+- **Step 4 Give SceneDelegate Access To ViewController**
+
+  - In the SceneDelegate class, just below the line var window: UIWindow?, create a variable property called `viewController` that is of type `ViewController?`. Be sure to make it optional.
+  - At the top of the scene(_:willConnectTo:options:) method, set the property `viewController` equal to the `rootViewController`. This will give the SceneDelegate access to the instance of ViewController, enabling you to write code that increments the corresponding count properties on ViewController each time an app life cycle method has been called, as in the following example: `viewController = window?.rootViewController as? ViewController`
+ 
+- **Step 5 Increment the Count Properties**
+
+  - In scene(_:willConnectTo:options:), increment the count of the ViewController property corresponding to the scene connecting: `viewController?.willConnectCount += 1`
+  - Repeat this step for the other SceneDelegate methods:
+    - sceneDidBecomeActive(_:)
+    - sceneWillResignActive(_:)
+    - sceneWillEnterForeground(_:)
+    - sceneDidEnterBackground(_:)
+
+- **Step 6 Regularly Update the View**
+
+  - Your view will need to update regularly to display the new counts for each app event. You might think to call updateView() in the viewDidLoad() method of your ViewController, but there's a problem: viewDidLoad() won't be called at all the app events. 
+  - There's a better place to update the view. One of the scene event methods, `sceneDidBecomeActive(_:)`, will be called after each of the other life cycle methods is called and just before the user can interact with the scene again. The `sceneDidBecomeActive(_:)` method is the perfect place to call the view controller's updateView(), ensuring that the labels display the proper count.
+
+- **Step 7 Test**
+
+  - Run the app in Simulator.
+  - The labels for both the app did finish launching and the scene did become active events should show 1 for their counts.
+  - Go to the Home screen on Simulator.
+  - Return to the app and observe which other labels have changed.
+  - Bring up the app switcher, but instead of changing apps, return to the same app. Which labels have changed?
+  - When the user quits your app or dismisses a scene, `sceneDidDisconnect(_:)` will be called—but adding a label and counter the same way for this method would be ineffective, as the data would be lost between terminations.
+  - Great job! You've made an app that helps you visualize the app life cycle. Be sure to save it to your project folder.
