@@ -856,3 +856,153 @@ In this lesson, you'll learn how to organize files, structures, and classes into
   - Controllers should perform a very specific function without depending on other controllers to perform their work. For example, a NoteListViewController might display a list of notes, and a NoteDetailViewController might display the details about an individual note instance and respond to user input to modify or create a note.
 - **Communication**
   - Besides mediating the communication between models and views, controller objects can communicate or work directly with other controller objects. Consider the examples above. The initial view controller of a Notes app (NoteListViewController) might be responsible for displaying a list of notes, so it accesses the notes property on a note model controller (NoteController). The note model controller needs to check whether there are any new notes, so it tells the network controller (NetworkController) to check the web service for new data. If the NetworkController finds new notes, it downloads the data and sends it back to the NoteController, which would then update its notes property and send a callback to the NoteListViewController that it has new data, enabling the NoteListViewController to update its view of notes.
+
+#### Example
+
+- Imagine you're tasked with building an app to track photos of meals that the user has eaten, along with notes and an optional rating of each meal. What model objects will you need? What views? What controllers?
+- Before moving on, take a moment to consider how you might plan, or architect, this simple app using model, view, and controller objects.
+- **Model**
+  - If the app is going to track meals, it makes sense to have a model object called Meal that holds the data about each meal. Each meal should have a name, and — according to your feature description — it also needs to have a photo, notes, and a rating.
+  - Next, you'll need to consider how your model objects will be displayed in the app — and your decisions will impact the properties to keep on your model objects. For example, if you want to make sure that a list of meals is displayed in the order that the meals were added, you may need to include a timestamp on each meal object.
+  - So your model object might be declared as a structure or a class with five properties:
+
+    - ```swift
+        struct Meal {
+            var name: String
+            var photo: UIImage
+            var notes: String
+            var rating: Int
+            let timestamp: Date
+        }
+      ```
+
+- **View**
+  - You can imagine that the app will need at least two views, or scenes. Just like in the Notes example, one scene will display a list of all the meals that the app has tracked, and another scene will display the details of a meal.
+  - The meal list scene could display the list in a table view, with the name and photo of each meal in an individual cell. The meal detail scene could then display the name of the meal in the navigation bar, a photo in an image view, notes about the meal in a text view, and the current rating in a segmented control.
+  - Each of these two views will need a view controller class that can manage the model data it's displaying and can respond to user interactions.
+  - In most cases, you'll use a storyboard to define your views in Interface Builder. You'll assign each view a view controller class, where you can add actions or outlets to respond programmatically to user interaction and to update the view.
+  - Occasionally, you may build a view that requires its own class definition. For example, you may have a custom table view cell with a button, which would require you to create a subclass of the cell type and add functionality in the class definition. You'll learn more about custom views with subclasses later.
+- **Controller**
+  - At a minimum, you'll need a controller for the meal list and meal detail views. For the meal list, you should use a UITableViewController, which displays data in a table, and for the detail view controller you should use a UIViewController. Some of the table view setup that follows will be unfamiliar to you, but don't worry — you'll learn more about UITableViewController and setting up table views in a future lesson.
+- **Meal List Table View Controller**
+  - `class MealListTableViewController: UITableViewController {...}`
+  - The MealListTableViewController should have a property that holds a collection of meals to display.
+  - The properties you add to a table view controller subclass — in this case, MealListTableViewController — should reflect anything that makes it different from a plain UITableViewController.
+    - `class MealListTableViewController: UITableViewController { var meals: [Meal] = [] }`
+  - Because the collection of meals lives on MealListTableViewController, the controller should handle adding and deleting meals from the collection. One approach would be to modify the array directly, but you might choose instead to define functions that add or remove meals from the array.
+  - When the user quits the app, they'll expect it to save any meal data they just entered or modified. In this example, MealListTableViewController is the intermediary between the view and the meal model data, so it should take responsibility for saving data to disk, as well as for loading data when the app launches and before the view is displayed.
+
+    - ```swift
+        class MealListTableViewController: UITableViewController {
+            var meals: [Meal] = []
+            func saveMeals() {...} 
+            func loadMeals() {...}
+        }
+      ```
+
+  - The view controller should also respond to any user events. What events might the list view handle?
+  - List views usually let the user select an item to display more details about the item. You'd enable that functionality by adding a segue from the list view scene to the detail view scene in the storyboard. You'll also need to add and implement the `prepare` function that passes the selected meal to the detail scene.
+  - When all is said and done, you'll likely end up with a view controller that looks similar to this:
+
+    - ```swift
+        class MealListTableViewController: UITableViewController {
+            var meals: [Meal] = []
+            override func viewDidLoad() {
+                super.viewDidLoad()
+                // Load the meals and set up the table view
+            }
+            // Required table view methods
+
+            override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {...}
+
+            override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {...}
+
+            // Navigation methods
+
+            @IBSegueAction func showMealDetails(_ coder: NSCoder) -> MealDetailViewController? {
+                // Initialize MealDetailViewController with selected Meal and return
+            }
+
+            @IBAction func unwindToMealList(sender: UIStoryboardSegue) {
+                // Capture the new or updated meal from the MealDetailViewController and save it to the meals property
+            }
+
+            // Persistence methods
+
+            func saveMeals() {
+                // Save the meals model data to the disk
+            }
+
+            func loadMeals() {
+                // Load meals data from the disk and assign it to the meals property
+            }
+        }
+      ```
+
+  - Once you've planned the required features of the list view controller, consider the detail view controller. How will the two controllers interact with each other?
+- **Meal Detail View Controller**
+  - `class MealDetailViewController: UIViewController {...}`
+  - The MealDetailViewController will display the details about an individual meal. You can use Interface Builder to set up views for displaying the name, the image, the notes, and the rating, then create outlets to MealDetailViewController. Your view controller should also have a property for the meal that will be displayed.
+  - Providing a custom initializer and using@IBSegueAction to display the detail controller from MealListTableViewController allows you to guarantee that a model is provided, so that you do not need to worry about handling optional values.
+
+    - ```swift
+        class MealDetailViewController: UIViewController {
+            var meal: Meal
+
+            @IBOutlet var nameTextField: UITextField!
+            @IBOutlet var photoImageView: UIImageView!
+            @IBOutlet var ratingControl: RatingControl!
+            @IBOutlet var saveButton: UIBarButtonItem!
+
+            init?(coder: NSCoder, meal: Meal) {
+                self.meal = meal
+                super.init(coder: coder)
+            }
+
+            override func viewDidLoad() {
+                super.viewDidLoad()
+                // Update view components using the Meal model
+            }
+        }
+      ```
+
+  - The MealDetailViewController should handle updating the view it controls with the information about the model object (the meal) it's meant to display. Many times you can do this right in viewDidLoad(), but you may want to break the process out into its own method — especially if the model can change.
+  - The detail view controller might have additional methods to allow the user to add a photo or to modify other properties of the meal. In those scenarios, it will need some way to know whether it's displaying an existing meal or creating a new meal.
+  - After accounting for all the tasks the detail view controller is handling, the result might look something like this:
+
+    - ```swift
+        class MealDetailViewController: UIViewController, UIImagePickerControllerDelegate {
+
+            @IBOutlet var nameTextField: UITextField!
+            @IBOutlet var photoImageView: UIImageView!
+            @IBOutlet var ratingControl: RatingControl!
+            @IBOutlet var saveButton: UIBarButtonItem!
+
+            var meal: Meal
+
+            init?(coder: NSCoder, meal: Meal) {
+                self.meal = meal
+                super.init(coder: coder)
+            }
+
+            override func viewDidLoad() {
+                super.viewDidLoad()
+                // Update view components using the Meal model
+            }
+
+            // Navigation methods
+
+            override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+                // Update the meal property that will be accessed by the MealListTableViewController to update the list of meals
+            }
+
+            @IBAction func cancel(_ sender: UIBarButtonItem) {
+                // Dismiss the view without saving the meal
+            }
+        }
+      ```
+
+- **A Reminder**
+  - MVC is a tool to help you write clean, maintainable, and organized code. But there's more than one way to implement it. If you were to plan out the same classes for the same app, you might end up with different variable names, different function names, different model objects, and different interfaces for your view hierarchies.
+  - When thinking through MVC, developers have their own distinct styles and patterns. Since you're going through this course, you'll tend to follow the patterns used here. But as you grow and gain more experience, you'll come up with your own preferences for how to architect the objects in your apps.
+  - You'll also develop your own perspective on the advantages and guidelines behind the MVC design pattern. Look at sample code and previous projects for further guidance. And don't be afraid to ask someone with more experience to mentor you in the best approach to app architecture.
