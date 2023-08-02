@@ -1040,3 +1040,79 @@ In this lesson, you'll learn how to organize files, structures, and classes into
 
 - When creating groups in Xcode's navigator, you will see two options: New Group and New Group without Folder. The latter does not create a folder on disk — it's simply visual organization within Xcode.
 - The specifics of how to organize your projects will depend on what you're building. For now, think simple. Allow yourself time to keep things organized so that your projects are easy to navigate. You'll appreciate it later.
+
+#### Lab - Favorite Athletes
+
+- **Object**
+  - In this lab, you'll plan out and create an app that uses proper MVC design. Your app will have two screens for displaying the user's favorite athletes. It will allow the user to add new athletes to the list and to edit existing entries.
+  - In your student resources folder, open the starter project called "FavoriteAthlete." The app is already set up with a table view for displaying a list of athletes and a form for collecting information about an individual athlete.
+- **Step 1 Make a Plan**
+  - Based on the app description, think through the following questions and write down your answers in a brief outline:
+    - What model object(s) will you need for this app?
+    - What properties will the model object(s) need?
+    - In addition to the view controller provided in the starter project, what other controllers will you need?
+    - What properties and functions will the controllers need?
+  - Did you come up with a plan for moving forward? Your design may differ slightly from the steps in this lab, and that's OK. In app design, there's no one right way to do things. But for the purposes of this project, you'll use the following model and controllers:
+    - The Athlete model will store information, through properties, for the athlete's name, age, league, and team.
+    - The AthleteTableViewController will handle the view associated with displaying the user's list of favorite athletes.
+    - The AthleteFormViewController will handle the views and user input associated with entering and editing athlete information.
+- **Step 2 Examine the Starter Project**
+  - Take a look at the view controllers in the storyboard. You'll see a table view controller that has two segues to a form. One segue has an identifier of AddAthlete and originates from an Add button. The other segue has an identifier of EditAthlete and originates from a table view cell.
+  - The form has a Save button that you'll use to trigger an unwind segue to bring the user back to the table view.
+  - The table view controller's subclass has already been created and set as AthleteTableViewController. At the moment, you'll see an error in this file. That's because it references a type, Athlete, that hasn't been created yet.
+- **Step 3 Create the Model**
+  - Create a new Swift file named "Athlete."
+  - In the file, create an Athlete struct that has the following properties: name, age, league, and team.
+  - Add a computed property description of type String that uses the four properties to return a phrase describing the athlete, as in the following:
+
+    - ```swift
+        var description: String {
+            return "\(name) is \(age) years old and plays for the \(team) in the \(league)."
+        }
+      ```
+
+- **Step 4 Create and Implement a View Controller Subclass**
+  - Create a new Cocoa Touch Class file that subclasses UIViewController and is named “AthleteFormViewController.” In the Main storyboard, use the Identity inspector to set the class of the form scene to your new subclass.
+  - Add a variable property athlete of type Athlete? to your AthleteFormViewController class. Why is this variable optional? It will be nil when the user comes to the screen to create a new athlete, and it will have a value when the user comes to the screen to edit an athlete.
+  - Create a custom initializer with the signature init?(coder: NSCoder, athlete: Athlete?). Assign self.athlete to your instance variable and call the super implementation. Satisfy the compilation error that this creates by using Xcode's fix-it suggestion.
+
+    - ```swift
+        class AthleteFormViewController: UIViewController {
+            var athlete: Athlete?
+            
+            init?(coder: NSCoder, athlete: Athlete?) {
+                self.athlete = athlete
+                super.init(coder: coder)
+            }
+            
+            required init?(coder: NSCoder) {
+                fatalError("init(coder:) has not been implemented")
+            }
+            ...
+      ```
+
+  - Create an updateView() method and call it in the viewDidLoad() method.
+  - Add outlets from the storyboard to all the text fields in AthleteFormViewController. In the same file, add an action for the Save button.
+  - In updateView(), unwrap the athlete property and check whether it contains an Athlete object. If so, use the object to update the text fields with the athlete's information.
+
+    - ```swift
+        func updateView() {
+            guard let theAthlete = athlete else { return }
+            nameTextField.text = theAthlete.name
+            ageTextField.text = "\(theAthlete.age)"
+            leagueTextField.text = theAthlete.league
+            teamTextField.text = theAthlete.team
+        }
+      ```
+
+  - Inside the the action for the Save button, create an Athlete object by unwrapping the text from the text fields and passing it to the Athlete initializer, as follows:​
+
+    - ```swift
+        guard let name = nameTextField.text,
+            let ageString = ageTextField.text,
+            let age = Int(ageString),
+            let league = leagueTextField.text,
+            let team = teamTextField.text else {return}
+         
+        athlete = Athlete(name: name, age: age, league: league, team: team)
+      ```
