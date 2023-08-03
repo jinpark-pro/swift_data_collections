@@ -1086,7 +1086,8 @@ In this lesson, you'll learn how to organize files, structures, and classes into
             }
             
             required init?(coder: NSCoder) {
-                fatalError("init(coder:) has not been implemented")
+                // fatalError("init(coder:) has not been implemented")
+                super.init(coder: coder)
             }
             ...
       ```
@@ -1116,3 +1117,43 @@ In this lesson, you'll learn how to organize files, structures, and classes into
          
         athlete = Athlete(name: name, age: age, league: league, team: team)
       ```
+
+- **Step 5 Finish Implementing AthleteTableViewController**
+  - In the starter project for this lab, most of the AthleteTableViewController class has already been implemented. You'll learn how to set up a table view on your own in a later lesson. For now, you simply need to create the functionality for informing the next view controller which athlete was tapped and for receiving information about an added or edited athlete.
+  - Create an @IBSegueAction from the AddAthlete segue by Control-dragging from the segue arrow between the two controllers into AthleteTableViewController. Name it `addAthlete` with no arguments. Do the same for the EditAthlete segue, naming the action `editAthlete` and setting Arguments to `Sender`.
+  - In the addAthlete method, instantiate and return a new instance of AthleteFormViewController.
+  - When the editAthlete method is called, the sender parameter will be the cell that was touched. Since you haven't yet learned about table views, this next part might be tricky, but see if you can follow along. Your Athlete objects are stored in an array called athletes in the table view controller. The index of each athlete in the array corresponds to the index of the table cell displaying that athlete. UITableView provides a method to look up a cell's IndexPath, which you can use to look up the corresponding Athlete in your athletes array.
+  - In the editAthlete method, unwrap the `sender` and cast it to a `UITableViewCell`, then use UITableView's `indexPath(for:)` method to get the IndexPath for the cell. The index path method returns an optional, so you can include that call in your unwrapping logic. Once you have the index path, you can access its row property, which translates to the index of the athlete in your athletes array. Your implementation might look like the following:​
+
+    - ```swift
+        let athleteToEdit: Athlete?
+        if let cell = sender as? UITableViewCell,
+          let indexPath = tableView.indexPath(for: cell) {
+            athleteToEdit = athletes[indexPath.row]
+        } else {
+            athleteToEdit = nil
+        }
+         
+        return AthleteFormViewController(coder: coder, athlete: athleteToEdit)
+      ```
+
+  - Next, you'll enable the table view controller to receive an Athlete object back from the AthleteFormViewController in the event that a new athlete has been added or an existing athlete has been edited. You will do this with an unwind segue. In AthleteTableViewController, add an @IBAction method that takes a parameter of type UIStoryboardSegue. Inside the body of this method, you'll first need to cast the segue's source view controller as an AthleteFormViewController and unwrap its athlete property with a guard statement.
+  - Which index path, if any, was selected before going to AthleteFormViewController? You can use the table view's indexPathForSelectedRow property in combination with conditional binding to discover the path. If the returned index path is successfully unwrapped, the Athlete object coming back is an edited athlete, not a new athlete. You'll need to use the index path to replace the existing athlete in the athletes array. If the returned index path is unsuccessfully unwrapped, the Athlete object coming back is a new athlete—in which case you can simply append the new athlete to the end of the athletes array. Here's how all this works:​
+
+    - ```swift
+        @IBAction func unwindToAthleteList(segue: UIStoryboardSegue) {
+            guard let athleteFormViewController = segue.source as? AthleteFormViewController,
+                  let athlete = athleteFormViewController.athlete else { return }
+            if let selectedIndexPath = tableView.indexPathForSelectedRow {
+                athletes[selectedIndexPath.row] = athlete
+            } else {
+                athletes.append(athlete)
+            }
+        }
+      ```
+
+- **Step 6 Perform the Unwind Segue in Storyboard**
+  - Finally, you need to create the unwind segue. In the storyboard, Control-drag from the Athlete Form View Controller to the view controller's Exit, then choose your unwind segue: `unwindToAthleteListWithSegue`. Give this segue a name, `segueForm`, by selecting it in the Document Outline and adding the identifier in the Attributes inspector.
+  - Now you need to instruct the segue when to execute in the AthleteFormViewController. Do this by calling `performSegue(withIdentifier:sender:)` at the end of your Save button's @IBAction method, passing in the identifier of the unwind segue and self as the sender: `performSegue(withIdentifier: "segueForm", sender: self)`
+  - Now run the app and see if you can add and edit your favorite athletes.
+  - Congratulations! You've planned and created a simple app using MVC principles. Be sure to save your work to your project folder.
