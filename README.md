@@ -1218,3 +1218,42 @@ In this lesson, you'll learn how to organize files, structures, and classes into
   - If you ran your project now, would you be able to scroll? Why or why not? You'd be correct if you said "no." The content isn't bigger than the scroll view, so scrolling isn't necessary.
   - In the Document Outline, select the view in the stack view and copy it (Command-C). Paste it (Command-V) several times into the stack view, once for every field you want to include in your form. Since your form will collect users' shipping information, you'll probably need the following fields: first name, last name, address line 1, address line 2, city, state, ZIP code, and phone number. Don't forget to modify the labels with descriptions of the field content. 
   - Build and run your app on different devices. On larger devices, you may find there's enough room to display all the views — so the scroll view won't scroll. On smaller devices, such as an iPhone XS, you won't be able to see all the views, but you should be able to scroll to see the rest. If you don't have a physical device small enough, run the app on a small device in Simulator.
+
+#### Keyboard Issues
+
+- When you ran your app on smaller devices, you might have noticed that the keyboard covers some of the text fields while they are being edited.
+- Obviously, it's not a good experience if the user can't see the text they're entering. This lesson doesn't provide details about keyboard management with scroll views, but here's a brief explanation that will help you handle the problem.
+- iOS sends a notification every time the keyboard is shown. You can add code to listen for the notification and execute a function when the notification is posted. And, because the notification includes the keyboard size, your function can adjust the scroll view so that its contents aren't overlapped by the keyboard. You can also add a listener for another notification that is posted when the keyboard will be hidden, allowing you to reverse the adjustments.
+- If you're interested in learning more about notifications, check out the API Reference documentation for [Notification Center](https://developer.apple.com/documentation/foundation/notificationcenter).
+- To adjust the size of the content view, you need to create an outlet from the scroll view to its view controller. Then you can add the following code to the ViewController class to fix the keyboard issues:
+
+  - ```swift
+      func registerForKeyboardNotifications() {
+          NotificationCenter.default.addObserver(self, selector: #selector(keyboardWasShown(_:)), name: UIResponder.keyboardDidShowNotification,
+          object: nil)
+          NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillBeHidden(_:)), name: UIResponder.keyboardWillHideNotification,
+          object: nil)
+      }
+
+      @objc func keyboardWasShown(_ notification: NSNotification) {
+          guard let info = notification.userInfo,
+              let keyboardFrameValue = info[UIResponder.keyboardFrameBeginUserInfoKey]
+              as? NSValue else { return }
+
+          let keyboardFrame = keyboardFrameValue.cgRectValue
+          let keyboardSize = keyboardFrame.size
+
+          let contentInsets = UIEdgeInsets(top: 0.0, left: 0.0, bottom: keyboardSize.height, right: 0.0)
+          scrollView.contentInset = contentInsets
+          scrollView.scrollIndicatorInsets = contentInsets
+      }
+
+      @objc func keyboardWillBeHidden(_ notification: NSNotification) {
+          let contentInsets = UIEdgeInsets.zero
+          scrollView.contentInset = contentInsets
+          scrollView.scrollIndicatorInsets = contentInsets
+      }
+    ```
+
+- Now add the following line to viewDidLoad(): `registerForKeyboardNotifications()`
+- Build and run your app. You should now be able to see what you're typing in any text field.
