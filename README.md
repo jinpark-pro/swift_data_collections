@@ -1257,3 +1257,27 @@ In this lesson, you'll learn how to organize files, structures, and classes into
 
 - Now add the following line to viewDidLoad(): `registerForKeyboardNotifications()`
 - Build and run your app. You should now be able to see what you're typing in any text field.
+
+#### Content Insets and Scroll Indicator Insets
+
+- To ensure that the keyboard does not overlap your content, you used a content inset to change the size of the content area of the scroll view, making room for the keyboard. You'll use this solution often when you want to add padding to the scroll view content so that controllers, toolbars, and keyboards don’t interfere with the user's experience of the content.
+- To add padding, use the contentInset property to specify a buffer area around the content of the scroll view. By adding padding, you're making the scroll view's window into its content smaller without changing the size of the scroll view itself or the size of its content.
+- The contentInset property is a UIEdgeInsets struct with fields for top, bottom, left, and right.
+
+  - <img src="./resources/contentInset.png" alt="Content Inset" width="400" />
+
+- But there's a problem. Changing the contentInset value has an unexpected side effect when your scroll view displays scroll indicators. For example, the scroll indicators may be drawn behind the keyboard — an unwanted result. To fix this, you'll need to modify the `scrollIndicatorInsets`. Like the contentInset property, the scrollIndicatorInsets property is defined as a UIEdgeInsets struct. You can remedy the situation by setting the scrollIndicatorInsets values to match the contentInset value.
+
+  - ```swift
+      let contentInsets = UIEdgeInsets(top: 0.0, left: 0.0, bottom: keyboardSize.height, right: 0.0)
+      scrollView.contentInset = contentInsets
+      scrollView.scrollIndicatorInsets = contentInsets
+    ```
+
+#### The Scroll View Family
+
+- UIScrollView is the parent class of several other classes in UIKit, including UITableView and UICollectionView. These two prominent classes both inherit all the functionality of UIScrollView classes. As you advance to these new topics, you'll want to keep this relationship in mind, since you'll be able to use all the tools you learned in this lesson when you use table views or collection views.
+
+#### Challenge
+
+- Create a horizontal scroll view that displays three of your favorite images.
