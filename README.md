@@ -1292,7 +1292,10 @@ In this lesson, you'll learn how to organize files, structures, and classes into
 ##### Step 1 Set Up the Storyboard
 
 - Add a scroll view to the view controller and resize it to fit in the Safe Area. Add constraints to pin the scroll view edges to the Safe Area of the view controller.
-Add an image view as a subview of the scroll view and resize it to fit the scroll view's bounds. Add constraints to pin the edges of the image view to the Content Layout Guide of the scroll view.
+- Add an image view as a subview of the scroll view and resize it to fit the scroll view's bounds. Add constraints to pin the edges of the image view to the Content Layout Guide of the scroll view.
+
+  - <img src="./resources/constraints_imageView.png" alt="Constraints of Image View" width="500" />
+
 - Add an image of your choosing to the Assets folder. Set it as the image of the image view.
 - Create outlets from the scroll view and image view to the ViewController file.
 
@@ -1300,9 +1303,9 @@ Add an image view as a subview of the scroll view and resize it to fit the scrol
 
 - To use a scroll view for zooming, your view controller needs to conform to UIScrollViewDelegate. You can read more about UIScrollViewDelegate in the [documentation](https://developer.apple.com/documentation/uikit/uiscrollviewdelegate). But for now, go ahead and add the following line of code to the class declaration: `class ViewController: UIViewController, UIScrollViewDelegate {...}`
 - In the viewDidLoad() method, set the scroll view's delegate to be the ViewController instance.
-- Implement the viewForZooming() delegate method, and return the image view in the body of the method.
-- Create a new method `updateZoomFor(size: CGSize)` that will update the zoom of the image. Override `viewDidAppear(_:)` and in the body call `updateZoomFor(size:)`, passing in view.bounds.size.
-- Inside the updateZoomFor(size:) method, use the imageView and the size parameter to calculate the scale. Then set the minimumZoomScale property of the scrollView to be that scale, as in the following:
+- Implement the `viewForZooming()` delegate method, and return the image view in the body of the method.
+- Create a new method `updateZoomFor(size: CGSize)` that will update the zoom of the image. Override `viewDidAppear(_:)` and in the body call `updateZoomFor(size:)`, passing in `view.bounds.size`.
+- Inside the `updateZoomFor(size:)` method, use the imageView and the size parameter to calculate the scale. Then set the `minimumZoomScale` property of the scrollView to be that scale, as in the following:
 
   - ```swift
       let widthScale = size.width / imageView.bounds.width 
@@ -1313,5 +1316,40 @@ Add an image view as a subview of the scroll view and resize it to fit the scrol
     ```
 
 - The code above starts by calculating the scale necessary to show the entire width and height of the image. It then sets the minimum scale to be the smaller of the two (width or height), so that you won't be able to zoom out beyond that. Finally, it sets the initial zoom scale so that the image fits inside the screen.
-Run the app. You should be able to zoom and scroll in all directions. (Use Option-drag to zoom in Simulator.)
+- Run the app. You should be able to zoom and scroll in all directions. (Use **Option-drag** to zoom in Simulator.)
 - Great work! You've made an app that can scroll and zoom in on an image. Can you think of something you want to build where this functionality might be useful? Be sure to save your app to your project folder for future reference.
+
+  - ```swift
+      import UIKit
+
+      class ViewController: UIViewController, UIScrollViewDelegate {
+          @IBOutlet var scrollView: UIScrollView!
+          @IBOutlet var imageView: UIImageView!
+
+          override func viewDidLoad() {
+              super.viewDidLoad()
+              scrollView.delegate = self
+          }
+
+          func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+              return imageView
+          }
+          
+          func updateZoomFor(size: CGSize) {
+              let widthScale = size.width / imageView.bounds.width
+              let heightScale = size.height / imageView.bounds.height
+              let scale = min(widthScale, heightScale)
+              scrollView.minimumZoomScale = scale
+              scrollView.zoomScale = scale
+          }
+          
+          override func viewDidAppear(_ animated: Bool) {
+              super.viewDidAppear(animated)
+              updateZoomFor(size: view.bounds.size)
+          }
+      }
+    ```
+
+- Tip: When to use super when overriding iOS method
+  - It depends on recommendations from the documentation for the superclass's implementation of that method.
+  - `viewDidAppear(_:)` - If you override this method, you must call super at some point in your implementation.
