@@ -1353,3 +1353,39 @@ In this lesson, you'll learn how to organize files, structures, and classes into
 - Tip: When to use super when overriding iOS method
   - It depends on recommendations from the documentation for the superclass's implementation of that method.
   - `viewDidAppear(_:)` - If you override this method, you must call super at some point in your implementation.
+
+### Lesson 1.5 Table Views
+
+- Enter UITableView, one of the most widely used views in iOS. Table views are perfect for efficiently displaying large or small amounts of information and for managing dynamic or static lists of data.
+- In this lesson, you'll learn why table views are so popular among iOS developers. This lesson will focus on dynamic table views; the next table view lesson will cover static table views.
+- If you've ever used an iOS device, odds are you've encountered a table view, or UITableView. Because of their utility, table views are one of the most ubiquitous views in all of iOS. In the Music app, table views allow you to navigate through your music hierarchy. In Contacts, table views present your contacts in an indexed list. In Settings, table views organize controls into visually distinct groupings. 
+- As you work through this lesson, you'll learn how to work with table views by building an emoji dictionary app.
+- Before we jump into table views, you'll need to complete a few setup steps — all things you've learned about in previous lessons. To get started, open Xcode and create a new iOS app project called "EmojiDictionary." When creating the project, make sure the interface option is set to "Storyboard." Delete the ViewController file and the view controller scene in the Main storyboard. Now you have a truly blank app canvas to work with.
+- The next step is to create your model. Remember that model objects should represent the real-world object you want to display to the user. In this project, you're going to display information about different emoji, so you'll need to create an Emoji model object. Your emoji structure will have the following properties:
+  - symbol, a String that holds the emoji symbol
+  - name, a String representing the emoji name
+  - description, a String describing the emoji
+  - usage, a String describing how the emoji is used or its meaning
+- For example, an emoji instance might look like the following:
+
+  - ```swift
+      {
+          symbol: "🐘",
+          name: "Elephant",
+          description: "A gray elephant.",
+          usage: "good memory"
+      }
+    ```
+
+- Before looking at the code segment below, create a new Swift file called Emoji.swift and try to create a struct to represent an emoji on your own.
+
+  - ```swift
+      struct Emoji {   
+          var symbol: String
+          var name: String
+          var description: String
+          var usage: String
+      }
+    ```
+
+- Now that your model is set up, you can dive into table views.
