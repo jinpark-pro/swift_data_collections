@@ -1407,3 +1407,10 @@ In this lesson, you'll learn how to organize files, structures, and classes into
 - Build and run you app. At this point, you should see an empty table view inside a navigation controller.
 
   - <img src="./resources/tableViewController.png" alt="Table View Controller" width="500" />
+
+##### Table View Style
+
+- Table views come in three styles: plain, grouped, and inset grouped.
+  - The plain style is the default. In a plain table view, rows can be separated into labeled sections with an optional index along the right edge of the table (such as the alphabet index seen in Contacts). Each section immediately follows the previous section with no spacing, creating an unbroken list.
+  - In a grouped table view, rows are displayed in visually distinct groups, or sections, with spacing in between - and without an index option.
+  - An inset grouped table view is similar to grouped, but each visual group in inset on both sides of the view with rounded corners, providing a very pronounced separation between sections.
