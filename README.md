@@ -1414,3 +1414,36 @@ In this lesson, you'll learn how to organize files, structures, and classes into
   - The plain style is the default. In a plain table view, rows can be separated into labeled sections with an optional index along the right edge of the table (such as the alphabet index seen in Contacts). Each section immediately follows the previous section with no spacing, creating an unbroken list.
   - In a grouped table view, rows are displayed in visually distinct groups, or sections, with spacing in between - and without an index option.
   - An inset grouped table view is similar to grouped, but each visual group in inset on both sides of the view with rounded corners, providing a very pronounced separation between sections.
+
+##### Table View Cells
+
+- Every row in a table view is represented with a table view cell, a UITableViewCell instance. Cells are reusable views that can display text, images, or any other UIView. In addition to the cell content, each cell has an optional accessory view (more on accessory views later).
+
+  - <img src="./resources/table_view_cell_non_editing.png" alt="Table View Cell - Non-Editing Mode" width="400" />
+
+- In addition to the default, non-editing mode, table views can enter an editing mode, which enables users to insert, delete, or reorder cells. In editing mode, the cell content size shrinks and any accessory view disappears to allow room for the editing and reorder controls.
+
+  - <img src="./resources/table_view_cell_editing.png" alt="Table View Cell - Editing Mode" width="400" />
+
+- The UITableViewCell class defines three properties for cell content. 
+  - `textLabel` and `detailTextLabel` are UILabels for the title and subtitle (or additional detail). 
+  - `imageView` is a UIImageView for an image.
+- These three properties have existed since the release of the iOS 2.0 SDK in 2009. UIKit has evolved since then, and table view cell configurations were introduced in iOS 14.0. Cell configurations let you describe what a cell should contain, rather than directly updating the cell's views yourself. The cell is responsible for taking the information in a configuration and updating its own views. This extra abstraction gives the cell more control over how to display its contents and lets you focus on the data you want it to display. (Also, the support for the textLabel, detailTextLabel, and imageView properties will be deprecated in a future version of iOS, so you should use cell configurations when possible.)
+- To configure a cell, request its defaultContentConfiguration and set the properties of the returned content configuration. Then update the cell's contentConfiguration property with the updated configuration. The configuration has properties for text, secondaryText, image, and more to adjust the presentation of elements in a cell. You'll see cell content configurations in action shortly.
+- The UIKit framework defines four standard cell styles that you can select in Interface Builder or programmatically, using the enum UITableViewCell.CellStyle. Each style supports its own combination of properties and has its own layout.
+- | Storyboard Name | Programmatic Enum Name | Displays | Description |
+  |---|---|---|---|
+  | Basic | .default | textLabel, imageView | A label on the left side of the cell with black, left-aligned text; options leading image view. <img src="./resources/table_basic.png" alt="Basic" width="200" />|
+  | Subtitle | .subtitle | textLabel, detailTextLabel, imageView | A label across the top with black, left-aligned text; a second label below in smaller, gray, left-aligned text; optional leading image view.  <img src="./resources/table_subtitle.png" alt="Subtitle" width="200" />|
+  | Right Detail | .value1 | textLabel, detailTextLabel, imageView | A label on the left side of the cell with black, left-aligned text; a label on the right side with black(storyboard) or gray (programmatic), right-align text; optional leading image view. <img src="./resources/table_right_detail.png" alt="Right Detail" width="200" />|
+  | Left Detail | .value2 | textLabel, detailTextLabel | A label on the left side of the cell with small, black, right aligned text, followed by a detail label with small, black (storyboard) or blue (programmatic), left-align text. <img src="./resources/table_left_detail.png" alt="Left Detail" width="200" />|
+-  When the table is in default (view-only) mode, cells can display an accessory view, which you can also select in Interface Builder or programmatically, using the enum `UITableViewCell.AccessoryType`. The iOS SDK defines five standard types of accessory views, some of which can respond to user touches, like a button. With a delegate method, you can respond and execute code when the user taps the accessory view. You'll learn about the delegate later in this lesson.
+No matter which accessory view is displayed, your code is responsible for responding to the user's tap on a cell or its accessory view. Accessory views are just indicators to the user about the nature of the cell.
+  - | Storyboard Name | Programmatic Enum Name | Description | Image |
+    |---|---|---|---|
+    | None | .none |  No accessory view is displayed; content view takes up the entire cell. | <img src="./resources/accessoryType_none.png" alt="" width="50" /> |
+    | Disclosure Indicator | .disclosureIndicator | A chevron. Tapping the cell typically triggers a show segue. The accessory view does not track touches. | <img src="./resources/accessoryType_disclosure.png" alt="" width="50" /> |
+    | Detail | .detailButton | An info button. The accessory view tracks touches; tapping it typically displays additional information about the cell's contents. | <img src="./resources/accessoryType_detail.png" alt="" width="50" /> |
+    | Detail Disclosure | .detailDisclosureButton | An info button and a chevron. Tapping the cell typically triggers a show segue. The accessory view tracks touches and typically displays additional information about the cell's contents. | <img src="./resources/accessoryType_detail_disclosure.png" alt="" width="50" /> |
+    | Checkmark | .checkmark | A checkmark. The accessory view does not track touches. | <img src="./resources/accessoryType_checkmark.png" alt="" width="50" /> |
+- Return to your EmojiDictionary project. In the table view controller scene, notice there is one cell under the Prototype Cells header. If you select the cell and open the Attributes inspector, you'll see many adjustable options, including Style. Feel free to select the different styles to see the options. When you're done, select the Subtitle style. You will use the labels to display the emoji symbol and name on the title line and the description as the subtitle. This style gives you the most room for both of your labels.
