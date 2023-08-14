@@ -1495,3 +1495,30 @@ No matter which accessory view is displayed, your code is responsible for respon
 - A dynamic table view object must have a data source object and may or may not have a delegate object. Following the MVC design model you learned about in an earlier lesson, the data source acts as an intermediary between the table view and your app's data model. The optional delegate manages the appearance (minus the actual cells) and the behavior of the table view.
 - Since the UITableView class itself doesn't have the methods, properties, or data required to configure its own contents, it delegates that responsibility to other objects. The data source and delegate are often, but not always, the same object. Typically this object is your custom subclass of UITableViewController. The responsibilities of the data source and delegate are defined in the UITableViewDataSource and UITableViewDelegate protocols.
 - As a reminder, protocols define methods and properties for the objects conforming to the protocol to implement. Now that you understand the general difference between the two table view protocols, you'll explore the specific methods defined by them.
+
+#### Table View Data Source
+
+- The data source, which adopts the `UITableViewDataSource` protocol, is responsible for providing the necessary data to the table view object.
+- Take a moment to think about the minimum information a table view would need to display its contents. It needs to know how many things to display (i.e. how many rows are in the table) and what goes in each row (i.e. the contents of each cell).
+- To provide this information, you implement the methods outlined in UITableViewDataSource.
+- For now, you'll focus on three data source methods that provide the number of sections in the table view, the number of rows in each section, and the cell to display for each index path.
+
+  - ```swift
+      optional func numberOfSections(in tableView: UITableView) -> Int
+      func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
+      func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell
+    ```
+
+- When the table view loads or reloads its data, it queries the data source by calling each of these methods (sometimes multiple times) to request information for the visible rows. As the user scrolls through the table view and different rows become visible, the table view continues to query the data source for information to fill the new rows about to be displayed. The data source is responsible for returning the requested information based on the values of the parameters passed into the methods.
+- In the next three sections, you'll explore the parameters of each function and your job, as the programmer, when implementing these functions.
+- **Number of Sections**
+  - In `numberOfSections(in:)`, you return as an Int the number of sections you want the table view to display. You probably noticed in the code above that this function has the optional modifier. If you choose not to write this function, the table view will display one section.
+- **Number of Rows in a Section**
+  - Once the table view knows how many sections to display, it needs to know how many rows there will be in each section. The `tableView(_:numberOfRowsInSection:)` method has two parameters: the table view requesting the information and the section in question. Based on these parameters, your job is to return an Int representing the number of rows for the given section. This required method will be called for every section in your table view.
+- **Cell for Row at Index Path**
+  - The table view now knows how many sections to display and how many rows there should be in each section. `tableView(_:cellForRowAt:)` provides you with an index path, and in the body of the method you dequeue, configure, and return a cell for the table view to display.
+  - While different situations will call for different implementations of this method, most will adhere to the following steps:
+    1. Fetch the correct cell type by dequeueing a cell.
+    2. Fetch the model object to be displayed.
+    3. Configure the cell's properties with the model object's properties — in other words, set views (labels, image views, etc.) based on the model object.
+    4. Return the fully configured cell.
