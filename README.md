@@ -1522,3 +1522,30 @@ No matter which accessory view is displayed, your code is responsible for respon
     2. Fetch the model object to be displayed.
     3. Configure the cell's properties with the model object's properties — in other words, set views (labels, image views, etc.) based on the model object.
     4. Return the fully configured cell.
+
+#### Implement the Data Source
+
+- It's time to implement your table view's data source. Since you're using a UITableViewController subclass, your table view already has its data source assigned as the EmojiTableViewController instance. Open the Swift file for your emoji table view controller. Notice that the three data source methods are already defined for you, but with comments warning you that the implementations are incomplete.
+  - The first method that will be called is `numberOfSections(in:)`. EmojiDictionary will have one section, so delete the comment inside the body of the method and return 1. (You could also remove the implementation of numberOfSections(in:) completely, and the table view would assume that it has one section. However, it's a good habit to clearly define your table views rather than relying on default values.)
+  - Next, the table view will call `tableView(_:numberOfRowsInSection:)` to determine how many rows to place inside the section. You'll know which section is being requested via the parameter section. In EmojiDictionary, you only have one section. Delete the comment in tableView(_:numberOfRowsInSection:) and add the following to its body: `return emojis.count`
+    - The code above returns the count of your emojis array. This means that if you were to allow user input to add to the array of emoji, your table view could be updated at runtime to match.
+      - For example, if you added an emoji to the emojis array, the count of the array would increase by one, and your table view would display an additional row.
+    - Since the EmojiDictionary table view has only one section, there's no need to use the section parameter of the method. If you were to add more sections in the future, you'd need to add conditional logic to return the correct number of cells in each section.
+- Now that the table view knows how many rows to display, the table view will call `tableView(_:cellForRowAt:)` to get a cell for each row. To expose the method, you'll need to uncomment it. Delete the /* before the method and the */ after it. Next, you'll implement the method to follow the dequeueing steps detailed above.
+  - First, you'll ask the table view to dequeue a cell. The following line (provided in the template with a placeholder for the reuse identifier) returns a UITableViewCell instance of the same style you registered in Interface Builder with the EmojiCell identifier: `let cell = tableView.dequeueReusableCell(withIdentifier: "EmojiCell", for: indexPath)`
+  - The second step is to get the appropriate model object to display in the cell — in this example, that's the Emoji instance associated with that row. Using the indexPath parameter, you can get the array index required to retrieve the correct Emoji. Recall that the index path has two properties to access the cell address: `section` and `row`. Since your table view only has one section, you can ignore the section property, as it will be the same (in this case) every time the method is called.
+    - You'll use the `row` property instead. Add the following line: `let emoji = emojis[indexPath.row]`
+  - Your third step is to configure the cell with information about the emoji. Using the example cell above, you'll modify the cell's view to display the emoji info. Add the following lines:
+
+    - ```swift
+        var content = cell.defaultContentConfiguration()
+        content.text = "\(emoji.symbol) - \(emoji.name)"
+        content.secondaryText = emoji.description
+        cell.contentConfiguration = content
+      ```
+
+    - These lines update the cell's content configuration so that a string consisting of the `symbol` and `name` will be rendered in the primary text position and the `description` will be rendered in the secondary text position. (Your usage property will be put to use in the next lesson.)
+  - At last, your cell is looking the way you want. The final line from the template returns the configured cell: `return cell`
+- You've completed the basic implementation of a table view data source, which means your table view now has enough information to display content.
+- Build and run your app. At this point, you should see a filled table view with one row for each emoji in your array.
+- Take some time to add more emoji to the emojis array. Build and run your app. Notice that without changing any code your table view was able to handle the additional data and display more cells, demonstrating the power that comes from combining an array with a table view.
