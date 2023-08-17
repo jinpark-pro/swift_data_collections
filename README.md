@@ -1549,3 +1549,27 @@ No matter which accessory view is displayed, your code is responsible for respon
 - You've completed the basic implementation of a table view data source, which means your table view now has enough information to display content.
 - Build and run your app. At this point, you should see a filled table view with one row for each emoji in your array.
 - Take some time to add more emoji to the emojis array. Build and run your app. Notice that without changing any code your table view was able to handle the additional data and display more cells, demonstrating the power that comes from combining an array with a table view.
+
+#### Table View Delegate
+
+- The second protocol in the table view API is the delegate. The delegate object, which conforms to the UITableViewDelegate protocol, implements methods to modify visible aspects of the table view, manage selections, support an accessory view, and support editing of individual rows. Unlike the data source protocol, the delegate protocol has no required methods.
+- Although several of the delegate methods are beyond the scope of this lesson, there are two that are important to learn right now:
+  - `tableView(_:accessoryButtonTappedForRowWith:)` — This method is used to respond to user interaction with the accessory view.
+  - `tableView(_:didSelectRowAt:)` — This method is used to respond to user interaction with the cell's content area.
+- **Accessory Button Tapped for Row**
+  - As you learned earlier in the lesson, two of the accessory types track user interaction. Accessory button tapped for row is called if the cell has a detail or a detail disclosure accessory type and the user taps the detail indicator. This gives you the opportunity to respond to the user interaction, and you'll be given the index path of the row that contains the tapped accessory button so you can get the corresponding model object.
+- **Did Select Row**
+  - In a table view, you can respond to user interaction by implementing the `tableView(_:didSelectRowAt:)` method of the table view delegate. Any time the user taps a cell, the table view will select that row, provided the cell's selection style isn't set to `.none`. By default, the table view changes the background of a selected cell from white to gray and deselects any previously selected cell. The currently selected index path is accessible through the table view property `indexPathForSelectedRow`. Once the selection is completed, `tableView(_:didSelectRowAt:)` is called, and you're provided with the index path of the selected cell.
+- **Implement the Delegate**
+  - In your EmojiDictionary app, you're using a UITableViewController subclass to manage the table view. That table view controller, as you have seen, was automatically assigned as the table view data source, and it is also assigned as the table view delegate.
+  - Add the delegate method `tableView(_:didSelectRowAt:)` to your EmojiTableViewController. In this method, print the emoji symbol and the index path of the row tapped.
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, didSelectRowAt
+          indexPath: IndexPath) {
+            let emoji = emojis[indexPath.row]
+            print("\(emoji.symbol) \(indexPath)")
+        }
+      ```
+ 
+- Build and run your app. As you select rows, you should see the background color change and your message printed in the console.
