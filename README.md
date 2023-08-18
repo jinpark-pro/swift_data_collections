@@ -1637,6 +1637,209 @@ No matter which accessory view is displayed, your code is responsible for respon
 
 - With your new skills, you'll be able to confidently and efficiently build a custom display to present whatever model objects your app uses and respond to user interactions with your table view. Make sure to save your EmojiDictionary project as you will continue to build on it in the next table view lesson.
 
+  - ```swift
+      import UIKit
+      class EmojiTableViewController: UITableViewController {
+          var emojis: [Emoji] = [
+              Emoji(symbol: "😀", name: "Grinning Face", description: "A typical smiley face.", usage: "happiness"),
+              Emoji(symbol: "😕", name: "Confused Face", description: "A confused, puzzled face.", usage: "unsure what to think; displeasure"),
+              Emoji(symbol: "😍", name: "Heart Eyes", description: "A smiley face with hearts for eyes.", usage: "love of something; attractive"),
+              Emoji(symbol: "🧑‍💻", name: "Developer", description: "A person working on a MacBook (probably using Xcode to write iOS apps in Swift).", usage: "apps, software, programming"),
+              Emoji(symbol: "🐢", name: "Turtle", description: "A cute turtle.", usage: "something slow"),
+              Emoji(symbol: "🐘", name: "Elephant", description: "A gray elephant.", usage: "good memory"),
+              Emoji(symbol: "🍝", name: "Spaghetti", description: "A plate of spaghetti.", usage: "spaghetti"),
+              Emoji(symbol: "🎲", name: "Die", description: "A single die.", usage: "taking a risk, chance; game"),
+              Emoji(symbol: "⛺️", name: "Tent", description: "A small tent.", usage: "camping"),
+              Emoji(symbol: "📚", name: "Stack of Books", description: "Three colored books stacked on each other.", usage: "homework, studying"),
+              Emoji(symbol: "💔", name: "Broken Heart", description: "A red, broken heart.", usage: "extreme sadness"),
+              Emoji(symbol: "💤", name: "Snore", description: "Three blue \'z\'s.", usage: "tired, sleepiness"),
+              Emoji(symbol: "🏁", name: "Checkered Flag", description: "A black-and-white checkered flag.", usage: "completion")
+          ]
+
+          override func viewDidLoad() {
+              super.viewDidLoad()
+              navigationItem.leftBarButtonItem = editButtonItem
+          }
+
+          override func numberOfSections(in tableView: UITableView) -> Int {
+              return 1
+          }
+
+          override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+              return emojis.count
+          }
+
+          override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+              let cell = tableView.dequeueReusableCell(withIdentifier: "EmojiCell", for: indexPath)
+              let emoji = emojis[indexPath.row]
+              
+              var content = cell.defaultContentConfiguration()
+              content.text = "\(emoji.symbol) - \(emoji.name)"
+              content.secondaryText = emoji.description
+              cell.contentConfiguration = content
+              
+              cell.showsReorderControl = true
+              
+              return cell
+          }
+
+          override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+              let emoji = emojis[indexPath.row]
+              print("\(emoji.symbol) \(indexPath)")
+          }
+          override func tableView(_ tableView: UITableView, moveRowAt fromIndexPath: IndexPath, to: IndexPath) {
+              let movedEmoji = emojis.remove(at: fromIndexPath.row)
+              emojis.insert(movedEmoji, at: to.row)
+          }
+
+          override func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCell.EditingStyle {
+              return .none
+          }
+          
+          override func viewWillAppear(_ animated: Bool) {
+              super.viewWillAppear(animated)
+              tableView.reloadData()
+          }
+      }
+    ```
+
 #### Challenge - Table Views
 
 - With your new skills, you'll be able to confidently and efficiently build a custom display to present whatever model objects your app uses and respond to user interactions with your table view. Make sure to save your EmojiDictionary project, as you will build on it in the next table view lesson.
+
+#### Lab - Meal Tracker
+
+- The objective of this lab is to give you a chance to practice implementing a basic table view. You'll create an app that will display a list of foods grouped into three sections, one for each meal of the day.
+- Create a new project called "Meal Tracker" using the iOS App template. When creating the project, make sure the interface option is set to "Storyboard."
+
+##### Step 1 - Set Up the Storyboard
+
+- Delete the UIViewController that comes with the storyboard and its associated ViewController file. Add a UITableViewController from the Object library.
+- Embed the scene in a navigation controller. Check `Is Initial View Controller` in Attributes inspector of Navigation Controller.
+- The table view will default to having one prototype cell. 
+  - Change its Style to `Subtitle`.
+  - Update the reuse identifier to `Food`.
+- Select the table view and change its Style to `Grouped`.
+- Add a new Cocoa Touch Class file called `FoodTableViewController` that subclasses UITableViewController. Assign that class to the table view controller in your storyboard.
+
+##### Step 2 - Create Model Objects
+
+- Create two new Swift files. Name one “Meal” and the other “Food.”
+- In the Food file, create a Food struct. Give it two properties, `name` and `description`, both of type `String`.
+- In the Meal file, create a Meal struct. Give it two properties, `name` and `food`. The name property should be of type `String`, and food should be a type `[Food]`.
+
+##### Step 3 - Implement UITableViewDataSource
+
+- In the FoodTableViewController, remove all the template code except for `numberOfSections(in:)`, `tableView(_:numberOfRowsInSection:)`, and `tableView(_:cellForRowAt:)`.
+- Create a computed property, `meals`, of type [Meal].
+  - This property will return three Meal objects that each have three Food objects. The meals will represent `breakfast`, `lunch`, and `dinner`.
+  - In the body of the property, create three Meal objects. Name them breakfast, lunch, and dinner. Set their food values to [] for now.
+  - Return the three Meal objects in an array with the order: breakfast, lunch, dinner.
+  - Create three Food objects for the food array on each Meal object. Give each Food item an appropriate name for its corresponding meal.
+
+    - ```swift
+        var meals: [Meal] {
+            let aBreakfast = Food(name: "Eggs", description: "Scrambled with bacon")
+            let bBreakfast = Food(name: "Cooked Rice", description: "Boiled rice by pressed pot with side dishes")
+            let cBreakfast = Food(name: "Salad", description: "Cabbage, Cucumber, Almond, and Dressing")
+            let breakfast = Meal(name: "Breakfast", food: [aBreakfast, bBreakfast, cBreakfast])
+            
+            let aLunch = Food(name: "Soup", description: "Mushroom soup")
+            let bLunch = Food(name: "Pizza", description: "Pepperoni pizza")
+            let cLunch = Food(name: "Pork belly", description: "Grilled port belly")
+            let lunch = Meal(name: "Lunch", food: [aLunch, bLunch, cLunch])
+            
+            let aDinner = Food(name: "Milk", description: "2% Milk")
+            let bDinner = Food(name: "Ramen", description: "Shin ramen")
+            let cDinner = Food(name: "Seaweed Soup", description: "")
+            let dinner = Meal(name: "Breakfast", food: [aDinner, bDinner, cDinner])
+            
+            return [breakfast, lunch, dinner]
+        }
+      ```
+
+- In `numberOfSections(in:)`, return the number of meals in your meals array. `return meals.count`
+- In `tableView(_:numberOfRowsInSection:)`, access the meal for the given section and return the number of food items in that meal. `return meals[section].food.count`
+- In `tableView(_:cellForRowAt:)`, 
+  - dequeue a cell with the reuse identifier `Food`.
+  - Access the meal for the row using `indexPath.section`.
+  - From the returned meal, access the food for the row using `indexPath.row`.
+  - Get the cell's default content configuration, update the content configuration's text and secondary text to be the `name` and `description` of the food item, and assign it to the cell's content configuration before returning the cell.
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+            let cell = tableView.dequeueReusableCell(withIdentifier: "Food", for: indexPath)
+            let meal = meals[indexPath.section]
+            let food = meal.food[indexPath.row]
+
+            var content = cell.defaultContentConfiguration()
+            content.text = "\(food.name)"
+            content.secondaryText = "\(food.description)"
+            cell.contentConfiguration = content
+
+            return cell
+        }
+      ```
+
+- In `tableView(_:titleForHeaderInSection:)`, return the `name` of the meal that corresponds to the section.
+
+  - ```swift
+      override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+          return meals[section].name
+      }
+    ```
+
+- Congratulations! You've made an app that displays a list of meals and food items in a table view. Be sure to save it to your project folder for future reference.
+
+  - ```swift
+      import UIKit
+      class FoodTableViewController: UITableViewController {
+          var meals: [Meal] {
+              let aBreakfast = Food(name: "Eggs", description: "Scrambled with bacon")
+              let bBreakfast = Food(name: "Cooked Rice", description: "Boiled rice by pressed pot with side dishes")
+              let cBreakfast = Food(name: "Salad", description: "Cabbage, Cucumber, Almond, and Dressing")
+              let breakfast = Meal(name: "Breakfast", food: [aBreakfast, bBreakfast, cBreakfast])
+              
+              let aLunch = Food(name: "Soup", description: "Mushroom soup")
+              let bLunch = Food(name: "Pizza", description: "Pepperoni pizza")
+              let cLunch = Food(name: "Pork belly", description: "Grilled port belly")
+              let lunch = Meal(name: "Lunch", food: [aLunch, bLunch, cLunch])
+              
+              let aDinner = Food(name: "Milk", description: "2% Milk")
+              let bDinner = Food(name: "Ramen", description: "Shin ramen")
+              let cDinner = Food(name: "Seaweed Soup", description: "")
+              let dinner = Meal(name: "Breakfast", food: [aDinner, bDinner, cDinner])
+              
+              return [breakfast, lunch, dinner]
+          }
+          
+          override func viewDidLoad() {
+              super.viewDidLoad()
+          }
+
+          override func numberOfSections(in tableView: UITableView) -> Int {
+              return meals.count
+          }
+
+          override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+              return meals[section].food.count
+          }
+
+          override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+              let cell = tableView.dequeueReusableCell(withIdentifier: "Food", for: indexPath)
+              let meal = meals[indexPath.section]
+              let food = meal.food[indexPath.row]
+
+              var content = cell.defaultContentConfiguration()
+              content.text = "\(food.name)"
+              content.secondaryText = "\(food.description)"
+              cell.contentConfiguration = content
+
+              return cell
+          }
+
+          override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+              return meals[section].name
+          }
+      }
+    ```
