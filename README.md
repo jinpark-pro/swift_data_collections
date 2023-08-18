@@ -1573,3 +1573,52 @@ No matter which accessory view is displayed, your code is responsible for respon
       ```
  
 - Build and run your app. As you select rows, you should see the background color change and your message printed in the console.
+
+#### Edit the Table View
+
+- In addition to the data source methods you've already seen, there are others that allow for modifying the data in the table view. For example, `tableView(_:moveRowAt:to:)` reorders the cells displayed by a table view. Cells display the reorder control based on three factors:
+  - The `UITableViewCell` class property `showsReorderControl`, a `Bool`, must be set to `true`. 
+  - The data source method `tableView(_:moveRowAt:to:)` must be implemented. 
+  - The table must be in editing mode.
+- When it is displayed, the reorder control appears to the right of the cell's content and allows the user to drag cells to reorder them. The same factors will cause the delete button to display to the left of the content.
+- Back in your project, add the following line to the method `tableView(_:cellForRowAt:)` method just before the return statement: `cell.showsReorderControl = true`
+- Typically, but not necessarily, a table view will enter editing mode when the user taps an Edit button in the navigation bar. That seems like a good idea for your app. 
+  - To enable this functionality, add a bar button item to the left slot of the table view controller's navigation bar. 
+  - Choose Edit for the System Item property of the bar button, then add an @IBAction from the Edit button to the table view controller. 
+  - Put the table view into editing mode using the setEditing(_:animated:) function; this will toggle the editing mode of the table view on and off:
+
+    - ```swift
+        @IBAction func editButtonTapped(_ sender: UIBarButtonItem) {
+            let tableViewEditingMode = tableView.isEditing
+         
+            tableView.setEditing(!tableViewEditingMode, animated: true)
+        }
+      ```
+
+- Alternatively, you can add an Edit button programmatically that will give you the same functionality without requiring any additional actions.
+  - In viewDidLoad(), set the `leftBarButtonItem` to `editButtonItem`, a predefined button that switches the table view's editing mode on and off.
+
+    - ```swift
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            navigationItem.leftBarButtonItem = editButtonItem
+        }
+      ```
+
+- Next, implement the `tableView(_:moveRowAt:to:)` method. When called, it should remove the data within emojis at `fromIndexPath.row` and add it back at `to.row`:
+
+  - ```swift
+      override func tableView(_ tableView: UITableView, moveRowAt fromIndexPath: IndexPath, to: IndexPath) {
+          let movedEmoji = emojis.remove(at: fromIndexPath.row)
+          emojis.insert(movedEmoji, at: to.row)
+      }
+    ```
+
+- Build and run your app. Enter editing mode. You should now see the reorder controls. Go ahead and use one to rearrange the cells.
+- Maybe you only want users to be able to reorder items, not delete them. To remove the delete indicator, you could add the following method to the table view controller:
+
+  - ```swift
+      override func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCell.EditingStyle {
+          return .none
+      }
+    ```
