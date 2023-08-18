@@ -1622,3 +1622,21 @@ No matter which accessory view is displayed, your code is responsible for respon
           return .none
       }
     ```
+
+#### Reload Data
+
+- The time will come when you need to reload your table view's data. Imagine, for example, that a user adds a new model object in a separate view controller and then returns to an already loaded table view. The table view won't reflect the addition.
+- Table views have a built-in instance method, called `reloadData()`, that forces a refresh. If you want to refresh the table view with new data when a user returns to the view, you could add the call to `reloadData()` in the view will appear method.
+
+  - ```swift
+      override func viewWillAppear(_ animated: Bool) {
+          super.viewWillAppear(animated)
+          tableView.reloadData()
+      }
+    ```
+
+- With your new skills, you'll be able to confidently and efficiently build a custom display to present whatever model objects your app uses and respond to user interactions with your table view. Make sure to save your EmojiDictionary project as you will continue to build on it in the next table view lesson.
+
+#### Challenge - Table Views
+
+- With your new skills, you'll be able to confidently and efficiently build a custom display to present whatever model objects your app uses and respond to user interactions with your table view. Make sure to save your EmojiDictionary project, as you will build on it in the next table view lesson.
