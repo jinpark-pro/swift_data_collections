@@ -1843,3 +1843,62 @@ No matter which accessory view is displayed, your code is responsible for respon
           }
       }
     ```
+
+### Lesson 1.6 Intermediate Table Views
+
+- In the previous lesson, you learned how to build basic table views. While the styles and functionality provided by basic table views will get you far, you'll often find you want more customization. In this lesson, you'll learn how to create custom table view cells and use row actions to add and delete table view rows. You'll also learn how you can use table views to display static data without the overhead of implementing the table view's data source.
+
+#### Custom Table View Cells
+
+- Throughout this section, you'll build on the EmojiDictionary project you set up in the previous table view lesson. In that lesson, you used the table view cell styles provided in the iOS SDK. But what if you wanted further customization? For example, table view cells in the Mail app display preview text so the user can read a piece of each message at a glance. In the App Store, cells display app names and an image of the app as well as a button that allows users to download the app right from the table view.
+- In EmojiDictionary, the default cell displaying the emoji works — but emoji are all about the symbol. Wouldn't it be nice if the symbol were displayed more prominently?
+- Since emoji are characters, it won't work to use the included image view. Instead, you'll build a custom table view cell that adds a third, larger label aligned to the leading edge of the cell to display the emoji.
+- To start creating a custom table view cell in the EmojiDictionary project, open the Main storyboard, select the table view cell, and set its Style in the Attributes inspector to `Custom`. You now have a blank cell to work with.
+- You can customize this empty cell using the tools provided in Interface Builder in the same way you would customize a scene's main view.
+- Add a horizontal stack view to the cell's content view with Spacing set to 8. Use the Add New Constraints tool to constrain the stack view to the margins of the cell (make sure that the "Constrain to margins" checkbox is checked). 
+- In the horizontal stack view, add a label and, to the right of the label, a vertical stack view. The horizontal stack view on the canvas is probably very short, which will make it difficult to drag in the labels. Instead, you can drag the labels to the Stack View item in the Document Outline. The left label will contain the emoji, so replace the label text with a sample emoji. (You can bring up the emoji keyboard on your Mac using Control+Command+Spacebar in a text field.) Set the font size to 24 and the Alignment to centered.
+- Add two labels to the vertical stack view. Set the vertical stack view's Distribution property to `Fill Equally` so that the two labels share equal space.
+- At this point, you'll probably notice that the Auto Layout engine is giving too much width to the emoji label compared to the vertical stack view and its labels.
+- **Content Hugging**
+  - How much horizontal space should the emoji label use compared to the labels in the vertical stack view? It would be nice if the emoji symbol used as much space as it needed to fit its contents, and then allowed all remaining horizontal space to be dedicated to the vertical labels.
+  - In short, the emoji label's width should hug its contents. To achieve this, select the emoji label and open the Size inspector. Under Content Hugging Priority, change the value in the Horizontal field from `251` to `252`.
+    - This number is a relative number indicating how high of a priority the Auto Layout engine should place on making the view hug its content. In this case, the Horizontal Content Hugging Priority of each of the other labels is set to 251, so the Auto Layout engine prioritizes shrinking the emoji label to fit its content over shrinking the other labels to fit their content.
+  - The end result is that the emoji label is only as wide as it needs to be to display the entire emoji symbol, while the other labels fill the rest of the horizontal space.
+  - Touch up your cell's design by setting the top label's font to the `Title 3` Text Style, provided by the system, and the lower label's font to `Subhead`. You can also set the values for these labels to `Name` Label and `Description` Label in the storyboard to help remind you of their purposes.
+- **Create Cell Subclass**
+  - Now that your cell is visually set up in the storyboard, you'll need to create a custom table view subclass. This will let you create outlets that you can use to configure the cell. Create a new Cocoa Touch Class file named “EmojiTableViewCell” and set its subclass to UITableViewCell.
+  - Back in the storyboard, update the identity of the cell to be an EmojiTableViewCell. 
+  - In the EmojiTableViewCell class, add outlets for each of the labels: symbolLabel, nameLabel, and descriptionLabel. Also, add a function called update(with emoji: Emoji). This function will take an Emoji instance and use it to update the cell's labels appropriately. Try adding the implementation of this function on your own before looking at the following code:
+
+    - ```swift
+        func update(with emoji: Emoji) {
+            symbolLabel.text = emoji.symbol
+            nameLabel.text = emoji.name
+            descriptionLabel.text = emoji.description
+        }
+      ```
+
+  - Using an `update(with:)` method on a custom table view cell is a common pattern for abstracting, or moving, setup code from the `tableView(_:cellForRowAt:)` method into the cell itself.
+  - At this point, your custom cell class is ready for use. The last step will be to update the `tableView(_:cellForRowAt:)` method to use your new cell. 
+    - The first line involves the dequeueing process. When you dequeue a cell, the method returns a UITableViewCell instance. You'll need to force - downcast the dequeued cell to your EmojiTableViewCell class so that you can use the update(with:) method you defined earlier. The new line will look like this: `let cell = tableView.dequeueReusableCell(withIdentifier: "EmojiCell", for: indexPath) as! EmojiTableViewCell`
+    - The second thing you'll need to do is update how the cell is configured. Instead of using the default cell's text and detail labels, you'll use your recently created `update(with:)` method. Here's the cell configuration part of `tableView(_:cellForRowAt:)`: `cell.update(with: emoji)`, `cell.showsReorderControl = true`
+    - Your final `tableView(_:cellForRowAt:)` implementation will now look like this (possibly without the comments):
+
+      - ```swift
+          override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+              //Step 1: Dequeue cell
+              let cell = tableView.dequeueReusableCell(withIdentifier: "EmojiCell", for: indexPath) as! EmojiTableViewCell
+           
+              //Step 2: Fetch model object to display
+              let emoji = emojis[indexPath.row]
+           
+              //Step 3: Configure cell
+              cell.update(with: emoji)
+              cell.showsReorderControl = true
+           
+              //Step 4: Return cell
+              return cell
+          }
+        ```
+
+  - Build and run your app. You should see your emoji displayed with your custom table view cells.
