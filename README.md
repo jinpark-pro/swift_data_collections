@@ -1902,3 +1902,46 @@ No matter which accessory view is displayed, your code is responsible for respon
         ```
 
   - Build and run your app. You should see your emoji displayed with your custom table view cells.
+
+#### Edit Table Views
+
+- Once the table view enters editing mode, it calls its delegate method `tableView(_:editingStyleForRowAt:)` to determine the editing style of each row. In the previous lesson, you might have used this method to set the editing style of all rows to have no edit control displayed:
+
+  - ```swift
+      override func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCell.EditingStyle {
+          return .none
+      }
+    ```
+
+- In addition to `.none`, there are two other styles: `.delete` and `.insert`.
+- When your table view enters editing mode, several data source and delegate methods are called in sequence. The steps, including user input, include:
+  1. `tableView(_:canEditRowAt:)` — This data source method is used to exclude rows from being edited. Note that this method isn't necessary for most apps.
+  2. `tableView(_:editingStyleForRowAt:)` — This delegate method designates the row's editing style. If you don't implement this method, the table view will display the deletion control. Following this method, the table view will be fully in editing mode.
+  3. The user taps an editing control. If it's a deletion control, the row displays a Delete button for confirmation.
+  4. `tableView(_:commit:forRowAt:)` — This data source method updates your data model to reflect the user's action in step 3. Although this protocol method is marked optional, the data source must implement it if it needs to delete or insert rows. It must do two things:
+     - Update the corresponding data source by either deleting the referenced item or adding an item.
+     - Send `deleteRows(at:with:)` or `insertRows(at:with:)` to the table view to remove or insert the appropriate rows.
+- **Delete Items**
+  - Like most apps, EmojiDictionary won't exclude specific rows from being edited. Therefore, you can ignore step 1.
+  - For step 2, you'll need to tell the table view which controls, if any, should be displayed. In EmojiDictionary, you'll display the delete control. If you didn't implement the `tableView(_:editingStyleForRowAt:)` delegate method in the first table view lesson, add it now — and if you already added it, ensure that it returns .delete:
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCell.EditingStyle {
+            return .delete
+        }
+      ```
+
+  - In step 3, the user's action leads to the implementation of `tableView(_:commit:forRowAt:)` in step 4. When the user taps a control, the app must update the model data backing the table view and the table view itself. For your convenience, Apple has included this method header in table view controllers. You just have to remove the `/*` and the `*/`.
+  - In the implementation, remove the emoji from the emojis array using the given index path. Next, call the table view's `deleteRows(at:with:)` method. This method takes in an array of index paths, specifying the rows to delete, and a `UITableView.RowAnimation` enum. There are several different row animations. To see a full list, take a look at the [documentation](https://developer.apple.com/documentation/uikit/uitableview/rowanimation). For now, implement the method using `.automatic` for the row animation.
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+            if editingStyle == .delete {
+                emojis.remove(at: indexPath.row)
+                tableView.deleteRows(at: [indexPath], with: .automatic)
+            }
+        }
+      ```
+
+- Build and run your app. If you tap the Edit button, the table view should enter editing mode and give you the option to delete rows. If you tap the delete control, that row should animate away.
+- Implementing the ability to delete rows also automatically enables swipe to delete. Try swiping on a row from right to left to make sure it animates away.
