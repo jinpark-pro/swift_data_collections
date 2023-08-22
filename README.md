@@ -1945,3 +1945,54 @@ No matter which accessory view is displayed, your code is responsible for respon
 
 - Build and run your app. If you tap the Edit button, the table view should enter editing mode and give you the option to delete rows. If you tap the delete control, that row should animate away.
 - Implementing the ability to delete rows also automatically enables swipe to delete. Try swiping on a row from right to left to make sure it animates away.
+
+#### Add and Edit Emoji
+
+- What if you want your users to be able to add or edit the emoji in your dictionary app? Right now, the only solution is to modify the emojis array property — but your users don't have access to your code.
+- How could you add this capability? For adding an emoji, you could use the `.insert` control on a blank row. Another approach would be to add an Add (+) button to the navigation bar and present a new view controller where users can input the properties of their addition — and you could use that same view controller to permit emoji editing. Two birds with one view controller!
+- This is also a perfect case for a static table view.
+- **Static Table Views**
+  - As you can guess from the name, you'll use a static table view when the data it displays will be static — you know exactly how many rows and what types of cells are needed, regardless of the specific information it will display. Static table views are great for forms, settings, or anything where the number of rows doesn't change. In your EmojiDictionary project, your static table view will contain four cells, each with a text field to allow input and editing.
+  - For static table views, you'll always use a table view controller — which should not implement the data source protocol. Instead, you'll use the viewDidLoad() method to populate the table view's data. When you create a new UITableViewController subclass, you'll need to remember to delete or comment out the data source methods that are provided in the file. Otherwise your static table view will attempt to use the empty data source methods, and you'll end up with an empty table view.
+  - In your storyboard, add a navigation controller from the Object library to the scene, which will include a table view controller alongside it.
+    - This new table view controller will be backed by a subclass of UITableViewController. Start by creating a new file to define a UITableViewController subclass called `AddEditEmojiTableViewController`. Remember to delete or comment out the table view data source methods in the file.
+  - In the Main storyboard set the static table view's Custom Class to `AddEditEmojiTableViewController`. In AddEditEmojiTableViewController, add a property called emoji with a type of Emoji?.
+  - Next, create a custom initializer, as you'll be using @IBSegueAction to pass an Emoji when editing.
+
+    - ```swift
+        var emoji: Emoji?
+        init?(coder: NSCoder, emoji: Emoji?) {
+            self.emoji = emoji
+            super.init(coder: coder)
+        }
+      ```
+
+  - This will cause a compilation error, use the Xcode provided fix-it to resolve the issue.
+  - Next, go back to your storyboard and add a bar button item to the Emoji Dictionary scene. Set the system item to Add. Create a modal presentation segue from the bar button item to the new navigation controller. Create a second modal presentation segue from the emoji cell to the navigation controller.
+    - <img src="./resources/addEmoji.png" alt="Add Emoji Segue" width="500" />
+  - According to the Human Interface Guidelines, you should modally present this static table controller when it's being used to create a new Emoji or to edit an existing Emoji. If, however, you're simply displaying data without the ability to edit, it should be pushed.
+  - With the segue from the cell to the navigation controller in place, you are no longer interested in knowing when a row is selected — remove the `tableView(_:didSelectRowAt:)` method in EmojiTableViewController.
+  - Your new segues both go from the list of emoji to the navigation controller, but for your @IBSegueAction you're interested in initializing the AddEditEmojiTableViewController — the scene after the navigation controller — to pass it an Emoji when editing. You will notice that Xcode has provided a segue between the navigation controller and the AddEditEmojiTableViewController; this is called a relationship segue, and it's what you'll use to create an @IBSegueAction.
+  - Control-drag from the segue between the navigation controller and AddEditEmojiTableViewController into EmojiTableViewController and create an action segue with the name `addEditEmoji` and Arguments set to `Sender`.
+    - <img src="./resources/addEditEmojiSegueAction.png" alt="Add Edit Emoji Segue Action" width="500" />
+  - The new `addEditEmoji(_:sender:)` method will be called when the user taps the Add button or taps a row to edit an emoji. Add the following implementation.
+
+    - ```swift
+        if let cell = sender as? UITableViewCell,
+          let indexPath = tableView.indexPath(for: cell) {
+            // Editing Emoji
+
+            let emojiToEdit = emojis[indexPath.row]
+            return AddEditEmojiTableViewController(coder: coder, emoji: emojiToEdit)
+        } else {
+            // Adding Emoji
+
+            return AddEditEmojiTableViewController(coder: coder, emoji: nil)
+        }
+      ```
+
+  - When a cell is tapped, the sender parameter will be the cell, and you can use that to find the IndexPath — which translates back to the position in the emojis array. If the sender is not a cell, you can assume it was the Add button, so you create the `AddEditEmojiTableViewController` with a `nil` value for emoji.
+  - Build and run your app. You should be able to tap the Add button or a cell and see your new table view. However, it won't be populated, and it is missing a dismiss button. While you can dismiss by swiping down, the Human Interface Guidelines state that it's best to always provide a button as well.
+  - In the new table view controller scene, select the table view and open the Attributes inspector. Change the Content to Static Cells.
+  - You can now start to build your static table view. In the Attributes inspector, adjust the number of sections to 4 and the Style of the table view to `Grouped`. Next, edit each section's attributes by selecting the section in the Document Outline and adjusting the settings in Attributes inspector. Set the number of rows in each section to 1 and add the following section headers (from top to bottom): “Symbol,” “Name,” “Description,” and “Usage.” Add a text field in each cell, and don't forget to add constraints.
+  - Go ahead and test the app so far. Navigate back to your static table view controller, and enter the first text field. When the keyboard is presented, locate the emoji icon in the bottom left. Selecting it will switch to the Emoji keyboard. You can return to your default keyboard by pressing the ABC icon.
