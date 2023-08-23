@@ -1956,7 +1956,7 @@ No matter which accessory view is displayed, your code is responsible for respon
   - For static table views, you'll always use a table view controller — which should not implement the data source protocol. Instead, you'll use the viewDidLoad() method to populate the table view's data. When you create a new UITableViewController subclass, you'll need to remember to delete or comment out the data source methods that are provided in the file. Otherwise your static table view will attempt to use the empty data source methods, and you'll end up with an empty table view.
   - In your storyboard, add a navigation controller from the Object library to the scene, which will include a table view controller alongside it.
     - This new table view controller will be backed by a subclass of UITableViewController. Start by creating a new file to define a UITableViewController subclass called `AddEditEmojiTableViewController`. Remember to delete or comment out the table view data source methods in the file.
-  - In the Main storyboard set the static table view's Custom Class to `AddEditEmojiTableViewController`. In AddEditEmojiTableViewController, add a property called emoji with a type of Emoji?.
+  - In the Main storyboard set the Root View Controller's Custom Class to `AddEditEmojiTableViewController`. In AddEditEmojiTableViewController, add a property called emoji with a type of Emoji?.
   - Next, create a custom initializer, as you'll be using @IBSegueAction to pass an Emoji when editing.
 
     - ```swift
@@ -1996,3 +1996,19 @@ No matter which accessory view is displayed, your code is responsible for respon
   - In the new table view controller scene, select the table view and open the Attributes inspector. Change the Content to Static Cells.
   - You can now start to build your static table view. In the Attributes inspector, adjust the number of sections to 4 and the Style of the table view to `Grouped`. Next, edit each section's attributes by selecting the section in the Document Outline and adjusting the settings in Attributes inspector. Set the number of rows in each section to 1 and add the following section headers (from top to bottom): “Symbol,” “Name,” “Description,” and “Usage.” Add a text field in each cell, and don't forget to add constraints.
   - Go ahead and test the app so far. Navigate back to your static table view controller, and enter the first text field. When the keyboard is presented, locate the emoji icon in the bottom left. Selecting it will switch to the Emoji keyboard. You can return to your default keyboard by pressing the ABC icon.
+- **Pass Data to Static Table View**
+  - Now that your static table view is set up, you need to fill in the text fields when emoji is not nil. Create outlets for each text field: `symbolTextField`, `nameTextField`, `descriptionTextField`, and `usageTextField`. In the AddEditEmojiTableViewController's viewDidLoad() method, check whether emoji has a value. If it does, then you're editing an existing Emoji; update the text of each text field with the corresponding emoji properties as well as the view's title. If the property is nil, then the static table view controller was presented to create a new Emoji:
+
+    - ```swift
+        if let emoji = emoji {
+            symbolTextField.text = emoji.symbol
+            nameTextField.text = emoji.name
+            descriptionTextField.text = emoji.description
+            usageTextField.text = emoji.usage
+            title = "Edit Emoji"
+        } else {
+            title = "Add Emoji"
+        }
+      ```
+
+  - If you try running on a smaller device, you'll notice that the keyboard initially covers the usageTextField and possibly the descriptionTextField when it slides up. But the table view controller automatically moves the text fields above the keyboard — unlike with a scroll view, where you needed to add code to get this behavior. This is another benefit of using static table view controllers to build input screens.
