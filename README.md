@@ -2012,3 +2012,11 @@ No matter which accessory view is displayed, your code is responsible for respon
       ```
 
   - If you try running on a smaller device, you'll notice that the keyboard initially covers the usageTextField and possibly the descriptionTextField when it slides up. But the table view controller automatically moves the text fields above the keyboard — unlike with a scroll view, where you needed to add code to get this behavior. This is another benefit of using static table view controllers to build input screens.
+- **Add Action Buttons with Unwind Segue**
+  - Currently, the AddEditEmojiTableViewController can only be dismissed by swiping it down. Add two bar button items to the navigation bar, one on each side of the title. For the button on the left, adjust the System Item to `Cancel`. For the button on the right, adjust it to `Save`. Both of these buttons should trigger the dismissal of the view controller by dismissing it modally.
+  - Add an `unwindToEmojiTableView(segue:)` method in EmojiTableViewController. 
+    - `@IBAction func unwindToEmojiTableView(segue: UIStoryboardSegue) {}`
+  - You'll need a way to determine whether the unwind segue was triggered via the Save or Cancel button. The simplest way to do this is to give the segue initiated by the Save button an identifier. 
+    - Connect the Save button to this segue by Control-dragging from the Save button to the view controller's Exit icon, then choose the method. Locate the segue in the Document Outline and open the Attributes inspector to set the Identifier to `saveUnwind`. Now do the same for the Cancel button, but do not worry about providing an identifier for the segue.
+    - <img src="./resources/save_segue.png" alt="Save Segue" width="300" />
+  - Build and run your application to verify that the AddEditEmojiTableViewController properly dismisses.
