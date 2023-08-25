@@ -2020,3 +2020,75 @@ No matter which accessory view is displayed, your code is responsible for respon
     - Connect the Save button to this segue by Control-dragging from the Save button to the view controller's Exit icon, then choose the method. Locate the segue in the Document Outline and open the Attributes inspector to set the Identifier to `saveUnwind`. Now do the same for the Cancel button, but do not worry about providing an identifier for the segue.
     - <img src="./resources/save_segue.png" alt="Save Segue" width="300" />
   - Build and run your application to verify that the AddEditEmojiTableViewController properly dismisses.
+- **Update Save Button**
+  - The Save button should only be enabled if every text field contains a value. The simplest way to enable and disable the button is to have a single method that checks every text field for a value and enables the button only if all four fields are not empty. Create an outlet for the Save button called `saveButton`, then implement a method that will check the text of every field.
+
+    - ```swift
+        func updateSaveButtonState() {
+            let symbolText = symbolTextField.text ?? ""
+            let nameText = nameTextField.text ?? ""
+            let descriptionText = descriptionTextField.text ?? ""
+            let usageText = usageTextField.text ?? ""
+            saveButton.isEnabled = !symbolText.isEmpty && !nameText.isEmpty && !descriptionText.isEmpty && !usageText.isEmpty
+        }
+      ```
+
+  - You should call this method in viewDidLoad() so that the button is disabled after being modally presented or enabled if you pushed to this view controller.
+
+    - ```swift
+        override func viewDidLoad() {
+            super.viewDidLoad()
+         
+            if let emoji = emoji {
+                symbolTextField.text = emoji.symbol
+                nameTextField.text = emoji.name
+                descriptionTextField.text = emoji.description
+                usageTextField.text = emoji.usage
+                title = "Edit Emoji"
+            } else {
+                title = "Add Emoji"
+            }
+         
+            updateSaveButtonState()
+        }
+      ```
+
+  - How do you continually check to see if the Save button should be enabled or disabled? You can call `updateSaveButtonState` after each key press. Create an @IBAction in code that will call the method.
+
+    - ```swift
+        @IBAction func textEditingChanged(_ sender: UITextField) {
+            updateSaveButtonState()
+        }
+      ```
+
+  - Next, open your storyboard and the assistant editor. Select a text field in the static table view and open the Connections inspector. Drag from the `Editing Changed` event to the `textEditingChanged(_:)` method. Repeat this step for the other text fields. 
+  - Build and run the app and try adding text into the four fields. The Save button should only be enabled when all four fields contain text.
+  - This is a good start, but it's not perfect: The symbolTextField should only allow a single emoji character. Input validation is a very important topic in software development — invalid inputs can cause your software to do unexpected things. 
+  - Add the following method that checks whether the provided UITextField contains a single emoji character.
+
+    - ```swift
+        func containsSingleEmoji(_ textField: UITextField) -> Bool {
+            guard let text = textField.text, text.count == 1 else {
+                return false
+            }
+         
+            let isCombinedIntoEmoji = text.unicodeScalars.count > 1 && text.unicodeScalars.first?.properties.isEmoji ?? false
+            let isEmojiPresentation = text.unicodeScalars.first?.properties.isEmojiPresentation ?? false
+         
+            return isEmojiPresentation || isCombinedIntoEmoji
+        }
+      ```
+
+  - This implementation uses methods, properties, and concepts you probably aren't familiar with, but you can often find solutions to small - scoped problems like this in reference documentation or on the internet.
+  - Update the updateSaveButtonState() method to use this new validation.
+
+    - ```swift
+        func updateSaveButtonState() {
+            let nameText = nameTextField.text ?? ""
+            let descriptionText = descriptionTextField.text ?? ""
+            let usageText = usageTextField.text ?? ""
+            saveButton.isEnabled = containsSingleEmoji(symbolTextField) && !nameText.isEmpty && !descriptionText.isEmpty && !usageText.isEmpty
+        }
+      ```
+
+  - Build and run the app to test out your input validation code. Confirm that the Save button is disabled unless the Name, Description, and Usage fields contain text and the Symbol field contains a single emoji character.
