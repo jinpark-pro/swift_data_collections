@@ -2129,3 +2129,14 @@ No matter which accessory view is displayed, your code is responsible for respon
       ```
 
   - Build and run your app. You should now be able to add new emoji or edit existing ones.
+- **Automatic Row Height**
+  - If you enter a long piece of text into descriptionTextField, you may have noticed that the text is truncated. The first step toward resolving this issue is to set the bottom label's number of lines to 0 in the Attributes inspector. But if you build and run the app, there's no change. What's going on?
+  - Even though the description label's text can cover multiple lines, the cell height still defaults to 44. You could implement `tableView(_:heightForRowAt:)` and manually calculate the height that a cell should be to display all the text, but that would be very cumbersome and error-prone. Instead, you can tell the table view that its row height should be determined automatically based on the contents of the cell.
+  - To begin, add the following lines of code into the `viewDidLoad()` method of EmojiTableViewController. This will tell the table view that it needs to calculate the cell height but also give it a sensible estimate for how tall the average cell will be, to improve performance.
+
+    - ```swift
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 44.0
+      ```
+
+  - If you have constraints properly placed on both the top and bottom of your views, UITableView can automatically calculate the height that each cell needs to be to display all the content inside its views. However, if you want to avoid warnings in Interface Builder, you might still need to help the Auto Layout engine know which view's content to prioritize.
