@@ -2092,3 +2092,40 @@ No matter which accessory view is displayed, your code is responsible for respon
       ```
 
   - Build and run the app to test out your input validation code. Confirm that the Save button is disabled unless the Name, Description, and Usage fields contain text and the Symbol field contains a single emoji character.
+
+- **Sve Emoji**
+  - When the Save button is pressed, the saveUnwind segue is performed. Before the segue is triggered, you should use the text field values to construct a new Emoji instance and set it to your emoji property. In the unwind segue, the property can be used to update the emojis collection.
+  - In `AddEditEmojiTableViewController`, add the `prepare(for segue:)` method. Ensure that the `saveUnwind` segue is being performed (you don't want to do any work when Cancel is pressed), then update the emoji property. Since you've performed validation with the Save button, don't be too concerned that you have to handle the optional values from text fields — your validation ensures they'll never be empty.
+
+    - ```swift
+        override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+            guard segue.identifier == "saveUnwind" else { return }
+         
+            let symbol = symbolTextField.text!
+            let name = nameTextField.text ?? ""
+            let description = descriptionTextField.text ?? ""
+            let usage = usageTextField.text ?? ""
+            emoji = Emoji(symbol: symbol, name: name, description: description, usage: usage)
+        }
+      ```
+
+  - Back in the `unwindToEmojiTableView(segue:)` method, verify that the saveUnwind segue was triggered. If so, check whether the table view still has a selected row. If it does, then you're unwinding after editing a particular Emoji. If it does not, then a new Emoji is being created. To add a new entry into emojis, you'll need to calculate the index path for the new row and add the item to the end of the collection. Update the table view accordingly.
+
+    - ```swift
+        @IBAction func unwindToEmojiTableView(segue: UIStoryboardSegue) {
+            guard segue.identifier == "saveUnwind",
+                let sourceViewController = segue.source as? AddEditEmojiTableViewController,
+                let emoji = sourceViewController.emoji else { return }
+         
+            if let selectedIndexPath = tableView.indexPathForSelectedRow {
+                emojis[selectedIndexPath.row] = emoji
+                tableView.reloadRows(at: [selectedIndexPath], with: .none)
+            } else {
+                let newIndexPath = IndexPath(row: emojis.count, section: 0)
+                emojis.append(emoji)
+                tableView.insertRows(at: [newIndexPath], with: .automatic)
+            }
+        }
+      ```
+
+  - Build and run your app. You should now be able to add new emoji or edit existing ones.
