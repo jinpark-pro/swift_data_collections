@@ -2093,7 +2093,7 @@ No matter which accessory view is displayed, your code is responsible for respon
 
   - Build and run the app to test out your input validation code. Confirm that the Save button is disabled unless the Name, Description, and Usage fields contain text and the Symbol field contains a single emoji character.
 
-- **Sve Emoji**
+- **Save Emoji**
   - When the Save button is pressed, the saveUnwind segue is performed. Before the segue is triggered, you should use the text field values to construct a new Emoji instance and set it to your emoji property. In the unwind segue, the property can be used to update the emojis collection.
   - In `AddEditEmojiTableViewController`, add the `prepare(for segue:)` method. Ensure that the `saveUnwind` segue is being performed (you don't want to do any work when Cancel is pressed), then update the emoji property. Since you've performed validation with the Save button, don't be too concerned that you have to handle the optional values from text fields — your validation ensures they'll never be empty.
 
@@ -2145,3 +2145,51 @@ No matter which accessory view is displayed, your code is responsible for respon
   - Every view has a compression resistance value that represents how resistant the view is to shrinking. This is similar to the content hugging priority in that it is a relative value. The default is 750. In the Size inspector, set the Name Label's Vertical Compression Resistance to 751, telling the Auto Layout engine that it has a higher priority than everything else — including the cell itself — to avoid shrinking. Set the Description Label's Vertical Compression Resistance to 752 so that it is resistant to shrinking as well (a value of 751 would create ambiguity between the two labels).
   - Now, since the vertical stack view still has a compression resistance value of 750, the Auto Layout engine understands that the stack view should grow to accommodate a larger amount of text. The stack view height increase will be taken into account when the table view calculates the cell height via UITableView.automaticDimension.
   - Build and run you app, supplying long text into the descriptionTextField. You should see the cell height increase.
+
+#### Lab - Favorite Books
+
+- **Object**
+  - The objective of this lab is to implement intermediate table view features into an app that keeps track of your favorite books.
+  - You'll find a starter project called “FavoriteBooks” in your student resources folder. Take a minute to look it over and run it to see how it behaves. You'll notice that it contains a table view controller that segues to a regular view controller. The regular view controller contains a form that allows the user to enter details about a book. In this lab, you'll replace the form with a static table view, add the capability to delete books from the main list of books, and create a custom table view cell to better display the details of each book in the main list.
+- **Step 1. Create a Static Table View**
+  - Drag a table view controller onto the storyboard. With the table view selected, use the Attributes inspector to set the Content to `Static Cells` and the Style to `Grouped`.
+  - You'll be creating a form that models your existing form, where each text field is in its own cell and each cell is in its own section. You'll want five sections. In the storyboard, you can set the section header titles to “Title,” “Author,” “Genre,” and “Length.” The last section will be for the Save button.
+  - Place a text field in each of the top four cells and a button in the last cell — setting appropriate constraints.
+  - Create a new Cocoa Touch Class file named “BookFormTableViewController” and make sure it subclasses UITableViewController.
+  - Your static table view doesn't need most of the boilerplate code that's included with this new subclass. Go ahead and delete all of it except for viewDidLoad().
+  - Set the class of your table view controller in the storyboard and create outlets for your text fields and an action for your Save button.
+- **Step 2 Replace BookFormViewController ​with BookFormTableViewController**
+  - To transfer the functionality of BookFormViewController to BookFormTableViewController, you can copy and paste the entire implementation of BookFormViewController over — but you will need to rewire the text field outlets and save action to your new scene in the storyboard.
+  - The `saveButtonTapped(_:)` method performs an unwind segue. For the unwind segue to work, you'll need to connect it to your BookFormTableViewController in the storyboard and give the segue the `UnwindToBookTable` identifier. You'll also need to update the implementation of `prepareForUnwind(segue:)` in BookTableViewController: Where segue.source is cast to BookFormViewController, this now needs to be BookFormTableViewController.
+    - In the storyboard, Control-Drag from BookFormTableViewController to the Exit and select `prepareForUnwindWithSegue`. Click the Unwind segue in the Document Outline and type the Identifier in the Attribute Inspector to `UnwindToBookTable`.
+  - In the storyboard, remove the original form view controller and add the table view controller in its place. Remember the segues that existed with the view controller you just deleted? Re-create the same two segues to this table view controller and wire up the Edit segue to the `editBook(_:sender:)` @IBSegueAction in BookTableViewController.
+    - Control-Drag from the Add button and BookCell to BookFormTableViewController, and select Show in the Action segue.
+    - Type the identifier in the Attribute inspector to `AddBook` and `EditBook` respectively.
+    - To insert a segue action, Control-Drag from EditBook segue in the storyboard to BookTableViewController and the Name is editBook.
+    - Copy and past the code into it.
+
+      - ```swift
+          guard let cell = sender as? UITableViewCell, let indexPath = tableView.indexPath(for: cell) else {
+              return nil
+          }
+          
+          let book = books[indexPath.row]
+          
+          return BookFormTableViewController(coder: coder, book: book)
+        ```
+
+  - Run the app to make sure it behaves as it did before, only with a different visual form.
+- **Step 3 Delete Books**
+  - What if the user wants to remove a book from the list? Go to your BookTableViewController and add the table view method `tableView(_:commit:forRowAt:)`.
+  - To this method, add control flow that will check whether the editing style is `.delete`; if it is, remove the Book object in the Books array that corresponds to the index path in question, then remove the table view row at the same index path.
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+            if editingStyle == .delete {
+                books.remove(at: indexPath.row)
+                tableView.deleteRows(at: [indexPath], with: .automatic)
+            }
+        }
+      ```
+
+  - Run the app and confirm that you can delete books from the list.
