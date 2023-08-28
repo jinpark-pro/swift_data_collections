@@ -2193,3 +2193,44 @@ No matter which accessory view is displayed, your code is responsible for respon
       ```
 
   - Run the app and confirm that you can delete books from the list.
+- **Step 4 Create a Custom Book Cell**
+  - Maybe you want to customize the display of your books' information. In your BookTableViewController, change the Style of the prototype cell to Custom.
+  - You can now configure the cell however you'd like. For example, at the top, you might want a label for the book title; under it, you might want labels for author, genre, and length that are somewhat smaller and slightly indented. Or you could have six labels, in addition to the title label, arranged into three rows of two, where the labels on the left say “Author,” “Genre,” and “Length,” and the labels on the right contain the actual values corresponding to author, genre, and length. Go ahead and design your own custom prototype cell. Make sure it displays all the information contained in a Book object.
+  - To create outlets for your labels, you'll need a custom UITableViewCell subclass. Create a new file that subclasses UITableViewCell named “BookTableViewCell.”
+  - In the storyboard, set the type of your custom cell to be a BookTableViewCell, then create outlets for the labels.
+
+    - ```swift
+        @IBOutlet var titleTextField: UILabel!
+        @IBOutlet var authorTextField: UILabel!
+        @IBOutlet var genreTextField: UILabel!
+        @IBOutlet var lengthTextField: UILabel!
+      ```
+
+  - In BookTableViewCell, create a method called `update(with book: Book)` that will set the labels properly for each book cell.
+
+    - ```swift
+        func update(with book: Book) {
+            titleTextField.text = book.title
+            authorTextField.text = book.author
+            genreTextField.text = book.genre
+            lengthTextField.text = book.length
+        }
+      ```
+
+  - Back in your BookTableViewController, make some slight changes to the implementation for `tableView(_:cellForRowAt:)`. 
+    - First, force-cast the cell that's dequeued as a BookTableViewCell. Then, instead of setting cell.textLabel?.text and cell.detailTextLabel?.text, you can just call your custom cell's update(with:) method and pass in the Book object.
+
+      - ```swift
+          override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+              let cell = tableView.dequeueReusableCell(withIdentifier: "BookTableViewCell", for: indexPath) as! BookTableViewCell
+
+              let book = books[indexPath.row]
+              cell.update(with: book)
+              cell.showsReorderControl = true
+              
+              return cell
+          }
+        ```
+
+  - Run the app and see how the appearance of your cells has changed.
+  - Congratulations! The intermediate table view concepts you just added to FavoriteBooks will provide a much better experience to the user. Make sure you save your final product in your project folder.
