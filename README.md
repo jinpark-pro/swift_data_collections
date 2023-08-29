@@ -2234,3 +2234,74 @@ No matter which accessory view is displayed, your code is responsible for respon
 
   - Run the app and see how the appearance of your cells has changed.
   - Congratulations! The intermediate table view concepts you just added to FavoriteBooks will provide a much better experience to the user. Make sure you save your final product in your project folder.
+
+### Lesson 1.7 Saving Data
+
+- As a programmer, you'll need to design your apps so that they save user data between launches. Imagine if a user wrote a note in the Notes app only to have it disappear when they relaunched the app. Whether ten seconds or ten months later, users expect all their data to still be there.
+- In a previous lesson, you learned about MVC as a way to design the classes, structures, and flow of data in your app. You'll recall that model data represents the information in your app, views display the information, and a controller object acts as the intermediary, or communication layer, between the model and the views.
+- When you add the ability to save data, you're adding a storage layer to your MVC architecture. In most cases, you'll use controller objects to access the storage layer.
+With iOS, you have several ways to persist, or save, information in your app. In this lesson, you'll learn one approach: saving information to the device by archiving model data to a file saved on the disk. In the future, you'll learn about more advanced data storage tools, such as SQLite and Core Data.
+- Regardless of the approach you choose, your behind-the-scenes data store will sit in the same place in the MVC diagram. As your app is running, it pulls information from the data store, works with it, and saves it back to the data store when the data is modified or when the app closes.
+
+#### Encoding and Decoding with Codable
+
+- In a previous lesson, you learned about the `Codable` protocol. The Codable protocol declares two methods that a class must implement so that its instances can be encoded and decoded, or serialized, into data that can be written to a file on disk. This lesson will walk you through encoding an object into a special format called a Property List, or plist, which is similar to a representation of a Dictionary in a file that can be saved to disk.
+- In the earlier lesson, you learned that an object should be responsible for encoding and decoding its own instance variables. For a model object to be encoded or decoded, it must adopt the Codable protocol.
+- Here's an example declaration of a Note model object that adopts the Codable protocol: `class Note: Codable {...}`
+- Once an object conforms to the Codable protocol, an Encoder object can be used to encode the object as a data representation that can be saved to disk. Similarly, a Decoder object can be used to turn that encoded data into its corresponding model object. The `encode(_:)` method on an Encoder returns a Data object, and the `decode(_:from:)` method on a Decoder takes a Data object and returns an instance of the Codable object in question. (Data is a Swift structure that represents data stored as bytes. Data provides instance methods for writing to and reading from a file.)
+- Conforming to the Codable protocol is simple. A class must adopt two methods: `init(from:)` and `encode(to:)`, which take a Decoder and an Encoder as a parameter, respectively. However, in most cases the Swift compiler makes it even easier to conform to the Codable protocol. If a model object only declares properties of types that already conform to Codable, an automatic conformance is triggered that satisfies all the protocol requirements.
+- In other words, if all your object's properties are Codable, then all your object needs to do to adopt the Codable protocol is to include Codable in its declaration.
+- The discussion that follows works through an example of encoding an object as Data and writing it to a file. To practice implementing Codable using the example, create a new iOS playground in Xcode (File > New > Playground) called “PersistencePractice.”
+
+  - ```swift
+      struct Note: Codable {
+          let title: String
+          let text: String
+          let timestamp: Date
+      }
+    ```
+
+- The code above declares a simple Note model object, similar to the objects you've declared previously. It also adopts the Codable protocol. Notice that the compiler is not displaying any errors. String and Date are Swift types that conform to Codable, so despite not explicitly having the two required methods for the protocol, Note automatically conforms to Codable.
+- Create an instance of Note that can be encoded: `let newNote = Note(title: "Grocery run", text: "Pick up mayonnaise, mustard, lettuce, tomato, and pickles.", timestamp: Date())`
+- Now look at the following example to see how to use an Encoder object to encode a value to a plist.
+
+  - ```swift
+      let propertyListEncoder = PropertyListEncoder()
+      if let encodedNote = try? propertyListEncoder.encode(newNote) {
+          print(encodedNote)
+      }
+    ```
+
+- You might remember from the earlier lesson on protocols that PropertyListEncoder's `encode(_:)` method is a throwing function, requiring you to use either the do-try-catch syntax or the keyword `try?`. Because `try?` is used in this example, `encode(_:)` will simply return optional Data instead of throwing any errors. If you look at the console, you will see that printing encodedNote prints the number of bytes stored in the Data object. You have successfully encoded newNote.
+- Decoding your data appears similar to the previous code, but is done in reverse and uses a PropertyListDecoder. Put the following lines of code inside your if-let block, below the existing print statement:
+
+  - ```swift
+      let propertyListDecoder = PropertyListDecoder()
+      if let decodedNote = try? propertyListDecoder.decode(Note.self, from: encodedNote) {
+          print(decodedNote)
+      }
+    ```
+
+- You first create a PropertyListDecoder and then use it to decode encodedNote into a Note object. The `decode(_:from:)` method took as parameters `Note.self` and the note data. **Passing in Note.self passes in the actual Swift type of Note instead of any specific Note object**, which simply lets the method know what type of object it is trying to create from the data. PropertyListDecoder's `decode(_:from:)` method is also a throwing function, so the code uses `try?` and unwraps the resulting optional. By printing decodedNote to the console, you can see that you have successfully decoded the data.
+- At this point your whole playground should look as follows:
+
+  - ```swift
+      struct Note: Codable {
+          let title: String
+          let text: String
+          let timestamp: Date
+      }
+       
+      let newNote = Note(title: "Grocery run", text: "Pick up mayonnaise, mustard, lettuce, tomato, and pickles.", timestamp: Date())
+       
+      let propertyListEncoder = PropertyListEncoder()
+      if let encodedNote = try? propertyListEncoder.encode(newNote) {
+          print(encodedNote)
+       
+          let propertyListDecoder = PropertyListDecoder()
+          if let decodedNote = try?
+            propertyListDecoder.decode(Note.self, from: encodedNote) {
+              print(decodedNote)
+          }
+      }
+    ```
