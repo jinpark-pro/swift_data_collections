@@ -2305,3 +2305,27 @@ With iOS, you have several ways to persist, or save, information in your app. In
           }
       }
     ```
+
+#### Writing Data to a File
+
+- Now what's left is to write your data to a file once it has been encoded and to read from that file before decoding. To do this, you'll need to learn a bit about the iOS file system.
+- **Sandboxing and the Documents Directory**
+  - In many operating systems, applications are given access to read and write files anywhere on the disk. So an application like Numbers might be able to open a spreadsheet from any folder, and a web browser might be able to write files to any directory.
+  - This behavior is inherently insecure. A poorly written app could accidentally (or intentionally) delete important data that it has no business touching. Imagine if you downloaded an app to edit a music file, and it deleted all your photos.
+  - Around the time iOS came on the scene, some operating systems introduced the concept of “sandboxing,” meaning giving programs access only to resources that they'd created or that they specifically requested access to. In this model, each app has its own environment where it can create, modify, or delete data — its own sandbox — and it doesn't have access to resources outside of the sandbox.
+  - iOS apps work in the sandbox model. The operating system may allow access to resources outside of your app, but only when your app receives explicit permission from the user. For example, your app can load the user's contacts only after the user has given it permission to access them.
+  - As part of the sandbox model, your app has a few directories that it can use to save data. One of those directories is called the Documents directory, and it's where you're allowed to save and modify information related to your app.
+  - Another feature of the sandbox security model is that the file path to the Documents directory will change each time your app is loaded into memory. You can think of a file path as an address, similar to a URL, for locating the data. The contents of the directory will stay the same, but the address changes — preventing a variety of potential security issues.
+  - How can you work with files within your sandboxed app? The Foundation framework defines a FileManager class that's used for interacting with the files on disk. It has a function that gives your app access to the Documents directory (wherever it is) and enables it to read and write files in that directory.
+  - Back in your playground file, add the following line: `let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!`
+  - Option-click the urls method to view its declaration. You can see that the function returns an array of URLs for the specified directory in the requested domains. For a list of available iOS directories, check out the [documentation for the FileManager.SearchPathDirectory enumeration](https://developer.apple.com/documentation/foundation/filemanager/searchpathdirectory#).
+  - For this lesson, you're interested in the `.documentDirectory` — which you'll pass as the search parameter. The `.userDomainMask` refers to the user's home folder, the folder that holds the user's apps and all their data.
+  - The result of the function you entered above is an array of URL objects, which point to the directories that match your search. But there's only one Documents directory, so you request the first result of the search to assign to the variable.
+  - As a result, the documentsDirectory variable will hold a URL that points to the directory, or folder, where you can read and write data. Now you need a full path that provides a filename and extension as well, which you can get by appending those elements to the directory:
+
+    - ```swift
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let archiveURL = documentsDirectory.appendingPathComponent("notes_test").appendingPathExtension("plist")
+      ```
+
+  - If you look at the results sidebar for these two directories, you'll see that the first ends in /Documents/ and the second ends in Documents/notes_test.plist. This is the full path where you will write your Note object's data to file.
