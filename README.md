@@ -2329,3 +2329,36 @@ With iOS, you have several ways to persist, or save, information in your app. In
       ```
 
   - If you look at the results sidebar for these two directories, you'll see that the first ends in /Documents/ and the second ends in Documents/notes_test.plist. This is the full path where you will write your Note object's data to file.
+- **Writing the Data**
+  - Now that you know how to access the Documents directory, you can use methods on Data to write directly to and from files in that directory.
+  - Back in your playground, remove your previous code for encoding and decoding. Then, at the end of what is left, create a new PropertyListEncoder and encode newNote without unwrapping the result. Your code should look like the following:
+
+    - ```swift
+        struct Note: Codable {
+            let title: String
+            let text: String
+            let timestamp: Date
+        }
+         
+        let newNote = Note(title: "Grocery run", text: "Pick up mayonnaise, mustard, lettuce, tomato, and pickles.", timestamp: Date())
+         
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let archiveURL = documentsDirectory.appendingPathComponent("notes_test").appendingPathExtension("plist")
+         
+        let propertyListEncoder = PropertyListEncoder()
+        let encodedNote = try? propertyListEncoder.encode(newNote)
+      ```
+
+  - Now that you have a file path at which to save encodedNote, you can use the `write(to:options:)` method on Data to write to that path: `try? encodedNote?.write(to: archiveURL, options: .noFileProtection)`
+  - Notice that `write(to:options:)` is also a throwing function and requires the `try?` keyword. This method will create a file at the specified URL with the data in encodedNote. By adding `.noFileProtection` as a parameter, you allow the file to be overwritten in the future should your Note object change and need to be saved again.
+  - To retrieve the data from the file, you can initialize a Data object using its throwing initializer `init(contentsOf:)` and pass it the URL at which the data is stored. You can then decode the data:
+
+    - ```swift
+        let propertyListDecoder = PropertyListDecoder()
+        if let retrievedNoteData = try? Data(contentsOf: archiveURL),
+            let decodedNote = try? propertyListDecoder.decode(Note.self, from: retrievedNoteData) {
+            print(decodedNote)
+        }
+      ```
+
+  - You have successfully encoded, saved, loaded, and decoded your note.
