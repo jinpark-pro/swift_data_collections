@@ -2362,3 +2362,37 @@ With iOS, you have several ways to persist, or save, information in your app. In
       ```
 
   - You have successfully encoded, saved, loaded, and decoded your note.
+
+- **Saving an Array of Model Data**
+  - In many cases, your app will need to archive and unarchive collections of model data, not just a single instance. For example, you'll want the app to save all the user's notes, not just a single note.
+  - To persist an array of model objects, you'll use the same methods you used previously, just on an array of objects instead of a single object. Encoder and Decoder objects can encode and decode arrays as long as their elements conform to Codable.
+  - To put this concept into practice, enter several notes in your playground. Add the notes to a [Notes] array, then update your code to encode the array and write the resulting data to file.
+
+    - ```swift
+        let note1 = Note(title: "Note One", text: "This is a sample note.", timestamp: Date())
+        let note2 = Note(title: "Note Two", text: "This is another sample note.", timestamp: Date())
+        let note3 = Note(title: "Note Three", text: "This is yet another sample note.", timestamp: Date())
+        let notes = [note1, note2, note3]
+         
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let archiveURL = documentsDirectory.appendingPathComponent("notes_test").appendingPathExtension("plist")
+         
+        let propertyListEncoder = PropertyListEncoder()
+        let encodedNotes = try? propertyListEncoder.encode(notes)
+         
+        try? encodedNotes?.write(to: archiveURL, options: .noFileProtection)
+         
+        let propertyListDecoder = PropertyListDecoder()
+        if let retrievedNotesData = try? Data(contentsOf: archiveURL),
+            let decodedNotes = try? propertyListDecoder.decode(Array<Note>.self, from: retrievedNotesData) {
+            print(decodedNotes)
+        }
+      ```
+
+  - That's it! You've saved a collection of notes to a file and loaded the data from the file back into your program. Persistence is a key feature for many apps you'll build in the future.
+- **Translating from a Playground to a Project**
+  - In this lesson, you've created a playground to implement basic persistence using the Codable protocol.
+  - How does this practice translate into a full Xcode project? Where does all the code go? When implementing persistence in your projects, keep three things in mind:
+    1. Your model objects should implement the Codable protocol, similar to your implementation in the playground.
+    2. Writing to and reading from files can be implemented as static methods on the model. Be sure to make these method names descriptive, like `saveToFile()` and `loadFromFile()`. Any time you add, remove, or modify your model data, you'll want to update the file. You can accomplish this by calling your `saveToFile()` in appropriate locations. When your app launches, you'll want to load data from the disk. To do so, call your `loadFromFile()` method at an early stage of your app launch. This could be in the `AppDelegate` or in the `viewDidLoad()` method of your first view controller.
+    3. You'll want to save your objects in the correct app delegate life cycle events, such as when the app enters the background or is terminated.
