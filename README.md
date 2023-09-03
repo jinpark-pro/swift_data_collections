@@ -2553,3 +2553,23 @@ In this case, the central spot for your data is the emojis array on the EmojiTab
     ```
 
 - Congratulations! Persisting data isn't an easy thing to learn, but it's a concept you'll probably use in every app you build. Be sure to save this new version of your app to your project folder.
+
+### Lesson 1.8 System View Controllers
+
+- If you're an iOS user, you're likely already familiar with interfaces that allow you to access, present, and share content in an iOS app. When you enter your password for App Store purchases, use the Camera app to take a profile picture, or share an article through the Messages app, you're probably using a system view controller.
+As a developer, you can use these familiar view controllers to extend the functionality of your apps. For example, you might want to access a user's photo library, share data to other apps, or respond to certain user choices.
+- In this lesson, you'll learn the following:
+  - How to use UIActivityViewController to share content to other installed apps
+  - How to use SFSafariViewController to present information from the internet without exiting the app
+  - How to use UIAlertController to present new information and options, as well as how to respond to the user's actions
+  - How to use UIImagePickerController to access the device's camera and photo library and allow the user to select an image
+  - How to use MFMailComposeViewController to send emails from within the app
+- You'll work through the lesson by creating a project that uses these system view controllers and combines them to provide a better, more familiar user experience. The number of view controllers in that list might feel a bit overwhelming, but you'll learn that it's quite easy to build them into your app.
+
+#### Create the Project
+
+- Create a new project called "SystemViewControllers" using the iOS App template. When creating the project, make sure the interface option is set to "Storyboard."
+- In the Main storyboard, drag an image view from the Object library to the view controller. Add a photo to the Asset Catalog and set your image view to display it, as you have done in previous lessons. Later in this lesson, you'll learn how to use different system view controllers to share the image. When you learn about the image picker view controller, you'll allow the user to set the image from the photo library.
+- Next, add four buttons and set their text to reflect the system view controllers they'll be calling: “Share,” “Safari,” “Camera,” and “Email.” (You might want to use a stack view to help manage the layout.)
+- Create an outlet for the image view called imageView. Set your image and create four actions, one for each button tap.
+- If you have an iOS device available for testing, you might want to use it for this lesson instead of Simulator. Running this app on your device will allow you to access your own photos and share content with other apps on the device. You can switch from Simulator to a physical device with the schemes menu in the top-left corner of Xcode.
