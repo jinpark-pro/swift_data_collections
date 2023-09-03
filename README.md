@@ -2416,4 +2416,140 @@ With iOS, you have several ways to persist, or save, information in your app. In
 In this case, the central spot for your data is the emojis array on the EmojiTableViewController—which means it would be appropriate to call saveToFile(emojis:) whenever the emojis property is changed.
 - Next, think about when it might be appropriate to load your archived Emoji objects. Again, in this simple case, there's really only one point where the archived data will need to be unarchived—when the first view loads. You should already be calling this method in the first view controller's viewDidLoad().
 - By now, your emoji data should be properly saving and loading. Run your app. Try adding a new emoji and tapping the Save button. Then close the app, reopen it, and observe whether the emoji persists in the table view. Repeat this process for editing an already existing emoji.
+- On `Emoji.swift`
+
+  - ```swift
+      import Foundation
+
+      struct Emoji: Codable {
+          var symbol: String
+          var name: String
+          var description: String
+          var usage: String
+          
+          static var documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+          static let archiveURL = documentsDirectory.appendingPathComponent("emojis").appendingPathExtension("plist")
+          
+          
+          static func saveToFile(emojis: [Emoji]) {
+              let propertyListEncoder = PropertyListEncoder()
+              let encodedEmojis = try? propertyListEncoder.encode(emojis)
+              
+              try? encodedEmojis?.write(to: archiveURL, options: .noFileProtection)
+          }
+          
+          static func loadFromFile() -> [Emoji]? {
+              let propertyListDecoder = PropertyListDecoder()
+              guard let retrivedEmojisData = try? Data(contentsOf: archiveURL) else {return nil}
+              return try? propertyListDecoder.decode(Array<Emoji>.self, from: retrivedEmojisData)
+          }
+          
+          static func sampleEmojis() -> [Emoji] {
+              let emojis: [Emoji] = [
+                  Emoji(symbol: "😀", name: "Grinning Face", description: "A typical smiley face.", usage: "happiness"),
+                  ...
+              ]
+              
+              return emojis
+          }
+      }
+    ```
+
+- On `EmojiTableViewController.swift`
+
+  - ```swift
+      import UIKit
+      class EmojiTableViewController: UITableViewController {
+          var emojis = [Emoji]()
+
+          override func viewDidLoad() {
+              super.viewDidLoad()              
+              if let savedEmojis = Emoji.loadFromFile() {
+                  emojis = savedEmojis
+              } else {
+                  emojis = Emoji.sampleEmojis()
+              }
+              
+              navigationItem.leftBarButtonItem = editButtonItem
+              tableView.rowHeight = UITableView.automaticDimension
+              tableView.estimatedRowHeight = 44.0
+              
+          }
+
+          @IBSegueAction func addEditEmoji(_ coder: NSCoder, sender: Any?) -> AddEditEmojiTableViewController? {
+              if let cell = sender as? UITableViewCell,
+                let indexPath = tableView.indexPath(for: cell) {
+                  let emojiToEdit = emojis[indexPath.row]
+                  return AddEditEmojiTableViewController(coder: coder, emoji: emojiToEdit)
+              } else {
+                  return AddEditEmojiTableViewController(coder: coder, emoji: nil)
+              }
+          }
+          
+          override func numberOfSections(in tableView: UITableView) -> Int {
+              return 1
+          }
+
+          override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+              return emojis.count
+          }
+
+          override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+              let cell = tableView.dequeueReusableCell(withIdentifier: "EmojiCell", for: indexPath) as! EmojiTableViewCell
+              let emoji = emojis[indexPath.row]
+              
+              cell.update(with: emoji)
+              cell.showsReorderControl = true
+              
+              return cell
+          }
+
+          override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+              let emoji = emojis[indexPath.row]
+              print("\(emoji.symbol) \(indexPath)")
+          }
+          override func tableView(_ tableView: UITableView, moveRowAt fromIndexPath: IndexPath, to: IndexPath) {
+              let movedEmoji = emojis.remove(at: fromIndexPath.row)
+              emojis.insert(movedEmoji, at: to.row)
+              
+              tableView.reloadData()
+              Emoji.saveToFile(emojis: emojis)
+          }
+
+          override func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCell.EditingStyle {
+              return .delete
+          }
+          
+          override func viewWillAppear(_ animated: Bool) {
+              super.viewWillAppear(animated)
+              tableView.reloadData()
+          }
+          
+          override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+              if editingStyle == .delete {
+                  emojis.remove(at: indexPath.row)
+                  tableView.deleteRows(at: [indexPath] , with: .automatic)
+                  Emoji.saveToFile(emojis: emojis)
+              }
+          }
+          @IBAction func unwindToEmojiTableView(segue: UIStoryboardSegue) {
+              guard segue.identifier == "saveUnwind",
+                    let sourceViewController = segue.source as? AddEditEmojiTableViewController,
+                    let emoji = sourceViewController.emoji
+              else { return }
+              
+              if let selectedIndexPath = tableView.indexPathForSelectedRow {
+                  emojis[selectedIndexPath.row] = emoji
+                  tableView.reloadRows(at: [selectedIndexPath], with: .none)
+              } else {
+                  let newIndexPath = IndexPath(row: emojis.count, section: 0)
+                  emojis.append(emoji)
+                  tableView.insertRows(at: [newIndexPath], with: .automatic)
+              }
+              
+              Emoji.saveToFile(emojis: emojis)
+          }
+      }
+    ```
+
 - Congratulations! Persisting data isn't an easy thing to learn, but it's a concept you'll probably use in every app you build. Be sure to save this new version of your app to your project folder.
