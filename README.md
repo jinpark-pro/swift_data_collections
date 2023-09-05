@@ -2573,3 +2573,24 @@ As a developer, you can use these familiar view controllers to extend the functi
 - Next, add four buttons and set their text to reflect the system view controllers they'll be calling: “Share,” “Safari,” “Camera,” and “Email.” (You might want to use a stack view to help manage the layout.)
 - Create an outlet for the image view called imageView. Set your image and create four actions, one for each button tap.
 - If you have an iOS device available for testing, you might want to use it for this lesson instead of Simulator. Running this app on your device will allow you to access your own photos and share content with other apps on the device. You can switch from Simulator to a physical device with the schemes menu in the top-left corner of Xcode.
+
+#### Share with the Activity Controller
+
+- Have you ever been using an app and seen an image that you wanted to send to a friend? Have you ever wondered how you were able to share content between different apps? You can add sharing to your app easily using the `UIActivityViewController`. Fairly simple to implement, an activity controller provides a familiar experience that allows the user to share content from one app with other apps on their device.
+- You'll begin by creating an instance of UIActivityViewController when the Share button is tapped. The initializer for an activity view controller asks for a parameter called `activityItems`, an array of type `Any`. The sharing interface will show any app that can accept the activity items you've included in the array.
+- To share an item — such as text, an image, a URL, or other content — you'll pass it into the activityItems array. In this case, you will unwrap the image view's image and include it in the array of activity items in the initializer.
+- The initializer also has a parameter for `applicationActivities` that represents any custom services that your app might support. For this project, you'll set it to `nil`. Once the activity view controller has been created, don't forget to present it to the user. Here's how this works:
+
+  - ```swift
+      @IBAction func shareButtonTapped(_ sender: UIButton) {
+          guard let image = imageView.image else { return }
+          let activityController =  UIActivityViewController(activityItems: [image],
+            applicationActivities: nil)
+          activityController.popoverPresentationController?.sourceView = sender
+          present(activityController, animated: true, completion: nil)
+      }
+    ```
+
+- Why is the `popoverPresentationController` property being modified? On an iPad, a UIActivityViewController will be presented inside a popover, and all popovers emanate from a particular view. Popovers are best presented from the button that triggered the presentation — in this case, sender. This line of code will have no effect on smaller iOS devices.
+- Run your project and tap the Share button. If you're running the project in Simulator, you may only see one or two apps. But if you're running on your device and you have a lot of apps, you may discover quite a number of apps where you can share your content.
+- You can experiment with the array of activity items. What happens when you replace the image with a string? What about when you include an image and a string? You'll find that the available apps change to match the types of activity items you want to share.
