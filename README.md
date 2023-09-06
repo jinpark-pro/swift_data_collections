@@ -2594,3 +2594,32 @@ As a developer, you can use these familiar view controllers to extend the functi
 - Why is the `popoverPresentationController` property being modified? On an iPad, a UIActivityViewController will be presented inside a popover, and all popovers emanate from a particular view. Popovers are best presented from the button that triggered the presentation — in this case, sender. This line of code will have no effect on smaller iOS devices.
 - Run your project and tap the Share button. If you're running the project in Simulator, you may only see one or two apps. But if you're running on your device and you have a lot of apps, you may discover quite a number of apps where you can share your content.
 - You can experiment with the array of activity items. What happens when you replace the image with a string? What about when you include an image and a string? You'll find that the available apps change to match the types of activity items you want to share.
+
+#### Use Safari Services to Display Web Content
+
+- You've just learned how to take content from your app and share it with other apps on your device. What if you wanted to build an app that would present your user with content from the web while keeping them inside your app? `SFSafariViewController` allows you to open a webpage on a Safari web browser inside your app.
+- Have a look at the [documentation for SFSafariViewController](https://developer.apple.com/documentation/safariservices/sfsafariviewcontroller) to learn about some of its features, which include a safe and familiar interface for browsing the web, a read-only address field, Reader, AutoFill, Fraudulent Website Detection, and content blocking.
+- While you're in the documentation, see if you can identify which framework allows you to use Safari view controllers. Most of what you've worked with until now has been in either the Foundation or UIKit framework. SFSafariViewController, however, is in the `SafariServices` framework. To open a Safari view controller, you'll need to import this framework into your project by adding it to the top of your view controller file, beneath the line that imports UIKit.
+
+  - ```swift
+      import UIKit
+      import SafariServices
+    ```
+
+- Now you're ready to present your own Safari view controller. You may have noticed in the documentation that the Safari view controller has a read-only address field, which means you'll need to specify which website the sure will be visiting when you initialize the view controller.
+
+- To make an instance of Safari view controller, you have three things to do. 
+  - First, create a URL from a string; this is the site you'll present to the user. You'll notice the `URL(string:)` initializer returns an optional, so you'll need to unwrap it. 
+  - Next, create an instance of SFSafariViewController with the URL you just created. 
+  - And last, present the Safari view controller to the user. The code is quite simple. Here's how to make it happen:
+
+  - ```swift
+      @IBAction func safariButtonTapped(_ sender: UIButton) {
+          if let url = URL(string: "https://www.apple.com") {
+              let safariViewController = SFSafariViewController(url: url)
+              present(safariViewController, animated: true, completion: nil)
+          }
+      }
+    ```
+
+- Run the app and tap the Safari button. You've successfully opened a Safari view controller in your app. Tapping the Done button in the upper-left corner or swiping right from the edge of the screen will navigate back to the original view controller. You can use any URL when presenting a Safari view controller.
