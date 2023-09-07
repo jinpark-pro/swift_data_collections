@@ -2623,3 +2623,54 @@ As a developer, you can use these familiar view controllers to extend the functi
     ```
 
 - Run the app and tap the Safari button. You've successfully opened a Safari view controller in your app. Tapping the Done button in the upper-left corner or swiping right from the edge of the screen will navigate back to the original view controller. You can use any URL when presenting a Safari view controller.
+
+#### Present an Alert Controller
+
+- You've now shared content through the activity controller, and you've presented websites with the Safari view controller. But so far, all the content has been predetermined. How can you open up the experience to the user? How can you use system view controllers to allow them to interact with your app?
+- A great way to present your user with different options is with the `UIAlertController`. You've seen alert controllers before. iOS presents low battery alerts when you are running low and software update alerts when a new version of the operating system is available. You can use alert controllers to capture the attention of the user and give them options to choose from. As the programmer, you can determine the text of the alert, the available options, and the code that runs when the user chooses each option.
+- In the [documentation for UIAlertController](https://developer.apple.com/documentation/uikit/uialertcontroller), read through the different symbols and consider how you might configure an alert controller.
+- For this app, you'll use the alert controller to ask the user whether they would like to take a new photo or select an existing photo from their photo library to set as the new image for the image view. So you'll start by implementing the alert controller inside the `cameraButtonTapped` function.
+- When you initialize a UIAlertController, you specify a title, message, and a preferred presentation style — which also determines the placement of the alert. Choosing `.alert` will place the alert in the center of the screen, while `.actionSheet` will place the alert at the bottom of the screen.
+- Try it out. Create an alert controller and set the style to `.actionSheet`. Add an alert action to cancel, or dismiss, the alert controller. And, finally, present the alert controller to the user. Just like the activity view controller, you should set the sourceView property so that the popover presents in the proper location on an iPad. You can put it all together with the following code:
+
+  - ```swift
+      @IBAction func cameraButtonTapped(_ sender: UIButton) {
+          let alertController = UIAlertController(title: "Choose Image Source", message: nil, preferredStyle: .actionSheet)
+
+          let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+          alertController.addAction(cancelAction)
+          alertController.popoverPresentationController?.sourceView = sender
+
+          present(alertController, animated: true, completion: nil)
+      }
+    ```
+
+- You're now presenting the alert, but how can you respond to the user's action? Create a UIAlertAction and give it the title "Camera" and a style of .default. The alert action has a property called handler, which is where you'll write the code that will be executed if the user selects that option. The handler is a closure, or block of code, that will execute if its action has been selected. You'll learn more about closures in a future lesson.
+- For now, when you encounter a closure parameter, you can select the placeholder and press Return, which will automatically generate the closure syntax you'll need to add the code you want to execute. You can see an example of the closure syntax in the next code sample.
+- Imagine that you want the handler to print out the user's selection. Once you've created that alert action, you'll add it to the alert controller. Create another button that will allow the user to select a picture from the photo library and add it to the alert controller.
+- Here's how all that will work:
+
+  - ```swift
+      @IBAction func cameraButtonTapped(_ sender: UIButton) {
+          let alertController = UIAlertController(title: "Choose Image Source", message: nil, preferredStyle: .actionSheet)
+       
+          let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+          let cameraAction = UIAlertAction(title: "Camera", style: .default, handler: { action in 
+              print("User selected Camera action")
+          })
+       
+          let photoLibraryAction = UIAlertAction(title: "Photo Library",
+            style: .default, handler: { action in
+              print("User selected Photo Library action")
+          })
+       
+          alertController.addAction(cancelAction)
+          alertController.addAction(cameraAction)
+          alertController.addAction(photoLibraryAction)
+          alertController.popoverPresentationController?.sourceView = sender
+       
+          present(alertController, animated: true, completion: nil)
+      }
+    ```
+
+- Run the project on your device and present the alert controller. Select one of the action alerts, and notice that the string prints to the console. Now that you've presented an alert and responded to the user's actions, you're ready to step it up a notch.
