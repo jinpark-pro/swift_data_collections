@@ -2674,3 +2674,91 @@ As a developer, you can use these familiar view controllers to extend the functi
     ```
 
 - Run the project on your device and present the alert controller. Select one of the action alerts, and notice that the string prints to the console. Now that you've presented an alert and responded to the user's actions, you're ready to step it up a notch.
+
+#### Access the Camera
+
+- You've used an activity controller to share content, presented web content through a Safari view controller, and even responded to a user's actions from an alert controller. Now you can use these same tools to work with user - generated content by accessing the user's photos and camera.
+- When might you want to access a device's camera? Maybe you're building a photo - sharing app or an app where users can choose a profile picture. To access the user's camera or photo library, you'll use `UIImagePickerController`.
+- To use an image picker controller, you must adopt two protocols:
+  - `UIImagePickerControllerDelegate` will transfer the selected image's information back into your app.
+  - `UINavigationControllerDelegate` will handle the responsibility for dismissing the image picker view.
+- Update your ViewController class to adopt both `UIImagePickerControllerDelegate` and `UINavigationControllerDelegate`: `class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate {...}`
+- In your `cameraButtonTapped` action, create an instance of `UIImagePickerController` and set your view controller as the delegate. Place this code above the alert controller initializer.
+
+  - ```swift
+      @IBAction func cameraButtonTapped(_ sender: UIButton) {
+          let imagePicker = UIImagePickerController()
+          imagePicker.delegate = self
+       
+          //...
+      }
+    ```
+
+- With the delegate set, it's time to present the user with a choice of photo sources. In this case, you'll use the handlers for the alert action items you created in the previous section.
+- You'll only want to present the user with the options they can actually choose. For example, if the app is running on Simulator, you only want to present the Photo Library option, because Simulator does not have a camera. If you try to open the camera in Simulator, the app will crash with a fatal error.
+- You can use the class method `UIImagePickerController.isSourceTypeAvailable(_:)`, which will return a Bool indicating whether the source type can be used on that device.
+- Now create an alert controller and check whether the camera and photo library are available source types. If one or both are supported, create alert actions accordingly. Add the actions to the alert controller, remembering to set the source type in the action's handler. Finally, present the image picker. Your code should resemble the following:
+
+  - ```swift
+      @IBAction func cameraButtonTapped(_ sender: UIButton) {
+          let imagePicker = UIImagePickerController()
+          imagePicker.delegate = self
+       
+          let alertController = UIAlertController(title: "Choose Image Source", message: nil, preferredStyle: .actionSheet)
+       
+          let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+          alertController.addAction(cancelAction)
+       
+          if UIImagePickerController.isSourceTypeAvailable(.camera) {
+              let cameraAction = UIAlertAction(title: "Camera", style: .default, handler: { action in
+                  imagePicker.sourceType = .camera
+                  self.present(imagePicker, animated: true, completion: nil)
+              })
+              alertController.addAction(cameraAction)
+          }
+       
+          if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
+              let photoLibraryAction = UIAlertAction(title: "Photo Library", style: .default, handler: { action in
+                  imagePicker.sourceType = .photoLibrary
+                  self.present(imagePicker, animated: true, completion: nil)
+              })
+              alertController.addAction(photoLibraryAction)
+          }
+       
+          alertController.popoverPresentationController?.sourceView = sender
+       
+          present(alertController, animated: true, completion: nil)
+      }
+    ```
+
+- Build and run your app. What happened when you selected the photo library or camera? If you ran the app on an iOS device and followed all the steps above, your app probably crashed when you chose the camera. Take a look in the console, and you'll see an error message that reads: `This app has crashed because it attempted to access privacy-sensitive data without a usage description. The app's Info.plist must contain an NSCameraUsageDescription key with a string value explaining to the user how the app uses this data.`
+- This message appears because your app must request permission before trying to access the user's private information — in this case, the camera. The operating system handles presenting the user with the option to allow access. The `NSCameraUsageDescription` key is used to tell the user why your app wants to access their camera.
+- Open the Info file in the Project navigator and enter a new key for `NSCameraUsageDescription`
+- For the value, enter how you'll use the user's data — for example, `To share photos from the camera.` (1)
+  - <img src="./resources/new_info.png" alt="new Info - NSCameraUsageDescription" width="400" />
+- Now the operating system can ask the user for permission and present the camera accordingly. Run the app again. You'll notice an alert asking permission to access your camera.
+- Go ahead and select a photo from the library. What happened? Not much; you're just back at your view controller's view. You'll need a way to grab the selected photo and bring it into your app. You do this by implementing the delegate method `imagePickerController(_:didFinishPickingMediaWithInfo:)`. This method tells the delegate that the user has picked a photo (or other media), and it includes the photo in the info dictionary. Add the method to your view controller:
+
+  - ```swift
+      @IBAction func cameraButtonTapped(_ sender: UIButton) {...}
+       
+      func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+       
+      }
+    ```
+
+- In the body of this method, you can access the media through the info dictionary. The dictionary keys are of type UIImagePickerController.InfoKey and give you access to information regarding the user's image picking session. For now, you'll simply use the `.originalImage` key to get the image selected by the user. However, you should look at the [documentation for UIImagePickerController.InfoKey](https://developer.apple.com/documentation/uikit/uiimagepickercontroller/infokey) to see what other information is available.
+- Because the info dictionary is of the type `[UIImagePickerController.InfoKey: Any]`, the value for the original image key won't be of type UIImage. You can typecast the value to be a UIImage — but remember that by doing so you will make it an optional `(UIImage?)`. Once you've unwrapped the optional image, you can set it to display in your view controller. To dismiss the image picker, simply call `dismiss(animated:completion:)` at the end. Here's how it should look:
+
+  - ```swift
+      @IBAction func cameraButtonTapped(_ sender: UIButton) {...}
+       
+      func imagePickerController(_ picker: UIImagePickerController,  didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+          guard let selectedImage = info[.originalImage] as? UIImage else { return }
+       
+          imageView.image = selectedImage
+          dismiss(animated: true, completion: nil)
+      }
+    ```
+
+- Build and run the app. You can now open the photo library and select a photo or take a picture with the camera for your view controller to display.
