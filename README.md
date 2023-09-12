@@ -2762,3 +2762,63 @@ As a developer, you can use these familiar view controllers to extend the functi
     ```
 
 - Build and run the app. You can now open the photo library and select a photo or take a picture with the camera for your view controller to display.
+
+#### Send Email from Your App
+
+- The last system view controller you'll learn about in this lesson is the `MFMailComposeViewController`, which allows you to send emails from within your app. The mail compose view controller is in the `MessageUI` framework, which provides an interface for sending email and text messages. Add an import statement to the top of your view controller, beneath the other import statements.
+- Have a look at the [documentation for MFMailComposeViewController](https://developer.apple.com/documentation/messageui/mfmailcomposeviewcontroller#) before moving forward.
+- Just like the other view controllers, you're going to present the MFMailComposeViewController from the relevant button's action. But before doing anything: Is the user's device capable of sending email? Similar to the verification you performed with the image picker, you'll use the function `canSendMail()` to determine whether the device has available mail services. If not, you'll print a message to the console and return out of the function:
+
+  - ```swift
+      @IBAction func emailButtonTapped(_ sender: UIButton) {
+          guard MFMailComposeViewController.canSendMail() else {
+              print("Can not send mail")
+              return
+          }
+      }
+    ```
+
+- You may have noticed in the documentation the symbol for accessing the delegate. Similar to the `UIImagePickerControllerDelegate`, the `mailComposeDelegate` is responsible for dismissing the mail compose view controller at the appropriate time. To set the delegate, you'll need to adopt the `MFMailComposeViewControllerDelegate` protocol: `class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate, MFMailComposeViewControllerDelegate {...}`
+- Now that your view controller conforms to the protocol, you're ready to implement the mail compose view controller. Create an instance of `MFMailComposeViewController` and set the view controller as the `mailComposeDelegate`:
+
+  - ```swift
+      @IBAction func emailButtonTapped(_ sender: UIButton) {
+          guard MFMailComposeViewController.canSendMail() else { return }
+       
+          let mailComposer = MFMailComposeViewController()
+          mailComposer.mailComposeDelegate = self
+      }
+    ```
+
+- Notice that the guard statement returns silently if canSendMail returns false. This wouldn't be a good design in a real world app. You should disable — or just not show — the email option if the user can't send email on their device (for example, on an iPhone with no email account set up). Or you could display a message explaining the situation.
+- You can go even further with email functionality. With the `MFMailComposeViewController`, you can configure different parts of an email in your code: the recipients, the subject, the message body, and even attachments. One of the parameters used in setting the message body is the parameter `isHTML`, a Bool for checking whether your message should be interpreted as plain text or HTML. In this email, you won't be sending HTML, so the `isHTML` parameter is set to false. Once the email's details are configured, present the mail compose view controller to the user. Here's how the code goes:
+
+  - ```swift
+      mailComposer.setToRecipients(["example@example.com"])
+      mailComposer.setSubject("Look at this")
+      mailComposer.setMessageBody("Hello, this is an email from the app I made.", isHTML: false)
+       
+      if let image = imageView.image, let jpegData = image.jpegData(compressionQuality: 0.9) {
+          mailComposer.addAttachmentData(jpegData, mimeType: "image/jpeg", fileName: "photo.jpg")
+      }
+
+      present(mailComposer, animated: true, completion: nil)
+    ```
+
+- When the user has finished sending an email, they'll need a way to dismiss the mail compose view controller and return to the app. You can use the delegate method `mailComposeController(didFinishWith:)` to dismiss the view:
+
+  - ```swift
+      @IBAction func emailButtonTapped(_ sender: UIButton) {...}
+       
+      func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
+          dismiss(animated: true, completion: nil)
+      }
+    ```
+
+- If you have an iOS device, try running the app to see this system view controller at work. (Simulator doesn't have an email app, so tapping the button there won't do anything.)
+
+- Wrap-Up
+  - Now that you've successfully implemented the activity view controller, Safari view controller, alert controller, image picker controller, and mail compose view controller, you're ready to incorporate one or all of them into your apps.
+  - In addition to extending the functionality of your apps, these system view controllers add an element of familiarity to the apps you create and provide a sense of continuity across the iOS platform.
+- Challenge
+  - Read the [documentation for MFMessageComposeViewController](https://developer.apple.com/documentation/messageui/mfmessagecomposeviewcontroller) and implement the message compose view controller in your app.
