@@ -2907,3 +2907,16 @@ As a developer, you can use these familiar view controllers to extend the functi
           }
       }
     ```
+
+#### Lab - Home Furniture Sharing
+
+- The objective of this lab is to use system view controllers in an app that lists rooms and furniture and allows users to share furniture items with other apps on their device. Make sure to build and run your app on a physical iOS device if you have one — rather than on Simulator — so you'll have more apps that permit image and text sharing.
+- Your app has been started for you. Open the project called “HomeFurniture” in your student resources folder. Take a few minutes to get familiar with the project. Run the app and navigate to the detail screen of a furniture item. Notice that the button in the middle of the screen says “Choose Photo,” but that it doesn't do anything when you tap it. The button at the bottom left also does nothing. Your task in this lab is to add functionality to these two buttons.
+
+##### Step 1 Add a UIAlertController
+
+- To present the right `UIImagePickerController` state, you'll need to know whether the user wants to choose an existing image from the device's photo library or take a new image using the camera. To enable the user's choice, you'll use a `UIAlertController` to present an action sheet from the bottom of the screen.
+- In the `choosePhotoButtonTapped(_:)` method in `FurnitureDetailViewController`, you'll need to create and present your action sheet. First, create an instance of a UIAlertController. You can make the title and message parameters `nil`, but you'll need to set the preferredStyle to `UIAlertControllerStyle.actionSheet`.
+- Next, create a `UIAlertAction` for canceling the alert and add it to your instance of `UIAlertController`. As you've learned, a handler executes code after the button is tapped. By default, a button tapped in a `UIAlertController` will dismiss the alert, so the `handler` parameter can be `nil`.
+- You'll need to add two more `UIAlertAction` instances: one for choosing an image from the photo library and another for using the camera to take a new image. Use the autocompletion feature in Xcode to get the right syntax for including the `handler` parameter on these actions. You can leave the bodies of the handlers empty for now, but you'll need to put in code later to ensure the image picker uses the right source. Be sure to add these actions to your alert controller.
+- Present the alert controller at the end of the method.
