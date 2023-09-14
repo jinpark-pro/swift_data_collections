@@ -3004,3 +3004,23 @@ As a developer, you can use these familiar view controllers to extend the functi
           dismiss(animated: true, completion: nil)
       }
     ```
+
+##### Step 3 Share Furniture with the UIActivityViewController
+
+- From the `actionButtonTapped(_:)` method, use the `UIActivityViewController` to add the ability to share the image and description from the `Furniture` item.
+- Great work! Your user can now choose an image from an image source and add it to the app. They can also share information with other apps on their device. Be sure to save this project to your project folder.
+
+  - ```swift
+      @IBAction func actionButtonTapped(_ sender: UIButton) {
+          guard let furniture = furniture else {return}
+          
+          let activityController = UIActivityViewController(activityItems: [furniture.imageData, furniture.name, furniture.description], applicationActivities: nil)
+          activityController.popoverPresentationController?.sourceView = sender
+          
+          present(activityController, animated: true, completion: nil)
+      }
+    ```
+
+##### Issue - showing up text on a label on the simulator, but not showing it up on an actual device
+
+- If Dark mode is enabled on the actual device, the text color will appear white.
