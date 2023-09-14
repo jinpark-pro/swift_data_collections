@@ -2920,3 +2920,87 @@ As a developer, you can use these familiar view controllers to extend the functi
 - Next, create a `UIAlertAction` for canceling the alert and add it to your instance of `UIAlertController`. As you've learned, a handler executes code after the button is tapped. By default, a button tapped in a `UIAlertController` will dismiss the alert, so the `handler` parameter can be `nil`.
 - You'll need to add two more `UIAlertAction` instances: one for choosing an image from the photo library and another for using the camera to take a new image. Use the autocompletion feature in Xcode to get the right syntax for including the `handler` parameter on these actions. You can leave the bodies of the handlers empty for now, but you'll need to put in code later to ensure the image picker uses the right source. Be sure to add these actions to your alert controller.
 - Present the alert controller at the end of the method.
+
+  - ```swift
+      @IBAction func choosePhotoButtonTapped(_ sender: Any) {
+          let alertController = UIAlertController(title: "Choose Image Source", message: nil, preferredStyle: .actionSheet)
+
+          let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+          alertController.addAction(cancelAction)
+          
+          let cameraAction = UIAlertAction(title: "Camera", style: .default, handler: {})
+          alertController.addAction(cameraAction)
+
+          let photoLibraryAction = UIAlertAction(title: "Photo Library", style: .default, handler: {})
+          alertController.addAction(photoLibraryAction)
+          
+          present(alertController, animated: true, completion: nil)
+      }
+    ```
+
+##### Step 2 Add a UIImagePickerController
+
+- Now that you have your alert controller set up, you'll need to add the functionality for presenting the image picker. Make an instance of a `UIImagePickerController` before the line of code that creates your alert controller (but still in your `choosePhotoButtonTapped(_:)` method).
+- Set your image picker's delegate property to self. If your view controller doesn't conform to the `UINavigationControllerDelegate` and `UIImagePickerControllerDelegate` protocols, you'll get an error at this point. You can fix the error by adding these protocols to the class declaration.
+- In the handlers for your actions, set the corresponding source type on your image picker and present the image picker.
+- Right now, if you run the app on Simulator and try to present the camera, the app will crash (since Simulator has no camera). To avoid giving users the option to choose a source that doesn't exist, add an if statement before your image-picking actions to check whether the source type is available. For example:
+
+  - ```swift
+      if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
+          let photoLibraryAction = UIAlertAction(title:
+            "Photo Library", style: .default, handler: { (_) in
+              imagePicker.sourceType = .photoLibrary
+          })
+          alertController.addAction(photoLibraryAction)
+      }
+    ```
+
+- There are two more pieces of image-picking functionality to write. You'll need to provide a way to retrieve the image the user has selected as well as a way to dismiss the image picker if the user decides against picking an image. Start by implementing two delegate methods, `imagePickerController(_:didFinishPickingMediaWithInfo:)` and `imagePickerControllerDidCancel(_:)`, in your view controller.
+- In `imagePickerControllerDidCancel(_:)`, simply dismiss the image picker with `dismiss(animated: true, completion: nil)`.
+- In `imagePickerController(_:didFinishPickingMediaWithInfo:)`, you'll use the key `.originalImage` to retrieve the image from the info dictionary, then you'll unwrap the result and cast it as a UIImage.
+- Once you've retrieved the image, call the image's `jpegData(compressionQuality:)` method with a value of `0.9` and set the `imageData` property on `furniture` to the result. The `UIImage` instance method `jpegData(compressionQuality:)` returns a `Data` representation of the image. Then dismiss the image picker and call `updateView()` in the completion.
+- To use the camera on a device, your app will need explicit permission from the user. Enter the reason you need access in the Info file by adding the `NSCameraUsageDescription` key with a brief phrase.
+- Run the app. Navigate to the detail view for one of the furniture items and try selecting an image.
+
+  - ```swift
+      @IBAction func choosePhotoButtonTapped(_ sender: Any) {
+          let imagePicker = UIImagePickerController()
+          imagePicker.delegate = self
+
+          let alertController = UIAlertController(title: "Choose Image Source", message: nil, preferredStyle: .actionSheet)
+          let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+          alertController.addAction(cancelAction)
+          
+          if UIImagePickerController.isSourceTypeAvailable(.camera) {
+              let cameraAction = UIAlertAction(title: "Camera", style: .default, handler: { (_) in
+                  imagePicker.sourceType = .camera
+                  self.present(imagePicker, animated: true, completion: nil)
+              })
+              alertController.addAction(cameraAction)
+          }
+          
+          if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
+              let photoLibraryAction = UIAlertAction(title: "Photo Library", style: .default, handler: { (_) in
+                  imagePicker.sourceType = .photoLibrary
+                  self.present(imagePicker, animated: true, completion: nil)
+              })
+              alertController.addAction(photoLibraryAction)
+          }
+          
+          present(alertController, animated: true, completion: nil)
+      }
+
+      func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+          guard let selectedImage = info[.originalImage] as? UIImage else {return}
+          
+          if let furniture = furniture, let jpegData = selectedImage.jpegData(compressionQuality: 0.9) {
+              furniture.imageData = jpegData
+              updateView()
+          }
+          dismiss(animated: true, completion: nil)
+      }
+      
+      func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+          dismiss(animated: true, completion: nil)
+      }
+    ```
