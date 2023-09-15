@@ -3024,3 +3024,48 @@ As a developer, you can use these familiar view controllers to extend the functi
 ##### Issue - showing up text on a label on the simulator, but not showing it up on an actual device
 
 - If Dark mode is enabled on the actual device, the text color will appear white.
+
+### Lesson 1.9 Complex Input Screens
+
+- Take a look at the standard iOS apps preinstalled on your device. You'll notice that they display various input screens for collecting information. A good example is the interface for adding a new event in Calendar. This input screen relies on several types of controls — including text fields, date pickers, and switches — neatly organized in a table view controller. Another example is the interface for entering a new contact in the Contacts app.
+- Whether tapping interface elements or using the keyboard, inputting information can be a tedious process. When you design views that require complex or large amounts of user input, your end goal should always be to make the process easier for users.
+
+#### Model
+
+- Data input screens are tightly coupled with an app's model data. Imagine you're building an app to track cars on a dealer's lot. You'd probably need an input screen for adding details about each car. You'd have a text field to input the VIN, two date pickers to input the date acquired and the date sold, and maybe a segmented control to indicate whether the car is new or used.
+- As you progress through this lesson, you'll build an app for the fictional Hotel Manzana. Hotel staff will use the app to register guests when they arrive at the hotel. As you build the app, try to configure your scenes in Interface Builder to look exactly the way you want your input screens to be displayed. This will minimize the amount of customization code you'll need to do later, while giving you a visual representation of the forms as you're creating them.
+- To start, create an Xcode project using the iOS App template and name it “Hotel Manzana." When creating the project, make sure the interface option is set to "Storyboard." Go ahead and delete the ViewController file and the associated scene in the storyboard; this app doesn't need them.
+- Your client at Hotel Manzana has given you a list of the information they'd like to collect: the guest's first name, last name, and email; the check-in and check-out dates; the number of adults and children in the room; whether the guest wants Wi-Fi access; and the guest's room choice. Hotel Manzana has three different room choices: a room with two queen beds, a room with one king bed, and a suite with two king bedrooms. Each room type has a name, a short name (fewer than three characters), and price. You'll also include an ID number in your data model - invisible to the user - to make it easy to check whether two room type instances are equal.
+- Before reading ahead, try to plan out the necessary models for your client's app. Maybe you came up with something like the following:
+
+  - ```swift
+      struct Registration {
+          var firstName: String
+          var lastName: String
+          var emailAddress: String
+       
+          var checkInDate: Date
+          var checkOutDate: Date
+          var numberOfAdults: Int
+          var numberOfChildren: Int
+       
+          var wifi: Bool
+          var roomType: RoomType
+      }
+       
+      struct RoomType: Equatable {
+          var id: Int
+          var name: String
+          var shortName: String
+          var price: Int
+       
+          //Equatable Protocol Implementation for RoomType
+
+          static func ==(lhs: RoomType, rhs: RoomType) -> Bool {
+              return lhs.id == rhs.id
+          }
+      }
+    ```
+
+- Remember that there's never one and only one right answer in programming. Your approach might be one of many workable solutions. For example, in this exercise, you may have assigned the properties slightly different names or types. What matters is that you have a way to store everything your app will be tracking.
+- For the purposes of this lesson, though, you'll work with the structures defined above.
