@@ -3069,3 +3069,11 @@ As a developer, you can use these familiar view controllers to extend the functi
 
 - Remember that there's never one and only one right answer in programming. Your approach might be one of many workable solutions. For example, in this exercise, you may have assigned the properties slightly different names or types. What matters is that you have a way to store everything your app will be tracking.
 - For the purposes of this lesson, though, you'll work with the structures defined above.
+
+#### Input Screens
+
+- An input screen is a form with controls for inputting data. As you've learned, a good option for a form is a table view, with each cell representing a different piece of data to be entered. With table views, you can group information into logical sections and use section headers and footers to give instructions. And because table views scroll, you can fit in more inputs than you can on regular view controllers.
+- Most table views used for form input have static cells. Static cells allow the table view controller subclass to have outlets directly on each of the input controls, making it much simpler to access the control's values. In contrast, a dynamic table view requires a table view cell subclass to access the views on a cell.
+- To build the input screen for Hotel Manzana, you'll use a table view controller.
+- In your app's storyboard, add a navigation controller with a table view controller as the root view controller. Set the navigation controller as the initial view controller. Set the navigation item title for the table view controller to "New Guest Registration". In the Attributes inspector, set the table view Content to `Static Cells` and the Style to `Grouped`.
+- With the table view appropriately configured, you'll need to add and configure your cells. The type of cells is highly dependent on the data you're trying to collect. Based on the type, you'll use the appropriate control to collect that data. For a refresher on controls, you can check out the “Controls in Action” lesson.
