@@ -3077,3 +3077,40 @@ As a developer, you can use these familiar view controllers to extend the functi
 - To build the input screen for Hotel Manzana, you'll use a table view controller.
 - In your app's storyboard, add a navigation controller with a table view controller as the root view controller. Set the navigation controller as the initial view controller. Set the navigation item title for the table view controller to "New Guest Registration". In the Attributes inspector, set the table view Content to `Static Cells` and the Style to `Grouped`.
 - With the table view appropriately configured, you'll need to add and configure your cells. The type of cells is highly dependent on the data you're trying to collect. Based on the type, you'll use the appropriate control to collect that data. For a refresher on controls, you can check out the “Controls in Action” lesson.
+- <img src="./resources/input_screen.png" alt="Input Screen" width="200" />
+
+#### Collect Strings
+
+- For Hotel Manzana, you'll need to collect three pieces of String data: the guest's first name, last name, and email address. You'll generally use text fields for collecting strings, with the placeholder text property indicating the text field's purpose. If your string might take multiple lines, a text view could be a better choice (even though it's not technically a control).
+- In the storyboard, add a text field to each of three cells, one for each string you're collecting. Pin all four edges of the text fields and set the placeholder text in the Attributes inspector.
+- To implement the logic behind your input screen, you'll need a class file to add your code. Add a new Cocoa Touch Class called `AddRegistrationTableViewController` that inherits from `UITableViewController`. Since you're implementing a static table view, you don't need to implement the data source. In fact, if you'd like, you can delete the boilerplate data source code that comes with a `UITableViewController` subclass.
+- Make sure the identity of the table view controller in the storyboard is set to your newly created table view controller subclass.
+  - Click `New Guest Registration` on the Document Outline, choose Class to `AddRegistrationTableViewController` in the Identity inspector.
+- Next, add outlets for the text fields, so you can reference them in code. Here's how that works:
+
+  - ```swift
+      class AddRegistrationTableViewController: UITableViewController {
+          @IBOutlet var firstNameTextField: UITextField!
+          @IBOutlet var lastNameTextField: UITextField!
+          @IBOutlet var emailTextField: UITextField!
+          //...
+      }
+    ```
+
+- In the storyboard, add a bar button item to the right bar button item slot on the AddRegistrationTableViewController's navigation bar. In the Attributes inspector, set the new button to the `Done` system item.
+- Hook up an @IBAction to your `Done` button and name the function `doneBarButtonTapped(_:)`. Add code to this method to print any data in the text fields when the button is tapped.
+
+  - ```swift
+      @IBAction func doneBarButtonTapped(_ sender: UIBarButtonItem) {
+          let firstName = firstNameTextField.text ?? ""
+          let lastName = lastNameTextField.text ?? ""
+          let email = emailTextField.text ?? ""
+       
+          print("DONE TAPPED")
+          print("firstName: \(firstName)")
+          print("lastName: \(lastName)")
+          print("email: \(email)")
+      }
+    ```
+
+- You've now collected the first three pieces of data from your input view.
