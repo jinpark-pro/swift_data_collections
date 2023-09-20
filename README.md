@@ -3084,6 +3084,7 @@ As a developer, you can use these familiar view controllers to extend the functi
 - For Hotel Manzana, you'll need to collect three pieces of String data: the guest's first name, last name, and email address. You'll generally use text fields for collecting strings, with the placeholder text property indicating the text field's purpose. If your string might take multiple lines, a text view could be a better choice (even though it's not technically a control).
 - In the storyboard, add a text field to each of three cells, one for each string you're collecting. Pin all four edges of the text fields and set the placeholder text in the Attributes inspector.
 - To implement the logic behind your input screen, you'll need a class file to add your code. Add a new Cocoa Touch Class called `AddRegistrationTableViewController` that inherits from `UITableViewController`. Since you're implementing a static table view, you don't need to implement the data source. In fact, if you'd like, you can delete the boilerplate data source code that comes with a `UITableViewController` subclass.
+  - Delete `numberOfSections` method and `tableView(numberOfRowsInSection:)` method, or update the return
 - Make sure the identity of the table view controller in the storyboard is set to your newly created table view controller subclass.
   - Click `New Guest Registration` on the Document Outline, choose Class to `AddRegistrationTableViewController` in the Identity inspector.
 - Next, add outlets for the text fields, so you can reference them in code. Here's how that works:
@@ -3188,3 +3189,8 @@ Because your static table view doesn't rely on a data source, it won't â€œloadâ€
 }
 
 - Build and run your app. You should be able to use date pickers to input your date information, and your labels should update accordingly.
+
+- The table view was not displayed.
+  - It was because of `numberOfSections` returned `0`.
+  - Since you're implementing a static table view, you don't need to implement the data source. In fact, if you'd like, you can delete the boilerplate data source code that comes with a `UITableViewController` subclass.
+  - Delete `numberOfSections` method and `tableView(numberOfRowsInSection:)` method, or update the return.
