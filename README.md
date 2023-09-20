@@ -3114,3 +3114,77 @@ As a developer, you can use these familiar view controllers to extend the functi
     ```
 
 - You've now collected the first three pieces of data from your input view.
+
+#### Collect Dates
+
+- The Hotel Manzana app will also collect two dates. Dates are actually a very complex type. With the date type, you're representing a single point in time (both the day and the time of day), and that representation has several variable characteristics, like a time zone and a calendar (for example, Gregorian or Hebrew). How can you communicate a date in a way that's meaningful to all users?
+- Apple has many tools for clearly presenting dates, one of which is the date picker. The date picker makes date input easy to implement. When collecting a date, you'll typically use two cells. The first cell is a right detail cell (or a similar custom cell), where the title label describes the date (such as “Check-In Date,” “Appointment Date,” or “Inspection Date”) and the detail label shows the currently selected date. The second cell contains the date picker.
+  - <img src="./resources/date_picker.png" alt="Date Picker" width="400" />
+- In your storyboard, add a new section with two sets of date input cells: one set for the check-in date and one set for the check-out date. Each set should have two cells: one to display the selected date and one to display the date picker.
+- Referencing the previous image, add two date pickers from the Object library and use Auto Layout to position them. You'll want to set the constraints relative to the content view rather than the margins for the date pickers. The layout constraints and the intrinsic size of the date pickers will cause the rows to size automatically to the correct size.
+- Next, set each date picker's `Preferred Style` to `Wheels` and `Mode` to `Date` in the Attributes inspector. Setting the Mode to Date changes the display of the date picker so that the user doesn't have the option to enter a time.
+- For the label cells (rows 0 and 2), click the `Table View Cell` and set the `Style` to `Right Detail`. Set the font size for all of the labels to 17 points. Set the title labels to read "Check-In Date" and "Check-Out Date," and set the detail labels to some random date. You'll configure the date label's text programmatically in the next steps.
+- With your date input cells set up in the storyboard, you'll need to write code to update the date labels to match the user's input. As with your text fields, you'll need to have access to the date pickers and to the labels that will update. Add outlets for those four views. (You don't need outlets for the Check-In Date and Check-Out Date labels, since they won't change.)
+
+  - ```swift
+      class AddRegistrationTableViewController: UITableViewController {
+          @IBOutlet var checkInDateLabel: UILabel!
+          @IBOutlet var checkInDatePicker: UIDatePicker!
+          @IBOutlet var checkOutDateLabel: UILabel!
+          @IBOutlet var checkOutDatePicker: UIDatePicker!
+          //...
+      }
+    ```
+
+- With most controls, you can respond when the control's value changes. In the Hotel Manzana app, your code will need to update the detail label every time the date selected in a date picker changes. Before you add your @IBAction method, write an instance function called `updateDateViews()` in `AddRegistrationTableViewController`.
+- On the Hotel Manzana form, you'll want the date to read as a string. The date type can be a little tricky to represent, but date formatting can help you out. Using `Date`'s `formatted` method, you can create string representations of dates. The way the formatted string will read is controlled by the parameters that you pass to the `formatted` method.
+- The `formatted` method with no arguments will produce a date in a default format. You can supply additional arguments to show only the date or time and to adjust the style (such as displaying the month using a number or a spelled-out name, or omitting seconds from the time display).
+- For the Hotel Manzana app, the `.abbreviated` option will work well for dates. Because the hotel doesn't care about the time of day, you can use the `.omitted` option for the time.
+- In `updateDateViews()`, add the following code to update the date label text:
+
+  - ```swift
+      checkInDateLabel.text = checkInDatePicker.date.formatted(date: .abbreviated, time: .omitted)
+      checkOutDateLabel.text = checkOutDatePicker.date.formatted(date: .abbreviated, time: .omitted)
+    ```
+
+- Next, you'll configure your date pickers to only allow valid input and to initialize the `date` property when the view loads. Date pickers have a `minimumDate` property and a `maximumDate` property, which work together to prevent the user from selecting a date outside the range. In the Hotel Manzana app, it would make sense to set a minimum date for both pickers: the current day for the check-in date, and one day ahead of the check-in date picker's date for the check-out date.
+- The check-in minimum date doesn't change — it's always today — so you can set it in `viewDidLoad()`. You'll also initialize the check-in date in `viewDidLoad()`. However, the check-out minimumDate will change based on the check-in date. You'll set its minimumDate and date in the `updateDateViews()` method. Here's how all of that works together:
+
+  - ```swift
+      // In viewDidLoad()
+      let midnightToday = Calendar.current.startOfDay(for: Date())
+      checkInDatePicker.minimumDate = midnightToday
+      checkInDatePicker.date = midnightToday
+       
+      // At the top of updateDateViews()
+      checkOutDatePicker.minimumDate = Calendar.current.date(byAdding: .day, value: 1, to: checkInDatePicker.date)
+    ```
+
+- Take a closer look at this code. What's a Calendar? Without knowing the details, you should be able to tell that you're getting the current calendar, which lets you calculate dates using the `date(byAdding:value:to:)` method. In updateDateViews(), you're using that method to **add 1 day to the value of checkInDatePicker.date**.
+- Now that the updateDateViews() method is complete, remember you'll need to add an action to both date pickers. In the implementation of the function, call the updateDateViews() method:
+
+  - ```swift
+      @IBAction func datePickerValueChanged(_ sender: UIDatePicker) {
+          updateDateViews()
+      }
+    ```
+
+Because your static table view doesn't rely on a data source, it won't “load” when it's first displayed. So it's a good idea to also call the updateDateViews() method in viewDidLoad().
+- Remember the doneBarButtonTapped(_:) method? Add some code that will print the date properties of your new controls:
+ 
+@IBAction func doneBarButtonTapped(_ sender: UIBarButtonItem) {
+    let firstName = firstNameTextField.text ?? ""
+    let lastName = lastNameTextField.text ?? ""
+    let email = emailTextField.text ?? ""
+    let checkInDate = checkInDatePicker.date
+    let checkOutDate = checkOutDatePicker.date
+ 
+    print("DONE TAPPED")
+    print("firstName: \(firstName)")
+    print("lastName: \(lastName)")
+    print("email: \(email)")
+    print("checkIn: \(checkInDate)")
+    print("checkOut: \(checkOutDate)")
+}
+
+- Build and run your app. You should be able to use date pickers to input your date information, and your labels should update accordingly.
