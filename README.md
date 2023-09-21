@@ -3194,3 +3194,59 @@ Because your static table view doesn't rely on a data source, it won't “load�
   - It was because of `numberOfSections` returned `0`.
   - Since you're implementing a static table view, you don't need to implement the data source. In fact, if you'd like, you can delete the boilerplate data source code that comes with a `UITableViewController` subclass.
   - Delete `numberOfSections` method and `tableView(numberOfRowsInSection:)` method, or update the return.
+
+- **Adjust Cell Heights**
+  - Have you noticed that your two date picker cells take up a significant portion of an iPhone screen? Date pickers can make it difficult to scroll a table view. Since swiping up on the date picker scrolls the picker wheel, it won't scroll the table view. While this is expected if the user intentionally swipes up on the date picker, it's a large enough control that a user may intend to scroll the table view and inadvertently scroll the picker.
+  - How do other apps handle this problem? In Calendar, the date pickers are hidden until the user selects the label row. Plus, the date picker appears right below the labels. When one date picker is shown, any others collapse - so you'll see only one date picker at a time.
+  - You will implement a similar interface here, using the table view delegate methods `tableView(_:heightForRowAt:)`, to adjust the height, and `tableView(_:didSelectRowAt:)`, to respond to user interaction and dynamically modify the row's height at runtime. But first, you'll need a few variables to track the state of your views. Add the following properties to your `AddRegistrationTableViewController` class:
+
+    - ```swift
+        let checkInDatePickerCellIndexPath = IndexPath(row: 1, section: 1)
+        let checkOutDatePickerCellIndexPath = IndexPath(row: 3, section: 1)
+         
+        var isCheckInDatePickerVisible: Bool = false {
+            didSet {
+                checkInDatePicker.isHidden = !isCheckInDatePickerVisible
+            }
+        }
+         
+        var isCheckOutDatePickerVisible: Bool = false {
+            didSet {
+                checkOutDatePicker.isHidden = !isCheckOutDatePickerVisible
+            }
+        }
+      ```
+
+  - What's going on in the code above? The first two properties store the index path of the date pickers for easy comparison in the delegate methods. The next two properties store whether or not the date pickers will be shown and then appropriately show or hide them when the properties are set. (They don't adjust the cell height, though. That's coming next.) Both date pickers start as not shown.
+  - Now that you have variables to track the visibility of your date pickers, you can implement the `tableView(_:heightForRowAt:)` method. This table view delegate method queries for the row's height when your table view rows are displayed. As the developer, your job is to return the height based on the index path.
+  - How will you implement `tableView(_:heightForRowAt:)` in the Hotel Manzana app? By using a switch on indexPath, you can include cases for the two date picker rows with a where clause for each to further define when the case is matched. (A where clause works like an if clause.) Specifically, you'll want to return a height of 0 for the date picker cells when they are not shown. Then you'll use the default for all other situations to let the cells determine their height automatically. Here's what that looks like:
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+            switch indexPath {
+            case checkInDatePickerCellIndexPath where isCheckInDatePickerVisible == false:
+                return 0
+            case checkOutDatePickerCellIndexPath where isCheckOutDatePickerVisible == false:
+                return 0
+            default:
+                return UITableView.automaticDimension
+            }
+        }
+      ```
+
+  - The rows with the date pickers also need to have a specific estimated row height and can't use `UITableView.automaticDimension`. You can return the correct estimated row height for each row using the `tableView(_:estimatedHeightForRowAt:)` method. The exact value returned for the date cell rows isn't important (as long as it's not 0), because Auto Layout will ensure the correct height is used. A quick check of the Size inspector for the date pickers' cells shows that 190 is a good estimate for the row height when the cells are visible. Notice that you don't want to use the where clause in this case:
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, estimatedHeightForRowAt indexPath: IndexPath) -> CGFloat {
+            switch indexPath {
+            case checkInDatePickerCellIndexPath:
+                return 190
+            case checkOutDatePickerCellIndexPath:
+                return 190
+            default:
+                return UITableView.automaticDimension
+            }
+        }
+      ```
+
+  - Build and run your app. Because the default value of the visibility variables for the date picker is false, you'll no longer see the date pickers. To show them, you'll need to respond to the user tapping the date label cell.
