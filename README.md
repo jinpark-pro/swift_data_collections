@@ -3250,3 +3250,45 @@ Because your static table view doesn't rely on a data source, it won't “load�
       ```
 
   - Build and run your app. Because the default value of the visibility variables for the date picker is false, you'll no longer see the date pickers. To show them, you'll need to respond to the user tapping the date label cell.
+
+#### Show or Hide Date Pickers
+
+- As you learned in the first table view lesson, you can respond to a user's cell selection with the delegate method `tableView(_:didSelectRowAt:)`.
+- When the user taps a cell in the Hotel Manzana app, you'll first need to deselect the cell — that is, remove its gray highlight. This is a common pattern in the `tableView(_:didSelectRowAt:)` method when tapping the cell performs an action rather than a navigational push/modal, because it wouldn't make sense for the cell to remain highlighted after the action is performed. In the case of a navigation event, it's nice to leave the cell highlighted so when the user returns to the list they'll briefly see the highlighted cell to remind them what they had selected. `UITableViewController` subclasses handle this automatically for you, and you can see the subtle effect in apps like Settings. In the case of an app that allows multiple cell selection, that indication should be managed through accessory views, not the highlighted state of the cell.
+- It may be helpful to create properties for `checkInDateLabelCellIndexPath` and `checkOutDateLabelCellIndexPath` to compare with the selected IndexPath.
+
+  - ```swift
+      let checkInDateLabelCellIndexPath = IndexPath(row: 0, section: 1)
+      let checkOutDateLabelCellIndexPath = IndexPath(row: 2, section: 1)
+    ```
+
+- If the index path corresponds to one of the date label cells, you'll toggle the appropriate date picker and update the table view. The requirements of this feature boil down to the following:
+  - When both pickers are not visible, selecting a label toggles the visibility of the corresponding picker.
+  - When one picker is visible, selecting its own label toggles its visibility; selecting the other label toggles the visibility of both pickers.
+- This can be represented by a relatively concise if/else if statement. Finally, when the visibility of a picker is toggled, you must instruct the table view to update itself so that the height for each row is recalculated. This can be done by calling the following methods: `tableView.beginUpdates()` and `tableView.endUpdates()`
+- Here is one way to write the logic:
+
+  - ```swift
+      override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+          tableView.deselectRow(at: indexPath, animated: true)
+
+          if indexPath == checkInDateLabelCellIndexPath && isCheckOutDatePickerVisible == false {
+              // Check-in label selected, check-out picker is not visible, toggle check-in picker
+              isCheckInDatePickerVisible.toggle()
+          } else if indexPath == checkOutDateLabelCellIndexPath && isCheckInDatePickerVisible == false {
+              // Check-out label selected, check-in picker is not visible, toggle check-out picker
+              isCheckOutDatePickerVisible.toggle()
+          } else if indexPath == checkInDateLabelCellIndexPath || indexPath == checkOutDateLabelCellIndexPath {
+              // Either label was selected, previous conditions failed meaning at least one picker is visible, toggle both
+              isCheckInDatePickerVisible.toggle()
+              isCheckOutDatePickerVisible.toggle()
+          } else {
+              return
+          }
+
+          tableView.beginUpdates()
+          tableView.endUpdates()
+      }
+    ```
+
+- Build and run your app. At this point, in addition to guest information, you should be able to enter check-in and check-out dates while displaying only one date picker at a time.
