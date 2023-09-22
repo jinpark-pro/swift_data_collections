@@ -3292,3 +3292,26 @@ Because your static table view doesn't rely on a data source, it won't â€œloadâ€
     ```
 
 - Build and run your app. At this point, in addition to guest information, you should be able to enter check-in and check-out dates while displaying only one date picker at a time.
+
+- The datepicker's height didn't work well because `tableView(_,estimatedHeightForRowAt:)` did not work. I removed it and modified `tableVew(_,heightForRowAt)`
+
+  - ```swift
+      override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+          switch indexPath {
+          case checkInDatePickerCellIndexPath:
+              if isCheckInDatePickerVisible {
+                  return 232
+              } else {
+                  return 0
+              }
+          case checkOutDatePickerCellIndexPath:
+              if isCheckOutDatePickerVisible {
+                  return 232
+              } else {
+                  return 0
+              }
+          default:
+              return UITableView.automaticDimension
+          }
+      }
+    ```
