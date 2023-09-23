@@ -3293,7 +3293,7 @@ Because your static table view doesn't rely on a data source, it won't “load�
 
 - Build and run your app. At this point, in addition to guest information, you should be able to enter check-in and check-out dates while displaying only one date picker at a time.
 
-- The datepicker's height didn't work well because `tableView(_,estimatedHeightForRowAt:)` did not work. I removed it and modified `tableVew(_,heightForRowAt)`
+- The datepicker's height didn't work well. I modified `tableVew(_,heightForRowAt)`
 
   - ```swift
       override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
@@ -3315,3 +3315,59 @@ Because your static table view doesn't rely on a data source, it won't “load�
           }
       }
     ```
+
+#### Collect Numbers
+
+- The next type of data you'll collect is numbers. You can use different controls — steppers, sliders, even text fields — depending on the kind of numbers your app will collect.
+  - For example, you'll use a stepper when you need precise control of discrete and incremental adjustments to the value.
+  - You'll use a slider when you want continuous adjustments over a defined range.
+  - And you'll use text fields when a keypad might be more useful to input the number, such as for entering a very large number — and then use a number formatter (similar to a date formatter) to convert the string into a number.
+- In the Hotel Manzana app, the staff needs to know how many adults and children are staying at the hotel. Since both these values can be represented with discrete increments of 1, steppers are a good choice. In this case, you'll need two cells, one for entering the number of adults and another for the number of children. Each cell will have three objects: a label describing the entry, another label displaying the value of the stepper, and the stepper itself.
+- Using the following image as an example, add a new section with two cells to your table view.
+  - <img src="./resources/collect_numbers.png" alt="Collect Numbers" width="500" />
+- Next, you'll need outlets for the value labels and steppers:
+
+  - ```swift
+      @IBOutlet var numberOfAdultsLabel: UILabel!
+      @IBOutlet var numberOfAdultsStepper: UIStepper!
+      @IBOutlet var numberOfChildrenLabel: UILabel!
+      @IBOutlet var numberOfChildrenStepper: UIStepper!
+    ```
+
+- To update your new views, add a method called `updateNumberOfGuests`. This method will be called initially to synchronize the views and again any time the stepper value changes.
+
+  - ```swift
+      func updateNumberOfGuests() {
+          numberOfAdultsLabel.text = "\(Int(numberOfAdultsStepper.value))"
+          numberOfChildrenLabel.text = "\(Int(numberOfChildrenStepper.value))"
+      }
+    ```
+
+- To respond to a change in stepper value, add an `@IBAction` that calls your `updateNumberOfGuests` function. You'll also call `updateNumberOfGuests` in `viewDidLoad()` to set up the views correctly on the first load.
+
+  - ```swift
+      @IBAction func stepperValueChanged(_ sender: UIStepper) {
+          updateNumberOfGuests()
+      }
+      override func viewDidLoad() {
+          //...
+          updateNumberOfGuests()
+          //...
+      }
+    ```
+
+- Back in your `doneBarButtonTapped(_:)` method, add logic to print the entered values:
+
+  - ```swift
+      @IBAction func doneBarButtonTapped(_ sender: UIBarButtonItem) {
+          // ...
+          let numberOfAdults = Int(numberOfAdultsStepper.value)
+          let numberOfChildren = Int(numberOfChildrenStepper.value)
+       
+          // ...
+          print("numberOfAdults: \(numberOfAdults)")
+          print("numberOfChildren: \(numberOfChildren)")
+      }
+    ```
+
+- Build and run your app. You should now be able to adjust the number of guests for each registration and see the labels update accordingly. You should also be able to click the Done button to see the console print the values you entered.
