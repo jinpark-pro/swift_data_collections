@@ -3371,3 +3371,31 @@ Because your static table view doesn't rely on a data source, it won't “load�
     ```
 
 - Build and run your app. You should now be able to adjust the number of guests for each registration and see the labels update accordingly. You should also be able to click the Done button to see the console print the values you entered.
+
+#### Collect Binary Input
+
+- At Hotel Manzana, guests have the option of purchasing Wi-Fi access for $10 per day. This is an example of binary data, where there are two options: yes or no. Switches are perfect for inputting this type of data. For example, in Calendar, you use a switch to indicate whether an event is an all-day event or a timed event.
+- The cell will have three objects: a label describing the control, another label listing the price, and the switch itself. Using the image as a reference, add a new section with one cell to your table view.
+  - <img src="./resources/collect_binary.png" alt="Collect Binary Input" width="500" />
+- Next, add an outlet for the switch to `AddRegistrationTableViewController` so you can access the value when the user taps the Done button: `@IBOutlet var wifiSwitch: UISwitch!`
+- What happens when the value of the switch changes? Add an empty action for now. You'll have the opportunity to add functionality for this part of your UI in the challenge at the end of the lesson.
+
+  - ```swift
+      @IBAction func wifiSwitchChanged(_ sender: UISwitch) {
+          //implemented later
+      }
+    ```
+
+- Finally, add logic to your `doneBarButtonTapped(_:)` method to print the state of the switch when the user submits the form.
+
+  - ```swift
+      @IBAction func doneBarButtonTapped(_ sender: UIBarButtonItem) {
+          // ...
+          let hasWifi = wifiSwitch.isOn
+       
+          // ...
+          print("wifi: \(hasWifi)")
+      }
+    ```
+
+- Build and run your app. Verify that you're able to see the correct binary choice displayed in the console.
