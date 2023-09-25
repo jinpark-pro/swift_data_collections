@@ -3399,3 +3399,69 @@ Because your static table view doesn't rely on a data source, it won't “load�
     ```
 
 - Build and run your app. Verify that you're able to see the correct binary choice displayed in the console.
+
+#### Collect Predefined Options
+
+- What if you need to collect input from a set of predefined options? For example, an e-commerce app may need to know the purchaser's state for shipping, or a college registration app may ask students to select multiple classes for the next term. You could use a segmented control if (and only if) all of these conditions are met: the number of options is small (say, fewer than five), all options have a short name, and the user will choose only one option. But that's a fairly narrow use case.
+- What if you need to allow for multiple selections? What if you have a large number of options or they require long descriptions? In these cases, you'll often use an additional table view to present the options and a custom protocol to communicate the user's choice(s). To make it easier to change the displayed choices, programmers will often use dynamic table views for these selection table views.
+- If you haven't already added the definition for the RoomType struct introduced at the beginning of this lesson, add a new Swift file to the project named "RoomType" and add the struct definition:
+
+  - ```swift
+      struct RoomType: Equatable {
+          var id: Int
+          var name: String
+          var shortName: String
+          var price: Int
+
+          // Equatable Protocol Implementation for RoomType
+          static func ==(lhs: RoomType, rhs: RoomType) -> Bool {
+              return lhs.id == rhs.id
+          }
+      }
+    ```
+
+- Back at the Hotel Manzana, staff will record the guest's room choice on check-in. Add an array of room types as a type property on `RoomType`.
+
+  - ```swift
+      static RoomType: Equatable {
+          // ...
+
+          static var all: [RoomType] {
+              return [
+                  RoomType(id: 0, name: "Two Queens", shortName: "2Q", price: 179),
+                  RoomType(id: 1, name: "One King", shortName: "K", price: 209),
+                  RoomType(id: 2, name: "Penthouse Suite", shortName: "PHS", price: 309)
+              ]
+          }
+      }
+    ```
+
+- In the storyboard, add a new `table view controller`, which you'll use to display the room choices and to allow staff to collect the guest's choice. Add a Cocoa Touch Class file for your new controller called “SelectRoomTypeTableViewController.swift.” Set the identity of the new table view controller to the new subclass you just created.
+- Next, set up your prototype cell. Change its Style to `Right Detail`. You'll use the title label for the room type, the detail label for the price, and the accessory view to indicate selection. Set the reuse identifier to `RoomTypeCell`.
+  - <img src="./resources/room_type_cell.png" alt="Room Type Cell" width="500" />
+- In `SelectRoomTypeTableViewController`, implement the data source. Use the newly created array in the RoomType class to populate the table view. If you need a refresher, check out the first lesson on table views.
+
+  - ```swift
+      // MARK: - Table view data source
+       
+      override func numberOfSections(in tableView: UITableView) -> Int {
+          return 1
+      }
+       
+      override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+          return RoomType.all.count
+      }
+
+      override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+          let cell = tableView.dequeueReusableCell(withIdentifier: "RoomTypeCell", for: indexPath)
+          let roomType = RoomType.all[indexPath.row]
+
+          var content = cell.defaultContentConfiguration()
+          content.text = roomType.name
+          content.secondaryText = "$ \(roomType.price)"
+          cell.contentConfiguration = content
+          return cell
+      }
+    ```
+
+- Finally, in Interface Builder, move the arrow designating the initial view controller to `SelectRoomTypeTableViewController`, then run the app. You should now be able to see your populated table view.
