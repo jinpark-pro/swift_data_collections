@@ -3465,3 +3465,29 @@ Because your static table view doesn't rely on a data source, it won't â€œloadâ€
     ```
 
 - Finally, in Interface Builder, move the arrow designating the initial view controller to `SelectRoomTypeTableViewController`, then run the app. You should now be able to see your populated table view.
+
+#### Implement Selection
+
+- Remember using `tableView(_:didSelectRowAt:)` to make changes when the user selected a date label cell? You'll use the same method to respond to the user's selection in `SelectRoomTypeTableViewController`.
+- Start by adding a variable to `SelectRoomTypeTableViewController` to hold the currently selected room type. Make it an optional, because it's possible the staff won't have collected the room choice yet: `var roomType: RoomType?`
+- Next, add and implement the `tableView(_:didSelectRowAt:)` delegate method. Start the implementation by deselecting the selected row (removing the gray highlight). Then set the roomType property to the room type that corresponds to the index path. Finally, reload your table view.
+
+  - ```swift
+      override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+          tableView.deselectRow(at: indexPath, animated: true)
+          roomType = RoomType.all[indexPath.row]
+          tableView.reloadData()
+      }
+    ```
+
+- To indicate the currently selected room type, you'll use the checkmark accessory type. In `tableView(_:cellForRowAt:)`, add logic to configure the cell's accessory type. If the room type for the row is equal to the selected room type, the accessory type is .checkmark. If not, the accessory type is .none. Here's how to write the logic:
+
+  - ```swift
+      if roomType == self.roomType {
+          cell.accessoryType = .checkmark
+      } else {
+          cell.accessoryType = .none
+      }
+    ```
+
+- Build and run your app. If you still have the initial view controller set to SelectRoomTypeTableViewController, you'll be able to see your populated table view and to select a room type.
