@@ -3491,3 +3491,95 @@ Because your static table view doesn't rely on a data source, it won't “load�
     ```
 
 - Build and run your app. If you still have the initial view controller set to SelectRoomTypeTableViewController, you'll be able to see your populated table view and to select a room type.
+
+#### Communicate Selection
+
+- What happens next? Once the selection has been made, you'll need to pass the guest's room choice back to the main table view controller. To do this, you'll create a custom protocol. Recall that protocols define functions and properties that another class will implement. In this case, your selection table view will define a function that's implemented by the main table view controller. The function gives the main table view controller access to any of the parameters of the function — and it allows you write to custom code.
+- In the Hotel Manzana app, you'll add a protocol to the `SelectRoomTypeTableViewController` class file called `SelectRoomTypeTableViewControllerDelegate`. In the delegate, define a function called `selectRoomTypeTableViewController(_:didSelect:)` that takes in two parameters: the `SelectRoomTypeTableViewController` and a `RoomType` instance.
+- Notice how the naming of this delegate method follows a pattern similar to the ones you're familiar with from implementing `UITableViewDelegate`. When defining delegate and data source methods, it's good practice to include relevant items in the passed arguments. This helps conformers better identify what the method is for in their implementation. Had you chosen to define the delegate method as `didSelect(roomType:)`, it might not have been clear that this method will be called by a `SelectRoomTypeTableViewController` when a room is selected, and someone might have been tempted to start calling the method for other reasons.
+- Since another class will implement the protocol, you'll need to define a property to hold the reference to the implementing instance:
+
+  - ```swift
+      protocol SelectRoomTypeTableViewControllerDelegate: AnyObject {
+          func selectRoomTypeTableViewController(_ controller: SelectRoomTypeTableViewController, didSelect roomType: RoomType)
+      }
+       
+      class SelectRoomTypeTableViewController: UITableViewController {
+          weak var delegate: SelectRoomTypeTableViewControllerDelegate?
+          //...
+      }
+    ```
+
+- Now, when the user selects a room type, you can call your new delegate method. In `didSelectRow`, add a call to `selectRoomTypeTableViewController(_:didSelect:)`:
+
+  - ```swift
+      override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+          tableView.deselectRow(at: indexPath, animated: true)
+          let roomType = RoomType.all[indexPath.row]
+          self.roomType = roomType
+          delegate?.selectRoomTypeTableViewController(self, didSelect: roomType)
+          tableView.reloadData()
+      }
+    ```
+
+- Next, you'll add `SelectRoomTypeTableViewController` to the app's navigation hierarchy, displaying the view controller when the user taps the associated cell.
+- In the `AddRegistrationTableViewController` scene, add a new section with one cell and set the cell's Style to `Right Detail`. You'll use the title label to display a description of the requested information (“Room Type”) and the detail label to display the guest's choice (the room type's name). Set the Accessory to `Disclosure Indicator`. The small chevron indicates that a tap of this cell will push to a new view controller with options. You'll also add an outlet for the detail label, because it will update based on the selected room type: `@IBOutlet var roomTypeLabel: UILabel!`
+- Add a property to hold the selected room type: `var roomType: RoomType?`
+- Next, add a function to update the room type labels:
+
+  - ```swift
+      func updateRoomType() {
+          if let roomType = roomType {
+              roomTypeLabel.text = roomType.name
+          } else {
+              roomTypeLabel.text = "Not Set"
+          }
+      }
+    ```
+
+- Add a call to the update room type function in `viewDidLoad()`.
+- These properties and methods allow for the selected room type to be displayed and to be updated as the user makes a different selection. The call to `updateRoomType()` in the `viewDidLoad()` method initializes the table view when it first loads.
+- Next, you'll conform to the custom protocol of the `SelectRoomTypeTableViewController` and implement the required method, `selectRoomTypeTableViewController(_:didSelect:)`. In the implementation, set the `roomType` property of the `AddRegistrationTableViewController` and update the room type labels. Here are those two steps:
+
+  - ```swift
+      class AddRegistrationTableViewController: UITableViewController, SelectRoomTypeTableViewControllerDelegate {
+          func selectRoomTypeTableViewController(_ controller: SelectRoomTypeTableViewController, didSelect roomType: RoomType) {
+              self.roomType = roomType
+              updateRoomType()
+          }
+          //...
+      }
+    ```
+
+- Now you'll need to add a show segue from the room type cell to the `SelectRoomTypeTableViewController`. If your initial view controller is still `SelectRoomTypeTableViewController`, change it back to the navigation controller.
+- Create an `@IBSegueAction` in `AddRegistrationTableViewController` from your new show segue called `selectRoomType`, with no arguments.
+- Finally, in `AddRegistrationTableViewController`, implement the `selectRoomType(_:)` method to set the delegate property and the roomType property of the `SelectRoomTypeTableViewController` if a selection has already been made:
+
+  - ```swift
+      @IBSegueAction func selectRoomType(_ coder: NSCoder) -> SelectRoomTypeTableViewController? {
+          let selectRoomTypeController = SelectRoomTypeTableViewController(coder: coder)
+          selectRoomTypeController?.delegate = self
+          selectRoomTypeController?.roomType = roomType
+       
+          return selectRoomTypeController
+      }
+    ```
+
+- You've now set up your custom protocol. Here's a review of how it works to communicate the user's choice of room type:
+  1. The user taps a cell to make a selection, triggering `didSelectRow`.
+  2. The `tableView(_:didSelectRowAt:)` method calls the delegate method `selectRoomTypeTableViewController(_:didSelect:)`, using two things: 
+     1. the receiver stored in the delegate property (your `AddRegistrationTableViewController` instance) 
+     2. and the index path to the selected room type (which will be used as the parameter of the `selectRoomTypeTableViewController(_:didSelect:)` method).
+  3. In the `AddRegistrationTableViewController`, the `selectRoomTypeTableViewController(_:didSelect:)` method provides access to the room type parameter and updates the `AddRegistrationTableViewController` property that's holding the selected room type. This is the implementation of the method called in step 2.
+- Before you test your app, don't forget to add the logic to print the room selection when the Done button is tapped:
+
+  - ```swift
+      @IBAction func doneBarButtonTapped(_ sender: UIBarButtonItem) {
+          //...
+          let roomChoice = roomType?.name ?? "Not Set"
+          //...
+          print("roomType: \(roomChoice)")
+      }
+    ```
+
+- Build and run your app. You should now see your completed form, and you should be able to select a room type and see it displayed in both table views.
