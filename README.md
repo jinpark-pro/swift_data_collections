@@ -3583,3 +3583,54 @@ Because your static table view doesn't rely on a data source, it won't “load�
     ```
 
 - Build and run your app. You should now see your completed form, and you should be able to select a room type and see it displayed in both table views.
+
+#### Create a New Model Object Instance
+
+- Now that you have an elegant and orderly custom input screen, you'll need to use the entered data to generate your model object. For Hotel Manzana, you'll create a new Registration object when the staff submits the guest information. This model object can be stored using Codable or converted to JSON to transfer to a web server. (You'll learn about JSON in the next unit.) And then it can be passed around to view controllers for manipulation and display.
+- An easy way to make a model object instance is to add a computed property to the table view controller of your form. This property will create and return a model object from all the view outlets and view controller properties. You can then use the computed property in an unwind segue to add the new model object to your storage system.
+- If you haven't already added the definition for the Registration struct introduced at the beginning of this lesson, add a new Swift file to the project named "Registration" and add the struct definition:
+
+  - ```swift
+      struct Registration {
+          var firstName: String
+          var lastName: String
+          var emailAddress: String
+       
+          var checkInDate: Date
+          var checkOutDate: Date
+          var numberOfAdults: Int
+          var numberOfChildren: Int
+       
+          var wifi: Bool
+          var roomType: RoomType
+      }
+    ```
+
+- In your `AddRegistrationTableViewController`, add a computed property called registration that returns a `Registration?`. Use the code from the `doneBarButtonTapped(_:)` method to help you initialize a new registration object. If the `roomType` isn't set, return `nil`; otherwise, return a valid Registration object. Here's how to work that:
+
+  - ```swift
+      var registration: Registration? {
+          guard let roomType = roomType else { return nil }
+       
+          let firstName = firstNameTextField.text ?? ""
+          let lastName = lastNameTextField.text ?? ""
+          let email = emailTextField.text ?? ""
+          let checkInDate = checkInDatePicker.date
+          let checkOutDate = checkOutDatePicker.date
+          let numberOfAdults = Int(numberOfAdultsStepper.value)
+          let numberOfChildren = Int(numberOfChildrenStepper.value)
+          let hasWifi = wifiSwitch.isOn
+       
+          return Registration(firstName: firstName,
+                              lastName: lastName,
+                              emailAddress: email,
+                              checkInDate: checkInDate,
+                              checkOutDate: checkOutDate,
+                              numberOfAdults: numberOfAdults,
+                              numberOfChildren: numberOfChildren,
+                              wifi: hasWifi,
+                              roomType: roomType)
+      }
+    ```
+
+- At this point in the Hotel Manzana app, you'll be able to quickly generate your model object — collecting all the data submitted through the input screen — by simply referencing the `registration` property.
