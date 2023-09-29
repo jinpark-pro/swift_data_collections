@@ -3634,3 +3634,64 @@ Because your static table view doesn't rely on a data source, it won't “load�
     ```
 
 - At this point in the Hotel Manzana app, you'll be able to quickly generate your model object — collecting all the data submitted through the input screen — by simply referencing the `registration` property.
+
+#### Incorporate the Form into a Workflow
+
+- Your input screens are very nice. But if you think about how the hotel staff might use this app, you can imagine that these input screens represent a small part of their overall workflow. For example, after the staff registers a guest, they'd probably like to see and access the information entered.
+- These registration objects might be displayed in a table view for quick reference. To incorporate your `AddRegistrationTableViewController` into a full app workflow, you'll be adding a table view that displays the registrations entered and allows the staff to access the `AddRegistrationTableViewController` input screen you built.
+- Back in your storyboard, add a navigation controller from the Object library. Set the initial view controller to be the new navigation controller. This table view will display all the registrations that the staff have submitted. Add a Cocoa Touch Class file called “RegistrationTableViewController.swift” and update the new table view controller's identity to match the new class.
+- To display each registration, select the prototype cell and set its Style to `Subtitle` and its identifier to `RegistrationCell`. In your new `RegistrationTableViewController` scene, set the navigation item title to Registrations and add an Add bar button item to the right slot of the navigation bar. To display the input screen, add a modal segue from the Add bar button to the navigation controller of the `AddRegistrationTableViewController`.
+- In the `RegistrationTableViewController`, add a property that holds an array of Registration objects and set its default value to be empty: `var registrations: [Registration] = []`
+- Use the array of Registration objects to implement the data source for the `RegistrationTableViewController`. The registration cells will display the full name of the guest on the title label. The subtitle label will display the check-in date, the check-out date, and the room type. Before using the following code, practice implementing the data source on your own.
+- Here's the code for the registration table view data source:
+
+  - ```swift
+      override func numberOfSections(in tableView: UITableView) -> Int {
+          return 1
+      }
+       
+      override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+          return registrations.count
+      }
+       
+      override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+          let cell = tableView.dequeueReusableCell(withIdentifier: "RegistrationCell", for: indexPath)
+       
+          let registration = registrations[indexPath.row]
+       
+          var content = cell.defaultContentConfiguration()
+          content.text = registration.firstName + " " + registration.lastName
+          content.secondaryText = (registration.checkInDate..<registration.checkOutDate).formatted(date:​ .numeric, time: .omitted) + ": " + registration.roomType.name
+          cell.contentConfiguration = content
+       
+          return cell
+      }
+    ```
+
+- The assignment of the `content.secondaryText` is using the formatted method to format multiple dates. In this case, you're using a range to capture and format both `checkInDate` and `checkOutDate`. It's a bit cleaner than writing the same formatting code for both dates separately and concatenating the strings.
+- Next, add an unwind segue method to `RegistrationTableViewController` so that the `AddRegistrationTableViewController` can return to the `RegistrationTableViewController`. In the implementation, get the source view controller (`AddRegistrationTableViewController`) to access the registration property. If this property isn't `nil`, you'll add it to the registrations array and reload the table view:
+
+  - ```swift
+      @IBAction func unwindFromAddRegistration(unwindSegue: UIStoryboardSegue) {
+          guard let addRegistrationTableViewController =
+            unwindSegue.source as? AddRegistrationTableViewController,
+          let registration = addRegistrationTableViewController.registration else
+            { return }
+       
+          registrations.append(registration)
+          tableView.reloadData()
+      }
+    ```
+
+- For the last step, you'll need to adjust the actions sent by the Done bar button on the `AddRegistrationTableViewController`. In the storyboard, select the Done button and open the Connections inspector. In Sent Actions, click the small “x” to delete the action. Instead, hook the unwind segue to the Done button by Control-dragging from the button to the Exit icon of the view controller and choosing `unwindFromAddRegistrationWithUnwindSegue`.
+- At this point, you don't need the `doneBarButtonTapped(_:)` method — so go ahead and delete it. (The purpose of the `doneBarButtonTapped(_:)` method was to allow you to test your input screen as you were building it. Now that you've created the Registration object, you no longer need the print statements.)
+- What if the user wants to cancel an entry? Drag a bar button item from the Object library to the left bar button slot in the `AddRegistrationTableViewController` scene. Set its System Item to `Cancel`. Add an action that will dismiss the view controller when the button is tapped:
+
+  - ```swift
+      @IBAction func cancelButtonTapped(_ sender: Any) {
+          dismiss(animated: true, completion: nil)
+      }
+    ```
+
+- Build and run your app. You should now be able to add new registration objects and see them appear in the table view.
+- Nice work! User input can become very difficult to handle. Learning to properly gather and manage this information is an incredibly important part of becoming an app developer. As you come up with your own app ideas, be sure to consider how you can use what you learned in this lesson to better handle user input.
