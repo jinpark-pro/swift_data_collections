@@ -3695,3 +3695,10 @@ Because your static table view doesn't rely on a data source, it won't â€œloadâ€
 
 - Build and run your app. You should now be able to add new registration objects and see them appear in the table view.
 - Nice work! User input can become very difficult to handle. Learning to properly gather and manage this information is an incredibly important part of becoming an app developer. As you come up with your own app ideas, be sure to consider how you can use what you learned in this lesson to better handle user input.
+
+#### Complex Input Screens - Challenge
+
+- Update the `RegistrationTableViewController` with a segue that allows the user to select and view the details of a registration in the `AddRegistrationTableViewController` scene.
+Update the AddRegistrationTableViewController to disable or enable the Done button based on having all of the required information for a reservation. (Hint: Disable the button if self.registration is nil.)
+- Add a new section to the table view to display a summary of charges that updates dynamically as the staff enters information.
+  - <img src="./resources/complex_input_challenge.png" alt="Complex Input Screens Challenge" width="300" />
