@@ -3699,6 +3699,64 @@ Because your static table view doesn't rely on a data source, it won't â€œloadâ€
 #### Complex Input Screens - Challenge
 
 - Update the `RegistrationTableViewController` with a segue that allows the user to select and view the details of a registration in the `AddRegistrationTableViewController` scene.
-Update the AddRegistrationTableViewController to disable or enable the Done button based on having all of the required information for a reservation. (Hint: Disable the button if self.registration is nil.)
+- Update the AddRegistrationTableViewController to disable or enable the Done button based on having all of the required information for a reservation. (Hint: Disable the button if self.registration is nil.)
 - Add a new section to the table view to display a summary of charges that updates dynamically as the staff enters information.
   - <img src="./resources/complex_input_challenge.png" alt="Complex Input Screens Challenge" width="300" />
+
+#### Lab - Employee Roster
+
+- The objective of this lab is to create a screen that accepts complex user input. You'll use a date picker and a custom delegate to build an employee roster that keeps track of employee information.
+- The majority of the app has already been built. You'll find a starter project in your student resources folder. Take a few minutes to look through the project and see what has already been implemented. Go ahead and run the app. You might notice that you can add a new employee and edit existing employees, but you can't edit an employee's birthday or type. You'll add functionality to these fields as you go through the lab.
+
+##### Step 1. Add Birthday Input
+
+- To capture or edit an employee's birthday, you'll need a date picker. In the storyboard, add a third cell to the first section of the `EmployeeDetailTableViewController`. 
+  - Drag a date picker to this cell and constrain its top, leading, trailing, and bottom edges to the cell. Set the date picker's Preferred Style to `Wheels` and Mode to `Date` in the Attributes inspector. Create an outlet from the date picker to `EmployeeDetailTableViewController` called `dobDatePicker`.
+- You'll want to hide the cell until the user selects it. Start by adding a property to `EmployeeDetailTableViewController` that keeps track of whether the picker should be visible. 
+  - Add `isEditingBirthday` and set its initial value to `false`. Add a `didSet` to the property that calls `tableView.beginUpdates()` and `tableView.endUpdates()`. These steps will ensure that the table view calls its delegate methods whenever the value of `isEditingBirthday` changes.
+- In addition, you'll need to expand or hide the date picker cell every time the value of `isEditingBirthday` changes. 
+  - Start by declaring the table view delegate method `tableView(_:heightForRowAt:)`. In the body of the method, return the height for the cell at the specified index path. 
+  - If `indexPath` is equal to the date picker cell's index path and `isEditingBirthday` is `false`, return `0` to hide the picker. Otherwise return `UITableView.automaticDimension` to allow the cells to size themselves.
+- Has the user selected the birthday cell on the table view? You now need a way to change the value of `isEditingBirthday` based on the user's selection. 
+  - Start by declaring the table view delegate method `tableView(_:didSelectRowAt:)`. In the body of the method, deselect the selected row (regardless of the row) using `tableView.deselectRow(at: indexPath, animated: true)`. 
+  - If the index path is the same as the date label's index path, you'll set `isEditingBirthday` to the opposite of what it was previously using `isEditingBirthday.toggle()`. This is a good place to change the text color of the `dobLabel` to `.label` and to use the `formatted` method on the date to set the text on `dobLabel` to the date on the date picker.
+- Now, open the storyboard and the assistant editor and create an action from the date picker to `EmployeeDetailTableViewController`. 
+  - Set the Event to `Value Changed` so that the action will be called any time the user changes the date on the date picker. In the body of this method, set the text of `dobLabel` to the new selected date.
+- Finally, look at the action method saveButtonTapped. Currently, it creates a new Employee object using `Date()`, which returns the current date. Change this method to use the date from the date picker.
+- Run the app. Ensure that you can now open the date picker and that the selected date is saved to the new Employee object.
+
+  - ```swift
+      @IBOutlet var dobDatePicker: UIDatePicker!
+      
+      var isEditingBirthday: Bool = false {
+          didSet {
+              tableView.beginUpdates()
+              tableView.endUpdates()
+          }
+      }
+
+      @IBAction func saveButtonTapped(_ sender: Any) {
+          // ...
+          let employee = Employee(name: name, dateOfBirth: dobDatePicker.date, employeeType: .exempt)
+          // ...
+      }
+
+      @IBAction func dobDatePickerChanged(_ sender: UIDatePicker) {
+          dobLabel.text = dobDatePicker.date.formatted(date: .numeric, time: .omitted)
+      }
+      override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+          if indexPath == IndexPath(row:2, section: 0) && isEditingBirthday == false {
+              return 0
+          } else {
+              return UITableView.automaticDimension
+          }
+      }
+
+      override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+          tableView.deselectRow(at: indexPath, animated: true)
+          if indexPath == IndexPath(row: 1, section: 0) {
+              isEditingBirthday.toggle()
+              dobLabel.textColor = .label
+          }
+      }
+    ```
