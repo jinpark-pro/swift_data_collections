@@ -3805,7 +3805,7 @@ In your new table view controller, set the cell Style to `Basic` and give the ce
           }
 
           override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-              let cell = tableView.dequeueReusableCell(withIdentifier: "employeeCellTypes", for: indexPath)
+              let cell = tableView.dequeueReusableCell(withIdentifier: "employeeTypeCell", for: indexPath)
 
               let type = EmployeeType.allCases[indexPath.row]
               
@@ -3829,3 +3829,85 @@ In your new table view controller, set the cell Style to `Basic` and give the ce
           }
       }
     ```
+
+##### Step 3. Add Custom Delegate for Employee Type
+
+- But wait. Your selections in the employee type screen still don't transfer back to the previous screen. You'll need to create a custom delegate protocol to make this work. Declare a protocol named `EmployeeTypeTableViewControllerDelegate` in the `EmployeeTypeTableViewController` file, above its class declaration.
+- Inside your new protocol, declare a method `employeeTypeTableViewController(_:didSelect:)` that takes the controller and an `EmployeeType` object and doesn't return anything. Any object that conforms to your custom protocol will be forced by the compiler to implement this method.
+
+  - ```swift
+      protocol EmployeeTypeTableViewControllerDelegate: AnyObject {
+          func employeeTypeTableViewController(_ controller: EmployeeTypeTableViewController, didSelect employeeType: EmployeeType)
+      }
+    ```
+
+- In `EmployeeTypeTableViewController`, add a property delegate of type `EmployeeTypeTableViewControllerDelegate?`: `var delegate: EmployeeTypeTableViewControllerDelegate?`
+- In `tableView(_:didSelectRowAt:)`, call the delegate's `didSelect(employeeType:)` method after the code that sets the `employeeType` property.
+
+  - ```swift
+      override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+          tableView.deselectRow(at: indexPath, animated: true)
+          let employeeType = EmployeeType.allCases[indexPath.row]
+          self.employeeType = employeeType
+          delegate?.employeeTypeTableViewController(self, didSelect: employeeType)
+          tableView.reloadData()
+      }
+    ```
+
+- You now have code that will tell the delegate that a new employee type was selected, but you have no code assigning the delegate. The delegate will be the employee detail screen that presented the employee type screen. Create an `@IBSegueAction` with no arguments for the segue between the `EmployeeDetailTableViewController` and `EmployeeTypeTableViewController` scenes named `showEmployeeTypes`. In its implementation, initialize a new instance of `EmployeeTypeTableViewController` with the provided `coder`, set the delegate property to `self`, and return the new instance. 
+
+  - ```swift
+      @IBSegueAction func showEmployeeType(_ coder: NSCoder) -> EmployeeTypeTableViewController? {
+          let employeeTypeTableViewController = EmployeeTypeTableViewController(coder: coder)
+          employeeTypeTableViewController?.delegate = self
+          
+          return employeeTypeTableViewController
+      }
+    ```
+
+- This should cause the compiler to throw an error, because `EmployeeDetailTableViewController` doesn't conform  to `EmployeeTypeTableViewControllerDelegate`. Fix this by adding `EmployeeTypeTableViewControllerDelegate` to the class declaration and implementing the `employeeTypeTableViewController(_:didSelect:)` method.
+- `EmployeeDetailTableViewController` will also need a property `employeeType` of type `EmployeeType?` to keep track of the selected employee type. Add this now.
+- In `employeeTypeTableViewController(_:didSelect:)`, assign the `employeeType` passed into the method to `self.employeeType`, update the text of `employeeTypeLabel`, and make sure the text color of `employeeTypeLabel` is now `.black` (since an employee type has been selected).
+
+  - ```swift
+      class EmployeeDetailTableViewController: UITableViewController, UITextFieldDelegate, EmployeeTypeTableViewControllerDelegate {
+          func employeeTypeTableViewController(_ controller: EmployeeTypeTableViewController, didSelect employeeType: EmployeeType) {
+              self.employeeType = employeeType
+              employeeTypeLabel.text = employeeType.description
+              employeeTypeLabel.textColor = .black
+          }
+
+          var employeeType: EmployeeType?
+
+          // ...
+
+          override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+              guard let employeeTypeTableViewController = segue.destination as? EmployeeTypeTableViewController else {return}
+              
+              employeeTypeTableViewController.employeeType = employee?.employeeType
+              employeeTypeTableViewController.delegate = self
+          }
+    ```
+
+- In the `saveButtonTapped` action method, unwrap `employeeType` just after the code that unwraps the text from `nameTextField`. Then pass the unwrapped `EmployeeType` object into the initializer that's creating a new `Employee`.
+
+  - ```swift
+      @IBAction func saveButtonTapped(_ sender: Any) {
+          guard let name = nameTextField.text, let employeeType = employeeType else {return}
+          
+          let employee = Employee(name: name, dateOfBirth: dobDatePicker.date, employeeType: employeeType)
+          delegate?.employeeDetailTableViewController(self, didSave: employee)
+      }
+    ```
+
+- Finally, since you've updated the requirements to save, you should update the `updateSaveButtonState()` method to only enable the Save button if `employeeType` contains a value. Also, call `updateSaveButtonState()` within `employeeTypeTableViewController(_:didSelect:)`.
+
+  - ```swift
+      private func updateSaveButtonState() {
+          let shouldEnableSaveButton = (nameTextField.text?.isEmpty == false) && ((employeeType?.hashValue) != nil)
+          saveBarButtonItem.isEnabled = shouldEnableSaveButton
+      }
+    ```
+
+- Run the app and confirm that you can create a full Employee object that stores an employee's name, birthday, and type.
+- Congratulations! You added complex input features to the Employee Roster, giving the user a much smoother and simpler experience. Be sure to save your final product to your project folder.
