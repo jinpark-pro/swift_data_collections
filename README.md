@@ -3911,3 +3911,19 @@ In your new table view controller, set the cell Style to `Basic` and give the ce
 
 - Run the app and confirm that you can create a full Employee object that stores an employee's name, birthday, and type.
 - Congratulations! You added complex input features to the Employee Roster, giving the user a much smoother and simpler experience. Be sure to save your final product to your project folder.
+
+##### Challenge - User Experience Enhancement
+
+- The date of the birth date picker defaults to today's date, but it's highly unlikely that you'll be adding an employee who was just born! What default values could reduce the required scrolling of the date picker? Hint: Employees are probably between the ages of 16 and 65 and can be born in any month and on any day.
+
+  - ```swift
+      func updateView() {
+          if let employee = employee {
+              // ...
+          } else {
+              navigationItem.title = "New Employee"
+              dobDatePicker.maximumDate = Calendar.current.date(byAdding: .year, value: -16, to: Date())
+              dobDatePicker.minimumDate = Calendar.current.date(byAdding: .year, value: -65, to: Date())
+          }
+      }
+    ```
