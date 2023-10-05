@@ -3927,3 +3927,38 @@ In your new table view controller, set the cell Style to `Basic` and give the ce
           }
       }
     ```
+
+### Guided Project: List
+
+- In this unit, you learned how to display lists using table views, build screens that allow for complex input, and save data to disk. In this guided project, you'll combine those skills to create an app that manages a list and stores it away for later retrieval. You can add, modify, and delete items in the list using a custom input screen. Depending on what type of items are on your list, you can choose from various controls to give your users the best possible form of input.
+
+#### Part One - Project Planning
+
+- Think of a collection of items that you'd like to manage with an app. Maybe you have a collection of baseball cards that you trade with your friends, and you need an easy way to add and remove cards from the list. Or maybe you want to keep track of homework assignments: What are their due dates, which have you finished, and which have been turned in to the teacher?
+- In this guided project, you'll work with a to-do list of action items. Each to-do has a due date and a set of notes; it can be marked as complete, but remains in the list until the user deletes it. A more advanced to-do manager might include ways to sync the list across multiple devices or to notify the user as the due date approaches, but those capabilities are beyond the scope of this unit. You'll find examples of ways to enhance your app at the end of the guided project.
+- Features
+  - Nearly every app that manages a list of items will handle the following actions:
+    1. Display the list
+    2. Add items to the list
+    3. Edit existing items on the list
+    4. Delete items from the list
+    5. Automatically save the list to disk
+- What type of items will the list display? In most cases, your answer will affect the complexity of the second and third features. For example, if your app will manage a baseball card collection, it might need to store an image of each card, the card's quality, the card's market value, and the price paid for the card. The more properties you include per item, the more methods of input you'll need to build into your app.
+- **Workflow**
+  - What iOS apps include similar features to the list above? Take a look at the built-in Mail app. It displays a list of email messages and provides an easy way to delete messages. On the list screen, there's a button to create a new email, which will be added to the Sent folder once it's been sent. If you tap an email in the list of drafts, the interface to edit the draft is identical to the interface for creating a new email message.
+  - Contacts is another app with a similar feature set. Contacts are displayed in a table, and at the top of the table view is a button for adding a new contact. Tapping a name in the table shows more details about each contact and provides an interface for editing contact info.
+  - As you can see, there's nothing revolutionary about this type of app. Even though you might like to create something totally fresh and unique, it's actually a better idea to follow an approach that's easy and familiar to your users.
+  - The app you'll build should adhere to these simple specs:
+    - When the app opens, it displays a list of items.
+    - The list screen has controls for adding and deleting items on the list.
+    - Tapping an item displays more details about the item.
+    - The detail screen permits editing.
+    - The app saves the latest version of the list.
+- **Controllers**
+  - Are you ready to imagine the interface elements and how you'll put them together?
+  - Since you'll be displaying items in a table view, you'll use a `UITableViewController` to manage the displaying, editing, and deletion of cells. What about a controller to manage the collection of items? You could create an `ItemController`, or something similar, to manage the array. But since this app will have a limited number of screens, the `UITableViewController` should be able to handle the collection that its table view represents. The same controller will be responsible for saving the items to disk whenever the list is updated — after inserting, editing, or deleting.
+  - One last thing: If you include an image for each item, you'll need a `UIImagePickerController` to allow the user to add a photo to the table or to edit an existing one. In any case, your interface won't have more than a few controllers.
+- **Views**
+  - Depending on how much information you choose to display in each table cell, you may need to create a `UITableViewCell` subclass so that you can add additional labels, images, or controls to the cell. On the screen for adding and editing list items, you'll use a set of iOS input controls that best correspond to the item's properties. For example, if each item in the collection has a date associated with it, you'll want to use a date picker. If the item needs a description, you'll want to include a text field or text view, depending on the length of the description.
+- **Models**
+  - Your app is centered around one model — the particular type of item it will display and manage. This will be a ToDo model that will include a title, a due date, some extra notes, and a way to mark each to-do as complete. Since your collection must be stored to disk for future retrieval, your objects will need to adopt the Codable protocol that you learned about in this unit.
