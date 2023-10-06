@@ -3971,3 +3971,24 @@ In your new table view controller, set the cell Style to `Basic` and give the ce
 - If you were to build and run the app, you'd still see the single white screen. To fix this, adjust the initial view controller in the storyboard by dragging the entry point arrow to the navigation controller. Once you've made this connection, it's safe to delete the storyboard's original view controller.
 - Now, if you run your app, you'll see an empty table with the title “Root View Controller” in the navigation bar. You can adjust the title by selecting the table view controller's navigation item in the Document Outline and updating its title in the Attributes inspector. Change the title to `My To-Dos`.
 - Select the navigation controller's navigation bar and check the `Prefers Large Titles` box in the Attributes inspector. This will make your title display left-aligned and in a larger font.
+- **Define the Model**
+  - Before you can begin displaying your items in a table, you'll need to define the model. From the Xcode menu bar, choose File > New > File, then select "Swift File." You can name the file anything you like, but it's a good practice to give it the same name as your model. In this guided project, you'll use a type called `ToDo`.
+  - Open the Swift file and create your ToDo struct: `struct ToDo { }`
+  - What properties will each of your model objects require? If the model object is Homework, it may have a dueDate property of type Date and a subject property used in a custom Subject enumeration. If your model includes a UIImage property, you'll need to change the import Foundation line at the beginning of the Swift file to import UIKit. (The Foundation framework doesn't contain any platform-specific classes, and UIImage is specific to iOS.)
+  - An example of the properties for a to-do list are shown below.
+
+    - ```swift
+        struct ToDo: Equatable {
+            let id = UUID()
+            var title: String
+            var isComplete: Bool
+            var dueDate: Date
+            var notes: String?
+         
+            static func ==(lhs: ToDo, rhs: ToDo) -> Bool {
+                return lhs.id == rhs.id
+            }
+        }
+      ```
+
+  - Note the use of `UUID()`. This is a system-provided type that is a universally unique value that can be used to identify types. Anytime you create one, you're theoretically guaranteed to get a different value, making it a reliable unique identifier. Apple's implementation conforms to [RFC 4122 version 4](https://datatracker.ietf.org/doc/html/rfc4122), if you're interested in learning more.
