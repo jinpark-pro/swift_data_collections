@@ -3992,3 +3992,35 @@ In your new table view controller, set the cell Style to `Basic` and give the ce
       ```
 
   - Note the use of `UUID()`. This is a system-provided type that is a universally unique value that can be used to identify types. Anytime you create one, you're theoretically guaranteed to get a different value, making it a reliable unique identifier. Apple's implementation conforms to [RFC 4122 version 4](https://datatracker.ietf.org/doc/html/rfc4122), if you're interested in learning more.
+- **Configure the Table View Controller**
+  - Now that you've defined the model, you need to create the `UITableViewController` subclass to display a collection of models. Create the new subclass and name it something that lends itself to the list you're creating. If you're not deviating from these instructions, name it `ToDoTableViewController`.
+  - In addition to displaying the list in the table, the table view controller will manage the collection of items. Create an empty array of your model objects inside the class definition: `var toDos = [ToDo]()`
+  - Does your table view have multiple sections to consider? In the Contacts app, cells are separated into sections based on the first letter of the first name or the first letter of the last name. In Mail, there are no separate sections for cells. Your app is probably more like Mail, so all cells will be displayed in a single section — hence, you can delete the `numberOfSections(in:)` delegate method.
+  - If all model objects will be displayed in a cell and all cells are in the same section, `tableView(_:numberOfRowsInSection:)` can simply return the number of objects in your collection. In other words, there should be one table view cell for each entry in your array of models.
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+            return toDos.count
+        }
+      ```
+
+  - The next method to override is `tableView(_:cellForRowAt:)`. This method is called whenever a cell is about to be displayed onscreen, and the method provides you the IndexPath that you'll use to determine which cell you're dealing with. Ignoring custom cells for now, you'll follow the standard implementation for this method that you learned in previous lessons:
+    1. Dequeue a cell for the given index path.
+    2. Get the model out of the array that corresponds to the cell being displayed.
+    3. Update the cell's properties appropriately and return the cell from the method.
+  - In the following code snippet, a standard `UITableViewCell` is dequeued, and its textLabel text is set to the title property of the corresponding ToDo. Even though the cell doesn't display other properties of the ToDo, it will help you verify that you've set up the table view controller correctly.
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+            let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoCellIdentifier", for: indexPath)
+
+            let toDo = toDos[indexPath.row]
+            var content = cell.defaultContentConfiguration()
+            content.text = toDo.title
+            cell.contentConfiguration = content
+            return cell
+        }
+      ```
+
+  - Your table view controller subclass is not being utilized yet, because the storyboard is using a regular `UITableViewController`. Open the Main storyboard and select the table view controller. Using the Identity inspector, set the Custom Class to the `UITableViewController` subclass — in this case, `ToDoTableViewController`.
+  - Now try building and running. You should see your table view controller inside a navigation controller with your own custom title.
