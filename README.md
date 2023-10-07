@@ -4024,3 +4024,45 @@ In your new table view controller, set the cell Style to `Basic` and give the ce
 
   - Your table view controller subclass is not being utilized yet, because the storyboard is using a regular `UITableViewController`. Open the Main storyboard and select the table view controller. Using the Identity inspector, set the Custom Class to the `UITableViewController` subclass — in this case, `ToDoTableViewController`.
   - Now try building and running. You should see your table view controller inside a navigation controller with your own custom title.
+- **Supply Initial Data**
+  - The feature list for this project includes adding items to your collection and saving them to disk. But it doesn't make sense to write these features before you can see anything in the table. For now, you can populate the ToDo array with some initial data if no data is retrieved from disk.
+  - First, write a static method in the ToDo structure that retrieves the array of items stored on disk, if there are any, and returns them. You'll write the body of this method later, when it comes time to store and retrieve items from disk. For now, simply return nil.
+  
+    - ```swift
+        static func loadToDos() -> [ToDo]?  {
+            return nil
+        }
+      ```
+
+  - Next, write a static method that populates the array with sample data. You can create as many model objects as you wish, but don't go crazy — the user will eventually clear out these fake models to make room for their actual data. And don't worry about the values you give each property. With sample data, you just need enough information to distinguish one item from the next.
+  - In this example, each ToDo has been given a different title property, since the cell will need to display this property:
+
+    - ```swift
+        static func loadSampleToDos() -> [ToDo] {
+            let toDo1 = ToDo(title: "To-Do One", isComplete: false, dueDate: Date(), notes: "Notes 1")
+            let toDo2 = ToDo(title: "To-Do Two", isComplete: false, dueDate: Date(), notes: "Notes 2")
+            let toDo3 = ToDo(title: "To-Do Three", isComplete: false, dueDate: Date(), notes: "Notes 3")
+         
+            return [toDo1, toDo2, toDo3]
+        }
+      ```
+
+  - Now that you have some model data to see, build and run your project. You'll find that the table still isn't displaying any information. Why not?
+  - As you learned in earlier units, breakpoints are excellent for debugging problems, because they let you inspect the code as it's being executed. Try placing breakpoints in two of your `UITableViewController` methods: `tableView(_:numberOfRowsInSection) and tableView(_:cellForRowAt)`. Then run your app again. What do you notice?
+  - The first method, which determines how many cells should be displayed, is called. But there are no items in the array, so the method returns 0 — and the second method is never called. Had the first method returned 3, `tableView(_:cellForRowAt:)` would have been called three times, and three items would have been displayed.
+  - What you'll need to do is add some conditional logic inside viewDidLoad(). Try to load items from disk; if there aren't any, use the `loadSampleToDos()` method to fill the array with data:
+
+    - ```swift
+        override func viewDidLoad() {
+            super.viewDidLoad()
+         
+            if let savedToDos = ToDo.loadToDos() {
+                toDos = savedToDos
+            } else {
+                toDos = ToDo.loadSampleToDos()
+            }
+        }
+      ```
+
+  - One more thing. If you build and run the app now, it will crash with an assertion failure: Terminating app due to uncaught exception 'NSInternalInconsistencyException', reason: 'unable to dequeue a cell with identifier ToDoCellIdentifier - must register a nib or a class for the identifier or connect a prototype cell in a storyboard'. In `tableView(_:cellForRowAt:)`, the app was unable to dequeue a cell with the specified identifier, because the identifier hasn't been added to the storyboard.
+  - Open the Main storyboard and select the prototype cell in the table view. In the Attributes inspector, use the same identifier string that you supplied in code. With the identifier in place, the sample data should now display.
