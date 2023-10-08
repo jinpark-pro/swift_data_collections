@@ -4066,3 +4066,35 @@ In your new table view controller, set the cell Style to `Basic` and give the ce
 
   - One more thing. If you build and run the app now, it will crash with an assertion failure: Terminating app due to uncaught exception 'NSInternalInconsistencyException', reason: 'unable to dequeue a cell with identifier ToDoCellIdentifier - must register a nib or a class for the identifier or connect a prototype cell in a storyboard'. In `tableView(_:cellForRowAt:)`, the app was unable to dequeue a cell with the specified identifier, because the identifier hasn't been added to the storyboard.
   - Open the Main storyboard and select the prototype cell in the table view. In the Attributes inspector, use the same identifier string that you supplied in code. With the identifier in place, the sample data should now display.
+
+#### Part Three - Add and Delete Controls
+
+- Your app can now display data. It's time to create controls so that users can add items to the list and delete existing ones. To add items, you can use the + button — which you've probably noticed in the upper-right corner of the navigation bar on many iOS apps. A tap of the button will modally present a view controller that allows the user to enter model data. For quick removal of an item, you can use a cell's swipe-to-delete functionality. But you might also want to place an Edit button in the upper-left corner of the navigation bar, in case the user isn't familiar with swipe-to-delete. More on this later.
+- **Add Items**
+  - Open the Main storyboard and select the table view controller. Drag a bar button item from the Object library to the upper-right corner of the navigation bar's navigation item. To set the button to a + symbol instead of text, open the Attributes inspector and change the `System Item` to `Add`.
+  - Tapping the + button should modally present a new view controller, which will use a static table view contained in a navigation controller. Drag a new navigation controller from the Object library onto the canvas. As before, this step will add both a navigation controller and a table view controller.
+  - Control-drag from the + button to the new navigation controller and choose `Present Modally` in the popover. Take a moment to update the title of the new table view controller, making it clear that it's for creating new items. In this project, the title is “New To-Do.”  Select the new table view controller's navigation item and, from the `Large Title` dropdown, select `Never`. This will help make it clear to the user that this page is a sub-page of the primary to-do list.
+- **Delete Items**
+  - To add swipe-to-delete functionality to your table view controller's cells, you'll need to override the `tableView(_:canEditRowAt:)` method. You can use the `indexPath` property to choose which cells are editable. In this app, since all cells can be edited, you'll simply return `true`.
+  - Open the `ToDoTableViewController` class definition and add (or uncomment) the following implementation:
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+            return true
+        }
+      ```
+
+  - When the cell is swiped, a red Delete button appears to the right of the cell. You'll need to configure exactly how deletion will take place. Override the `tableView(_:commit:forRowAt:)` method. Inside its implementation, verify that the Delete button triggered the method call, then delete the model from the array and from the table view.
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+            if editingStyle == .delete {
+                toDos.remove(at: indexPath.row)
+                tableView.deleteRows(at: [indexPath], with: .automatic)
+            }
+        }
+      ```
+
+  - There's one last thing to complete the delete functionality: an Edit button. You could add a bar button item from the Object library and set its `System Item` property to `Edit`, but there's a better alternative. You can create an intelligent Edit button that will place the entire table view into editing mode, displaying - delete buttons to the left of each cell. When tapped, the button will switch its text from “Edit” to “Done” — and back again at the next tap.
+  - Add the following line of code to the viewDidLoad() method of your table view controller: `navigationItem.leftBarButtonItem = editButtonItem`
+  - Build and run your app and try clicking the Edit button. Notice how the button updates its title to Done and places the table view in edit mode. And when you tap a delete button, the item is removed from the collection. 
