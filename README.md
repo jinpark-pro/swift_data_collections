@@ -4104,7 +4104,7 @@ In your new table view controller, set the cell Style to `Basic` and give the ce
 - In this section, you'll learn the steps necessary for the user to populate the ToDo items. What kind of controls do you need to create? The answer depends on the properties you've included in your model.
 - Before you begin to think through the controls, you'll need to adjust some attributes of the table view (not the table view controller) of New To-Do Controller. In the Attributes inspector, switch the `Content` type from `Dynamic Prototypes` to `Static Cells`. Then switch the `Style` to `Grouped`, so that each section you add is clearly separated from the other sections.
 - How many sections will you need in the static table view? It depends on how many controls you'll add to the screen. You can easily adjust the number of sections using the `Sections` property in the Attributes inspector, then modify the `Rows` property in each section to change the number of rows. For the to-do list, each section will have only one row.
-- The result interface will be follow:
+- The result interface is as follow:
   - <img src="./resources/static_tableview_interface.png" alt="" width="200" />
 - **Save and Cancel Buttons**
   - After the user has entered a new item, they'll probably expect to tap a Save button to confirm its entry. Or, if they decide against an entry, they may look for a Cancel button. Whether saving or canceling, they'll expect to return to the table view.
@@ -4125,3 +4125,171 @@ In your new table view controller, set the cell Style to `Basic` and give the ce
   - To create this cell, select the section in the Document Outline and update its Header to “Notes.” Next, select the cell in the Document Outline and update its Row Height to `200`. Finally, drag a text view from the Object library onto the table view cell. Add four constraints to the text view that align its top, leading, bottom, and trailing edges to the edges of the cell. You can remove the placeholder text in text view using the Attributes inspector.
 - **Additional Controls**
   - The checkmark button, date picker, and text view are just a few of the controls that you could include in your list tracker app. For example, if your app is managing a collection of baseball cards, you might want a cell with a `UISegmentedControl` that allows the user to select the card's condition: Mint, Near Mint, Fair, etc. Or maybe you want to allow the user to associate an image with the model object, which would require a `UIImagePickerController` for selecting an image from their photo library. Refer to the “Controls in Action” and “System View Controllers” lessons if you need help configuring these controls.
+
+#### Part Five - Connect the Static Table View to Code
+
+- Take a step back to review everything you've built so far. You have a table view controller that displays a list of items, and you've defined the properties for the model. Items from the list can be deleted, and you've created the interface for inputting data. Now it's time to add some code to make the buttons, labels, and controls in the static table view update properly.
+- **Add View Controller Subclass**
+  - Start by creating an additional subclass of UITableViewController called `ToDoDetailTableViewController` so that you can add outlets to the controls, read their values, add actions, and create a new model with the data that the user supplies. Since this is a static table view, you can remove the data source methods provided by Xcode's template.
+    - Remove `numberOfSections(in:)` and `tableView(_:numberOfRowsInSection)`.
+  - Now return to the Main storyboard. Update the Custom Class of the static table view controller to match the name of the class you just created. With the class set properly, you can use the assistant editor to create outlets, one for each control or view that you'll update in code or read values from to create your model object.
+  - The outlets created for the ToDo cells are as follows:
+
+    - ```swift
+        @IBOutlet var titleTextField: UITextField!
+        @IBOutlet var isCompleteButton: UIButton!
+        @IBOutlet var dueDateLabel: UILabel!
+        @IBOutlet var dueDateDatePicker: UIDatePicker!
+        @IBOutlet var notesTextView: UITextView!
+      ```
+
+- **Disable the Save Button**
+  - Every ToDo requires a title. If there's no text in the title text field, the user shouldn't be able to save the item.
+  - To disable the Save button, start by creating an outlet in code: `@IBOutlet var saveButton: UIBarButtonItem!`
+  - Next, write a helper method that updates the Save button depending on whether or not text exists in the text field. If the string is empty, disable the button; otherwise, enable it:
+
+    - ```swift
+        func updateSaveButtonState() {
+            let shouldEnableSaveButton = titleTextField.text?.isEmpty == false
+            saveButton.isEnabled = shouldEnableSaveButton
+        }
+      ```
+
+  - You'll need to call this method in `viewDidLoad()` so that the button is disabled as soon as the user brings up the view controller to add a new item.
+
+    - ```swift
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            updateSaveButtonState()
+        }
+      ```
+
+  - The `updateSaveButtonState()` method should be called after each keyboard tap in the text field, ensuring that the state of the button is always up to date. Open the assistant editor, then Control-drag from the text field to an available spot in the view controller class definition. Create a new action called `textEditingChanged` that will fire whenever the `Editing Changed` control event takes place.
+  - In the definition of `textEditingChanged`, call `updateSaveButtonState()`:
+
+    - ```swift
+        @IBAction func textEditingChanged(_ sender: UITextField) {
+            updateSaveButtonState()
+        }
+      ```
+
+  - You've now prevented the user from creating a ToDo without a title.
+- **Dismiss Keyboard on Return**
+  - If you run your app at this point, you'll find that when you are editing the title text field, the keyboard blocks the notes text view and part of the date picker. It would be great if the user could tap the Return key on the keyboard to dismiss the keyboard, making it easier to interact with the other controls.
+  - With the assistant editor open, Control-drag again from the text field to an available spot in the view controller class definition. Create an action that will fire whenever the `Primary Action Triggered` control event takes place. In the case of `UITextField`, the action will fire when Return is tapped. When the action occurs, resign the text field from its role as the first responder:
+
+    - ```swift
+        @IBAction func returnPressed(_ sender: UITextField) {
+            sender.resignFirstResponder()
+        }
+      ```
+
+- **Switch Button Image**
+  - Is the ToDo complete or not? Earlier, you set two images to reflect isCompleteButton's Default state and its Selected state. When the user taps the button, you want the image to toggle between the empty circle and the checkmark image.
+  - Add an action to the button that changes the isSelected property whenever it's tapped: Control-drag from the button to an available space in the view controller definition and create an action called `isCompleteButtonTapped`.
+
+    - ```swift
+        @IBAction func isCompleteButtonTapped(_ sender: UIButton) {
+            isCompleteButton.isSelected.toggle()
+        }
+      ```
+
+  - Build and run the app. Clicking this button in the static table view will switch the isCompleteButton image from selected to unselected and vice versa.
+- **Update Date Label**
+  - The text for `dueDateLabel` should reflect the value the user entered in the date picker. As with the Save button, you'll update the value in `viewDidLoad()` so it's correct before being displayed to the user.
+  - You'll use the formatted method on Date to generate the date string. Previously you have used `formatted(date:time:)`, but you can have even greater control over the way the date is formatted by passing a style argument to provide detailed settings for each field. In this case you'll use the `.dateTime` style and customize it to display the date and time in the most succinct format possible. For example, using: `date.formatted(.dateTime.month(.defaultDigits).day().year(.twoDigits).hour().minute())` would cause "January 1st, 1970, at 12:00am" to appear as "1/1/70, 12:00 AM." Note that the order of the fields does not matter as they will be ordered according to the locale in use at runtime.
+  - Next, write a helper method in your detail table view controller to update `dueDateLabel` with the date passed into the method as a parameter. This method should be called in `viewDidLoad()` and whenever the date picker value changes:
+
+    - ```swift
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            updateDueDateLabel(date: dueDateDatePicker.date)
+            updateSaveButtonState()
+        }
+         
+        func updateDueDateLabel(date: Date) {
+            dueDateLabel.text = date.formatted(.dateTime.month(.defaultDigits).day().year(.twoDigits).hour().minute())
+        }
+      ```
+
+  - To create an action that's fired whenever the user changes the date picker, Control-drag from the date picker to an available space in the view controller class definition, then tie the action to the `Primary Action Triggered` event.
+
+    - ```swift
+        @IBAction func datePickerChanged(_ sender: UIDatePicker) {
+            updateDueDateLabel(date: sender.date)
+        }
+      ```
+
+  - Now the due date label will display a string of text that matches the value in the date picker.
+- **Update the Date Picker Starting Value**
+  - At the moment, the date picker displays the current date and time when the view controller is first displayed. Does that makes sense for something that hasn't been done? A more reasonable starting value might be 24 hours from now.
+  - In `viewDidLoad()`, you can set the date picker's date before updating the date label. The Date class makes it easy to calculate a date that's 24 hours in the future. Starting with `Date()`, which creates a date with the current date and time, you can use the `addingTimeInterval(_:)` method to add any number of seconds. How many seconds are in 24 hours? Multiply 24 by 60 to convert hours into minutes, then multiply by 60 again to convert minutes into seconds.
+
+    - ```swift
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            dueDateDatePicker.date = Date().addingTimeInterval(24*60*60)
+            updateDueDateLabel(date: dueDateDatePicker.date)
+            updateSaveButtonState()
+        }
+      ```
+
+  - Now when the static table view is displayed, the date picker will display a more logical starting value. Build and run the app to test your date picker.
+- **Expand and Collapse the Date Picker Cell**
+  - Having the date picker open all the time can make scrolling problematic for the table view. To avoid this, you can hide the picker until the user taps the date label cell, the same way you did in an earlier lesson.
+  - To set the height of each cell dynamically, you can override the `tableView(_:heightForRowAt:)` method, rather than using the values you supplied in Interface Builder.
+  - What's the right height for each cell? When a cell is visible, you should allow Auto Layout to handle the size, but when the date picker should be hidden, the height for that cell should be 0.
+  - Your app will need a way to know if the date picker is hidden or not. Its initial state should be hidden, so you'll add a Bool property to the detail table view controller class and set it to `true`. While you are there, add properties to store the index paths for the date label and date picker cells:
+
+    - ```swift
+        var isDatePickerHidden = true
+        let dateLabelIndexPath = IndexPath(row: 0, section: 1)
+        let datePickerIndexPath = IndexPath(row: 1, section: 1)
+        let notesIndexPath = IndexPath(row: 0, section: 2)
+      ```
+
+  - Next, you'll use a switch statement in the `tableView(_:heightForRowAt:)` delegate method to handle the date picker and notes index paths accordingly. In the case where the index path is the picker cell's and the picker is hidden, return `0`. For the notes index path, return `200`. Otherwise, you'll return `UITableView.automaticDimension` so that the other cells can size themselves.
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+            switch indexPath {
+            case datePickerIndexPath where isDatePickerHidden == true:
+                return 0
+            case notesIndexPath:
+                return 200
+            default:
+                return UITableView.automaticDimension
+            }
+        }
+      ```
+
+  - You'll also need to provide an estimated row height for each row in the table. In the case of the date picker index path, the value does not need to be exact-216 is close to the value in the Size inspector for the cell and is a good choice. For the notes index path, return `200`. Otherwise, you'll return `UITableView.automaticDimension`.
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, estimatedHeightForRowAt indexPath: IndexPath) -> CGFloat {
+            switch indexPath {
+            case datePickerIndexPath:
+                return 216
+            case notesIndexPath:
+                return 200
+            default:
+                return UITableView.automaticDimension
+            }
+        }
+      ```
+
+  - Next, your app will need to respond to the user tapping the Due Date cell, which will change `isDatePickerHidden` to `false`. You can override `tableView(_:didSelectRowAt:)` to handle the tap, but you're only concerned with this one cell. Similar to the previous method, you can check whether the index path matches up with the label cell's. If it does, your code will need to toggle `isDatePickerHidden`, then update the cell height. To animate a cell height adjustment, an easy trick is to call a table view's `beginUpdates` and `endUpdates` methods without any code between the two. This is also a good time to set the label to the date value on the picker.
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+            tableView.deselectRow(at: indexPath, animated: true)
+            if indexPath == dateLabelIndexPath {
+                isDatePickerHidden.toggle()
+                updateDueDateLabel(date: dueDateDatePicker.date)
+                tableView.beginUpdates()
+                tableView.endUpdates()
+            }
+        }
+      ```
+
+  - Build and run your app. You should have a Save button that ensures the user provides a title before saving, a text field that dismisses the keyboard when Return is tapped, a functional checkmark button that switches images on each tap, and a date picker view that shows and hides with an animation.
