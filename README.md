@@ -4293,3 +4293,50 @@ In your new table view controller, set the cell Style to `Basic` and give the ce
       ```
 
   - Build and run your app. You should have a Save button that ensures the user provides a title before saving, a text field that dismisses the keyboard when Return is tapped, a functional checkmark button that switches images on each tap, and a date picker view that shows and hides with an animation.
+
+#### Part Six - Create and Save the Model
+
+- What have you created so far? You have a table view controller that displays your list of items, but the list is using some initial data rather than data created through the static table view. You've added controls that enable the user to set values for each property in your model, but the Save button dismisses the modal view controller without actually saving the data. In this section, you'll create a new model object using data from the controls and update your list accordingly.
+- **Read Data from Controls**
+  - At the moment, your Save button performs an unwind segue when tapped, but you need to do some more work before the segue is performed. In earlier lessons, you used the `prepare(for:sender:)` method to pass information from one view controller to another. You'll use the same method here.
+  - First, on the `ToDoDetailTableViewController`, you'll need to verify that the `saveUnwind` segue is being performed, because you don't want to do any extra work when the Cancel button is tapped. Next, you'll read the values from the appropriate controls, store them into constants, and pass the values into your model's initializer:
+
+    - ```swift
+        override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+            super.prepare(for: segue, sender: sender)
+         
+            guard segue.identifier == "saveUnwind" else { return }
+         
+            let title = titleTextField.text!
+            let isComplete = isCompleteButton.isSelected
+            let dueDate = dueDateDatePicker.date
+            let notes = notesTextView.text
+        }
+      ```
+
+  - Is it safe to force-unwrap the title's text property? If you set up the Save button properly, it should only be enabled when there's text in the title text field. Why does it need to be unwrapped at all? Recall that the title property of a ToDo is non-optional, so the constant needs to be of type String, not String?.
+- **Pass Data Across the Unwind Segue**
+  - Think about how you could pass information across the `prepare(for:sender:)` method. The segue has a destination property, and in your to-do app you could access the destination view controller's array of models and add a new entry to the array.
+  - However, the static table view controller is only responsible for one ToDo at a time. It doesn't have to know that it was presented from a table view controller or that the data will eventually be saved to disk. It's always a good practice to keep the concerns of each view controller separate.
+  - Since the static table view controller will deal with one model at a time, you'll add an optional model property to the class definition. (It's optional because the property will be `nil` until the Save button is tapped and the property can be given a value.)
+    - `var toDo: ToDo?`
+  - Next, you'll add a line to the bottom of `prepare(for:sender:)` that sets the property to a value: `toDo = ToDo(title: title, isComplete: isComplete, dueDate: dueDate, notes: notes)`
+  - Now that the model is stored in a property, how does the list view controller access the property and add it to the collection? The unwind segue defined in the first table view controller can access data from the view controller that's being dismissed.
+  - When the `unwindToToDoList(_:)` method is called, it has a segue parameter, similar to `prepare(for:sender:)`. Again, you'll want to verify that the `saveUnwind` segue is being called; otherwise, the Cancel button has been tapped and there isn't any work to perform. Next, you'll check to see whether a model object exists in the segue's source (the view controller that triggered the segue). If a model object exists, add it to the array, then add a table cell that represents the new data.
+
+    - ```swift
+        @IBAction func unwindToToDoList(segue: UIStoryboardSegue) {
+            guard segue.identifier == "saveUnwind" else { return }
+            let sourceViewController = segue.source as! ToDoDetailTableViewController
+         
+            if let toDo = sourceViewController.toDo {
+                let newIndexPath = IndexPath(row: toDos.count, section: 0)
+         
+                toDos.append(toDo)
+                tableView.insertRows(at: [newIndexPath], with: .automatic)
+            }
+        }
+      ```
+
+  - Notice that you needed to calculate the index path so that you could add a row at the correct position. Why would you use `count` for the row of the index path? Imagine your array contains 0 items. When you add a cell, you'd insert it in the first row — row 0. If your array contains 1 item, you'd insert it below the existing one, so in row 1. Using the array's count value guarantees that you add a cell at the bottom of the table view.
+  - Build and run your app. When you click the Save button, creating a new entry in your collection, a new cell will be displayed.
