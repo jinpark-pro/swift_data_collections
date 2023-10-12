@@ -4340,3 +4340,94 @@ In your new table view controller, set the cell Style to `Basic` and give the ce
 
   - Notice that you needed to calculate the index path so that you could add a row at the correct position. Why would you use `count` for the row of the index path? Imagine your array contains 0 items. When you add a cell, you'd insert it in the first row — row 0. If your array contains 1 item, you'd insert it below the existing one, so in row 1. Using the array's count value guarantees that you add a cell at the bottom of the table view.
   - Build and run your app. When you click the Save button, creating a new entry in your collection, a new cell will be displayed.
+
+#### Part Seven - Editing Details
+
+- When your user selects a cell to view more about a particular item, they might also want to edit the information. The static table view you've created already provides an interface for editing, so this feature is on its way to completion.
+- **Present Details**
+  - Open the Main storyboard and Control-drag from the cell in the to-do list view controller to the static table view controller's navigation controller. Choose the `Present Modally` segue. Next, find the segue between the navigation controller and `ToDoDetailTableViewController`. Create an `@IBSegueAction` by Control-dragging from the segue into `ToDoTableViewController`'s implementation, giving it the argument "Sender" and naming it `editToDo(_:sender:)`.
+  - When you tap a ToDo in the list, your segue action will be called, and you're responsible for creating the `ToDoDetailTableViewController` that will be presented. You need to pass the model object from the list to the detail view controller. Using the sender parameter, which will be the tapped cell when the user selects one, you can determine the index path and therefore the ToDo that was selected.
+  - This segue action will also be called when the Add button is tapped. Before you added the segue action, the system created the `ToDoDetailTableViewController` for you, but now you'll want to return an empty `ToDoDetailTableViewController` in this case.
+
+    - ```swift
+        @IBSegueAction func editToDo(_ coder: NSCoder, sender: Any?) -> ToDoDetailTableViewController? {
+            let detailController = ToDoDetailTableViewController(coder: coder)
+         
+            guard let cell = sender as? UITableViewCell,​ let indexPath = tableView.indexPath(for: cell) else {
+                // if sender is the add button, return an empty controller
+                return detailController
+            }
+         
+            tableView.deselectRow(at: indexPath, animated: true)
+         
+            detailController?.toDo = toDos[indexPath.row]
+         
+            return detailController
+        }
+      ```
+
+  - The view controller has the data, but if you build and run your app, you'll see that the data isn't displayed in the `ToDoDetailTableViewController`. You'll need to make some edits before the views are updated to reflect the provided data.
+- **Update the Static Table View Controller**
+  - You originally created the static table view controller to add new items, but you can modify it to allow editing as well. When the view controller is initially loaded, your app will need to determine whether the screen is being used to create a new item or to edit an existing one. How will it know?
+  - When the user taps the + button, the static table view controller is displayed, and the optional model property is still `nil`. However, if the user taps a cell, the property contains a model, because it was passed from one controller to another in `editToDo(_:)`.
+  - So what's your next move? You'll need to update `viewDidLoad()` to handle the presence (or lack) of data. If the view controller is passed an item, update all the controls to match the model values. If the view controller doesn't have any data, then `viewDidLoad()` will configure the interface for easy model creation, including updates to the text field text, date picker date, navigation bar title, and notes text. Here's how that works:
+
+    - ```swift
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            let currentDueDate: Date
+            if let toDo = toDo {
+              navigationItem.title = "To-Do"
+              titleTextField.text = toDo.title
+              isCompleteButton.isSelected = toDo.isComplete
+              currentDueDate = toDo.dueDate
+              notesTextView.text = toDo.notes
+            } else {
+              currentDueDate = Date().addingTimeInterval(24*60*60)
+            }
+         
+            dueDateDatePicker.date = currentDueDate
+            updateDueDateLabel(date: currentDueDate)
+            updateSaveButtonState()
+        }
+      ```
+
+  - When the user taps the save button, the `prepare(for:sender:)` method is called. Currently this method creates a new ToDo from the current state of the controls. But when an existing ToDo is being edited, the existing ToDo should be updated. Replace the unconditional creation of the ToDo: `toDo = ToDo(title: title, isComplete: isComplete, dueDate: dueDate, notes: notes)`
+  - with code that updates the existing toDo if it is not `nil`:
+
+    - ```swift
+        if toDo != nil {
+            toDo?.title = title
+            toDo?.isComplete = isComplete
+            toDo?.dueDate = dueDate
+            toDo?.notes = notes
+        } else {
+            toDo = ToDo(title: title, isComplete: isComplete, dueDate: dueDate, notes: notes)
+        }
+      ```
+
+  - Build and run your app and tap a cell in your list. The static table view should display a new title, and all the controls should match the data the cell represented.
+- **Update the Unwind Segue Logic**
+  - Currently, two things happen when the unwind segue is triggered from the Save button: A new item is added to the end of the array, and a new cell is added to the table view. But when an existing model is edited, the old model data in the array should be replaced, and the corresponding cell should be reloaded to display the latest information. Since the unwind segue expects model data to be present — regardless of adding or editing — how will the app know whether to add a new item or update an existing one?
+  - Take a look at the table view to see whether a cell is still selected when the unwind segue takes place. A selected cell means the unwind segue is happening after editing. If no cell is selected, the + button (not a cell) was tapped, which indicates a new entry to the collection.
+  - After you safely unwrap the model data, you can use if-let syntax to unwrap the ToDo's index in your array. If the ToDo is in the array, you will receive its index and use it to update the corresponding model and cell. Otherwise, append the model to the end of the collection and add a new cell, as you did earlier. Here's the code for that logic:
+
+    - ```swift
+        @IBAction func unwindToToDoList(segue: UIStoryboardSegue) {
+            guard segue.identifier == "saveUnwind" else { return }
+            let sourceViewController = segue.source as! ToDoDetailTableViewController
+         
+            if let toDo = sourceViewController.toDo {
+                if let indexOfExistingToDo = toDos.firstIndex(of: toDo) {
+                    toDos[indexOfExistingToDo] = toDo
+                    tableView.reloadRows(at: [IndexPath(row: indexOfExistingToDo, section: 0)], with: .automatic)
+                } else {
+                    let newIndexPath = IndexPath(row: toDos.count, section: 0)
+                    toDos.append(toDo)
+                    tableView.insertRows(at: [newIndexPath], with: .automatic)
+                }
+            }
+        }
+      ```
+
+  - Build and run your app. You can use the sample data to try editing items on the list or create your own items. When you use the Save button to unwind to the list, the table should always display the most up-to-date model data.
