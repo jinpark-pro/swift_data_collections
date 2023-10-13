@@ -4431,3 +4431,38 @@ In your new table view controller, set the cell Style to `Basic` and give the ce
       ```
 
   - Build and run your app. You can use the sample data to try editing items on the list or create your own items. When you use the Save button to unwind to the list, the table should always display the most up-to-date model data.
+
+#### Part Eight - Create a Custom UITableViewCell
+
+- You can use the static table view controller to save any changes to an item, but what if you wanted to make a quick change to an item right from the list? For example, it would be convenient for the user if a to-do could be marked as complete without having to present the editing screen, toggle the checkmark, and press the Save button. You can simplify the workflow by using a custom UITableViewCell with its own set of controls and labels.
+- **Create a Cell Subclass**
+  - Create a new Cocoa Touch Class file, choosing `UITableViewCell` as the subclass. Call your new subclass `ToDoCell`.
+  - Currently, the `ToDoTableViewController` uses instances of `UITableViewCell` to represent each item in your list. Now that you've created a subclass of `UITableViewCell`, you'll need to switch to using the new cell. In your storyboard, select the prototype cell, then use the Identity inspector to change its class.
+  - Navigate to the to-do table view controller class and locate the `tableView(_:cellForRowAt:)` method. Currently, the first line calls `dequeueReusableCell`, which will return a `UITableViewCell`. Use the following code to conditionally downcast this cell to your custom class so that it matches the type of cell defined in the storyboard: `let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoCellIdentifier", for: indexPath) as! ToDoCell`
+  - If you've updated everything successfully, you can build and run your app, and everything should continue to work. The next step is to add new controls to enable the user to quickly update the information in the cell.
+- **Design the Cell**
+  - In your storyboard, you'll want a button that allows the user to mark the ToDo as complete. Select the cell and confirm that its Style is `Custom`. The checkmark button is identical to the one you created in the static table view controller, so you can copy (Command-C) it from the New To-Do scene and paste (Command-V) it into the prototype cell in the to-do list. Add constraints to the button that center it vertically in the cell and align it to the leading edge with at least 8 pixels of spacing.
+  - Previously, you used the textLabel of a `UITableViewCell` to display the to-do’s title, but this new button will partially cover that label. Go ahead and add your own label, positioning it to the right of the checkmark button. Be sure to add appropriate constraints. 
+  - Use the assistant editor to create outlets for your new views to `ToDoCell`, which will enable you to update the label text and the button status.
+
+    - ```swift
+        @IBOutlet var isCompleteButton: UIButton!
+        @IBOutlet var titleLabel: UILabel!
+      ```
+
+  - With the outlets in place, you can update their properties whenever a cell is about to be displayed. Locate the `tableView(_:cellForRowAt:)` method again. Switch it from using the cell's textLabel to your new `titleLabel`. In addition, add a line of code that sets the checkmark button to selected based on the model's `isComplete` property — just as you did with the checkmark in the static table view. Here's how it all works:
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+            let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoCellIdentifier", for: indexPath) as! ToDoCell
+         
+            let toDo = toDos[indexPath.row]
+            cell.titleLabel?.text = toDo.title
+            cell.isCompleteButton.isSelected = toDo.isComplete
+         
+            return cell
+        }
+      ```
+
+  - If you followed the advice above to copy the checkmark button from the one in the static table view controller, it will have a Touch Up Inside action associated with it. You'll want to remove this action by selecting the `isCompletedButton`, opening the Connections inspector, and clicking the "x" next to the Touch Up Inside action to remove it.
+  - Build and run your app. You should see the title of the ToDo displayed next to the checkmark button. At this point, the checkmark button reflects the isComplete status of the ToDo. It can't yet be tapped, but you can edit one of the to-dos toggle its completion state, then return to the list to confirm that the checkmark disappears.
