@@ -4466,3 +4466,43 @@ In your new table view controller, set the cell Style to `Basic` and give the ce
 
   - If you followed the advice above to copy the checkmark button from the one in the static table view controller, it will have a Touch Up Inside action associated with it. You'll want to remove this action by selecting the `isCompletedButton`, opening the Connections inspector, and clicking the "x" next to the Touch Up Inside action to remove it.
   - Build and run your app. You should see the title of the ToDo displayed next to the checkmark button. At this point, the checkmark button reflects the isComplete status of the ToDo. It can't yet be tapped, but you can edit one of the to-dos toggle its completion state, then return to the list to confirm that the checkmark disappears.
+- **Add a Cell Delegate Method**
+  - You'll need to add a method in your custom cell that handles the checkmark button tap, but what should it do? You'll have to update the isComplete boolean, but the cell doesn't have any knowledge of the ToDo model, nor does it know its own index in the table view.
+  - But there's good news. The table view controller knows all these details. In fact, the only thing it needs to know is which cell's checkmark was tapped. If the cell had a delegate, it could notify the delegate when its checkmark button is tapped.
+  - In the storyboard, use the assistant editor to create an action that's called when the checkmark button is tapped.
+  - Above the definition of your cell subclass, define a protocol with a method that passes the cell back to the delegate:
+
+    - ```swift
+        protocol ToDoCellDelegate: AnyObject {
+            func checkmarkTapped(sender: ToDoCell)
+        }
+      ```
+
+  - Add a delegate property to your cell subclass so that the cell has something to inform: `weak var delegate: ToDoCellDelegate?`
+  - In the action tied to the checkmark button, inform the delegate that the button tap has occurred, passing in self as the parameter to the method:
+
+    - ```swift
+        @IBAction func completeButtonTapped(_ sender: UIButton) {
+            delegate?.checkmarkTapped(sender: self)
+        }
+      ```
+
+  - The cell's delegate should be the table view controller, which doesn't conform to the protocol you defined earlier. Update the view controller's class definition so that it can be set as the delegate: `class ToDoTableViewController: UITableViewController, ToDoCellDelegate`
+  - To satisfy the conditions of the protocol, this view controller must implement all of its methods. In this case, there's only one method defined in the protocol. Add the method declaration, but leave the method body blank: `func checkmarkTapped(sender: ToDoCell) { }`
+  - Whenever a cell is dequeued, the table view controller should set itself as the cell's delegate. Locate the `tableView(_:cellForRowAt:)` method and set the delegate property of the cell accordingly: `cell.delegate = self`
+  - What have you implemented so far? Add breakpoints in the complete button action and in the empty `checkmarkTapped(_:)` method, then build and run the app. Tap the cell's checkmark button, triggering the action and the first breakpoint. The method will inform the delegate (the table view controller) that its checkmark was tapped and will pass itself through the delegate method. Let the code continue executing, and you'll trigger the breakpoint in `checkmarkTapped`.
+  - All that's left is to determine the index path of the cell, which you'll use to toggle the `isComplete` boolean of the corresponding `ToDo`. Once you've updated the model, reload the cell so that its appearance is up to date with the data. Here's the code:
+
+    - ```swift
+        func checkmarkTapped(sender: ToDoCell) {
+            if let indexPath = tableView.indexPath(for: sender) {
+                var toDo = toDos[indexPath.row]
+                toDo.isComplete.toggle()
+                toDos[indexPath.row] = toDo
+                tableView.reloadRows(at: [indexPath], with: .automatic)
+            }
+        }
+      ```
+
+  - Build and run your app again. The cell's button should now be fully functional.
+  - While more complicated than handling actions on cells in static table views, this is a necessary and common pattern for handling actions performed on cells in dynamic table views.
