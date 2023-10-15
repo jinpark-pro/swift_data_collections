@@ -4506,3 +4506,105 @@ In your new table view controller, set the cell Style to `Basic` and give the ce
 
   - Build and run your app again. The cell's button should now be fully functional.
   - While more complicated than handling actions on cells in static table views, this is a necessary and common pattern for handling actions performed on cells in dynamic table views.
+
+#### Part Nine - Codable
+
+- Your app is now capable of listing, adding, editing, and deleting items in a collection. You're almost done. You still need your app to save the collection to disk and to retrieve it when the app is opened at some point in the future.
+As you've learned and practiced in earlier lessons, persistence requires you to add Codable support to your model data. Once your model adopts this protocol, you'll add logic in the appropriate places to save items whenever necessary.
+- **Add Support for Archiving and Unarchiving**
+  - Start by adding Codable to your model's type definition: `struct ToDo: Equatable, Codable { ... }`
+  - You may notice a warning on the line defining the constant id informing you that it will not be decoded because it is defined as an immutable property — by assigning it a value where it's declared, you've prevented the automatic implementation of Codable conformance from setting it.
+  - To resolve the issue, first change the declaration of id by removing the assignment of `UUID()`. It should now look like this: `let id: UUID`. Of course, now you'll get an error everywhere the `ToDo` memberwise initializer is used, because it now requires an `id` argument. You could update your code to add a new UUID value for each initialization of `ToDo`, but it'll be cleaner to create a custom initializer with an identical signature to the current memberwise initializer — `init(title:isComplete:dueDate:notes:)` — and assign a value to id there.
+  - The beginning of the `ToDo` struct should now look like:
+
+    - ```swift
+        struct ToDo: Equatable, Codable { 
+            let id: UUID
+            var title: String
+            var isComplete: Bool
+            var dueDate: Date
+            var notes: String?
+         
+            init(title: String, isComplete: Bool, dueDate: Date, notes: String?) {
+                self.id = UUID()
+                self.title = title
+                self.isComplete = isComplete
+                self.dueDate = dueDate
+                self.notes = notes
+            }
+            ...
+        }
+      ```
+
+  - `ToDo` objects can now be encoded and decoded, but your app still needs to include logic that tells it where and when to store the data.
+  - Typically, you'll want to save your data somewhere in your app's Documents directory. Since this directory is accessible to your app and can't be modified by another app, it's a safe place to store your list. You can use the `FileManager` class to locate your app's Documents directory, create a subfolder for archiving data, and store that path to a constant.
+  - To ensure that the constants are only defined one time and are not tied to a particular instance of your model, use the `static` keyword. Add the following constant definitions to your model, making sure to define `ArchiveURL` with the appropriate subfolder string:
+
+    - ```swift
+        static let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        static let archiveURL = documentsDirectory.appendingPathComponent("toDos").appendingPathExtension("plist")
+      ```
+
+  - Now that you have a path defined for your data store, you can replace the body of the `loadToDos()` method with the appropriate logic to load data from disk. Use a `PropertyListDecoder` and the methods on Data that you learned in a previous lesson to unarchive the data and return it:
+
+    - ```swift
+        static func loadToDos() -> [ToDo]?  {
+            guard let codedToDos = try? Data(contentsOf: archiveURL) else {return nil}
+            let propertyListDecoder = PropertyListDecoder()
+            return try? propertyListDecoder.decode(Array<ToDo>.self, from: codedToDos)
+        }
+      ```
+
+  - Before you can attempt to read model data from disk, you have to provide a way to save it to disk. Write a `static` method that uses a `PropertyListEncoder` to encode a [ToDo] collection and then uses the `write(to:options:)` method on Data to store it in the Documents directory:
+
+    - ```swift
+        static func saveToDos(_ toDos: [ToDo]) {
+            let propertyListEncoder = PropertyListEncoder()
+            let codedToDos = try? propertyListEncoder.encode(toDos)
+            try? codedToDos?.write(to: archiveURL, options: .noFileProtection)
+        }
+      ```
+
+  - When is the appropriate time to write your collection of models to disk? You could say it's whenever the collection changes in some way — and that's mostly correct. The only exceptions are when you fill the array with sample data or when you load the data from disk. Otherwise, you want your app to save data any time there's a change in the collection.
+  - The collection can be changed in several ways. The first is when the user swipes a cell to delete the item. In this case, call the `save()` method after you've removed the item from the array:
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+            if editingStyle == .delete {
+                toDos.remove(at: indexPath.row)
+                tableView.deleteRows(at: [indexPath], with: .automatic)
+                ToDo.saveToDos(toDos)
+            }
+        }
+      ```
+
+  - The collection can also be updated when the user taps the Save button (regardless of whether an item was added or edited). Therefore, call the save method whenever you perform the segue marked with the `saveUnwind()` identifier:
+
+    - ```swift
+        @IBAction func unwindToToDoList(segue: UIStoryboardSegue) {
+            // ...
+
+            ToDo.saveToDos(toDos)
+        }
+      ```
+
+  - Finally, in the custom cell delegate method, you'll need to save the collection of items when the user taps the button in the cell. Each button tap changes the `isComplete` property of the ToDo from true to false or visa versa.
+
+    - ```swift
+        func checkmarkTapped(sender: ToDoCell) {
+            if let indexPath = tableView.indexPath(for: sender) {
+                // ...
+
+                ToDo.saveToDos(toDos)
+            }
+        }
+      ```
+
+  - Build and run your app. Make some changes to your collection, triggering the save functionality. Then stop the app and relaunch it to trigger the `load()` method.
+- **Wrap-Up**
+  - Congratulations on completing a custom list app! The procedures you learned to display, create, modify, and save data in this project will be extremely valuable throughout your iOS development career. As you continue to develop more apps, you'll begin to recognize common requirements among projects, and you'll be able to implement features with greater ease.
+  - Do you think all the steps in this project are more or less reusable? If not, try working through the project again, but using different items in the collection. You'll be amazed at how much of the code fits neatly into a new app.
+- **Stretch Goals**
+  - The features you built in this project are common across many iOS apps. Would you like to build some features that are less common? Would you like to add your own unique flavor to your app? Here are some additional features you might try to implement:
+    - Add the ability to share the details of an item using the Mail app.
+    - Add a search field at the top of your list that allows the user to filter a large list of items by specifying a portion of the item's title.
