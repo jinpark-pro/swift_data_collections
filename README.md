@@ -4613,3 +4613,77 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
   - Now that you know how to build table views, persist data, and use MVC to architect your app, you can start building many more complex apps that store data locally. At this point, you should also be able to start picking up new frameworks and tools by looking at the documentation. There are many new types of views and classes to explore and integrate into your apps, each one building on the skills you already have.
   - Take some time to experiment and learn about something new. Are you interested in building an app with Maps, or an app that uses location services? Want to play music or video? Go look up MapKit, CoreLocation, or AVFoundation. You'll find that “many of the frameworks and tools out there work very similarly to those you've already learned.
   - In the next unit, you'll learn how to level up your apps by fetching and sending information over the internet. You're well on your way to being a seasoned iOS developer. Congratulations!
+
+## Unit 2 Working With The Web
+
+- Most apps connect to web services to fetch or send information that is used in the app. In this unit, you'll learn how to create and send network requests to send and receive data.
+- To begin, you'll learn about closures, which are blocks of code that can be used like variables, which allow you to write code that will be executed at a later time. You'll use closures to write code that will execute after network requests are finished. You'll also learn how to use closures to work with collections and create animations in your app.
+- Then you'll work through three lessons that explain how the web works, how to request information from a web service, how to turn that information into structures or classes you can use within your app, and how to make your app run smoothly with long running networking operations.
+
+### Lesson 2.1 Closures
+
+- Closures can be a complicated topic for new developers, but many of the frameworks for building apps use them extensively. When understood and used correctly, they can be a very powerful tool for writing clean, reusable, high-performance code. You don't need to master closures at this stage, but you do need to be familiar with how to work with them.
+- This lesson will introduce you to closures and show you how to define them, how to use them as function arguments, and how to use some of the common functions that take closures as arguments. You'll learn more about closures in future lessons, as specific concepts apply to the projects you'll be building.
+- Closures are self-contained blocks of functionality that can be passed around as values and executed later on in your code. This may sound familiar, as functions are also self-contained blocks of functionality. What's the difference? You can think of a function as a special, named case of a closure. Closures typically don't have a name and can be stored as a variable or passed as an argument. In fact, some developers refer to closures as “anonymous functions,” because they're like functions without a name.
+
+#### Syntax
+
+- The syntax for declaring and using closures can be difficult to understand. It's helpful to start by reviewing the syntax of a function:
+
+  - ```swift
+      func sum(numbers: [Int]) -> Int {
+        // Code that adds together the numbers array
+        return total
+      }
+    ```
+
+- The function above has a name (sum), an argument (numbers) that's an array of Int values, and a return type Int. The code that's executed is written inside a pair of braces.
+- Now compare that with the syntax of a closure:
+
+  - ```swift
+      let sumClosure = { (numbers: [Int]) -> Int in
+        // Code that adds together the numbers array
+        return total
+      }
+    ```
+
+- The closure above is assigned to a constant named `sumClosure`. The closure, which is written inside a pair of braces, is a block of code that takes an array of `Int` values (`numbers`) and has a return type `Int`. Because the entire closure is inside the braces, you add the `in` keyword to indicate the beginning of the code to be executed when calling the closure.
+- You can then use the closure to perform the action by calling `sumClosure`.
+
+  - ```swift
+      let sum = sumClosure([1, 2, 3, 4])
+      print(sum) // 10
+    ```
+
+- All values in Swift have a type, including closures. You define the type by specifying a parameter list and a return type, or the lack of either, at the start of the block of code. Just like functions, there are four types of closures:
+  1. A closure with no parameters and no return value:
+
+     - ```swift
+        let printClosure = { () -> Void in
+        print("This closure does not take any parameters and does not return a value.")
+        }
+       ```
+
+  2. A closure with parameters and no return value:
+
+     - ```swift
+        let printClosure = { (string: String) -> Void in
+        print(string)
+        }
+       ```
+
+  3. A closure with no parameters and a return value:
+
+     - ```swift
+        let randomNumberClosure = { () -> Int in
+        // Code that returns a random number
+        }
+       ```
+
+  4. A closure with parameters and a return value (as in the earlier example):
+
+     - ```swift
+        let randomNumberClosure = { (minValue: Int, maxValue: Int) -> Int in
+        // Code that returns a random number between `minValue` and `maxValue`
+        }
+       ```
