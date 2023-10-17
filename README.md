@@ -4711,3 +4711,63 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
     ```
 
 - Did you notice that firstTrack and secondTrack do not include type information? Unlike the closures shown previously, `sorted(by:)` is a method being called by a `[Track]` collection, and the Swift compiler can infer that the two parameters within the closure will be of type Track.
+
+#### Additional Syntactic Sugar
+
+- The Swift compiler is very smart. Because it knows the types of every constant, variable, and closure, it can make assumptions that allow you to write more concise code. Swift allows you to combine type safety with closure syntax to help you move from syntax - heavy statements to very simple, concise statements. Programmers refer to such concise code as “syntactic sugar.”
+- Right now, you shouldn't write code that's more concise than you can handle, but as you become more familiar with closures and their syntactic sugar, it will become second nature to write code in the simplest way possible.
+- Starting with Xcode's autocompleted closure syntax, take a look at how you can simplify the closure one step at a time.
+
+  - ```swift
+      let sortedTracks = tracks.sorted { (firstTrack, secondTrack) -> Bool in
+          return firstTrack.starRating < secondTrack.starRating
+      }
+    ```
+
+- Swift can infer that the closure must return a Bool, so you can remove the return type:
+
+  - ```swift
+      let sortedTracks = tracks.sorted { (firstTrack, secondTrack) in
+        return firstTrack.starRating < secondTrack.starRating
+      }
+    ```
+
+- Because the `sorted(by:)` function expects two instances to compare, Swift knows that you need to pass the closure two tracks. The compiler provides placeholder names for the closure parameters that you can use instead of their actual names. Placeholder names begin with `$` followed by the index of the parameter. So you can access the first parameter using `$0`, the second using `$1`, and so on. Now you can drop the parameter names and in: `let sortedTracks = tracks.sorted { return $0.starRating < $1.starRating }`
+- When a closure has one line, Swift will automatically return the result, so you can remove the return keyword: `let sortedTracks = tracks.sorted { $0.starRating < $1.starRating }`
+- You can see how Swift allows you to trim your code from three lines to one line. As you become more comfortable with Swift closures, you will start to prefer this concise style.
+- One last interesting bit: Remember that closures are effectively functions. When a method accepts a closure as a parameter, it will also accept a function with a signature that matches the closure requirements. If your `Track` type conformed to `Comparable`, you could reduce this even further.
+
+  - ```swift
+      struct Track: Comparable {
+          var trackNumber: Int
+       
+          static func < (lhs: Track, rhs: Track) -> Bool {
+              return lhs.trackNumber < rhs.trackNumber
+          }
+      }
+
+      let tracks = [Track(trackNumber: 3), Track(trackNumber: 2), Track(trackNumber: 1), Track(trackNumber: 4)]
+       
+      let sortedTracks = tracks.sorted(by: <)
+    ```
+
+- The `<` function takes two parameters of type Track and returns a Bool — exactly the type of `sorted(by:)`'s parameter.
+- **Trailing Closure Syntax**
+  - You may be wondering why the `by` argument label was omitted during Xcode's autocompletion of the closure. If you were being as verbose as possible, the `sorted(by:)` method would be called like this:
+
+    - ```swift
+        let sortedTracks = tracks.sorted(by: { (firstTrack, secondTrack) -> Bool in
+            return firstTrack.starRating < secondTrack.starRating
+        })
+      ```
+
+- When a closure is the last argument of a function, you can move the closing parenthesis after the second-to-last argument, drop the name of the final argument, and leave the curly braces at the end. When the function's only argument is a closure, the parentheses can be omitted entirely, along with the argument name. This is called “trailing closure syntax.”
+- Imagine you have a function `performRequest(url: String, response: (Data) -> Void)`. The first argument is a URL string, and the last is a `response` closure that contains the data at the specified URL.
+  - `func performRequest(url: String, response: (code: Int) -> Void) { }`
+- Here's what it would look like to call the function using trailing closure syntax. The closing parenthesis is moved to the previous argument, the response argument label is dropped, and the curly braces hang nicely off the end.
+
+  - ```swift
+      performRequest(url: "https://www.apple.com") { (data) in
+          print(data)
+      }
+    ```
