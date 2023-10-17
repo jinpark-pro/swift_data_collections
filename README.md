@@ -4687,3 +4687,27 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
         // Code that returns a random number between `minValue` and `maxValue`
         }
        ```
+
+#### Passing Closures as Arguments
+
+- Many commonly used collection functions and UIKit objects take closures as arguments. Now that you know how to declare a closure, you can learn about passing a closure into a function.
+- Imagine you're working on an app for playing music. Your task is to build a screen that displays a playlist. Since tracks may arrive in any order, your playlist will need to sort them based on one of three user preferences: track number, track name, or star rating.
+- Your solution is the built-in `sorted(by:)` array function, an instance method on arrays that takes a closure as an argument. Given an array of tracks, you can pass the function a closure that takes two track numbers and determines whether the first track should appear before or after the second track when sorted:
+
+  - ```swift
+      let sortedTracks = tracks.sorted { (firstTrack, secondTrack) -> Bool in
+          return firstTrack.trackNumber < secondTrack.trackNumber
+      }
+    ```
+
+- When you're first learning how to write closure syntax, it may feel cumbersome to figure out where to position the curly braces and parentheses. Xcode does a great job of helping you with this! As you are writing out the method name, press the Return key to autocomplete it, and the cursor will highlight the first parameter. Press Return again, and Xcode will simplify and autofill the closure syntax. All that's left for you to do is provide names for each of the parameters.
+- The `sorted(by:)` function will run the instruction in the passed - in closure on every pair of objects in the array and return a Bool value. If the closure returns true, the first track will stay in front of the second track; if it returns false, the first track will move behind the second track. The function will repeat until the entire array returns true.
+- What makes closures so powerful is that you can pass any logic to the `sorted(by:)` function. So now you can pass a closure that sorts by track name or by star rating:
+
+  - ```swift
+      let sortedTracks = tracks.sorted { (firstTrack, secondTrack) -> Bool in
+          return firstTrack.starRating < secondTrack.starRating
+      }
+    ```
+
+- Did you notice that firstTrack and secondTrack do not include type information? Unlike the closures shown previously, `sorted(by:)` is a method being called by a `[Track]` collection, and the Swift compiler can infer that the two parameters within the closure will be of type Track.
