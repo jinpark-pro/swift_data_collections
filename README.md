@@ -4912,3 +4912,17 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
     - What is the closure parameter? ({ $0 + $1 })
     - What does the $0 represent? (The value of all the items that have been reduced so far.)
     - What does the $1 represent? (The value of the new item that you are reducing into the total.)
+
+#### Closures Capture Their Environment
+
+- In a previous lesson, you learned about scope and that any constant or variable declared within braces is defined in that local scope and isn't accessible by any other scope. Closures work somewhat differently. They're often written using values or functions that are defined in the same scope as the closure — but not within the closure braces.
+- Consider the following closure that animates the backgroundColor from its current color to red:
+
+  - ```swift
+      animate {
+        self.view.backgroundColor = .red
+      }
+    ```
+
+- What if the view property were removed from the screen during this animation? Would the animation stop? Would the code crash, since view would no longer be an accessible property? No worries. Swift is smart. Based on the context, a closure can access, or capture, surrounding constants and variables. This means that, if the view would typically be deallocated when it's removed from the screen, the animate closure will keep the view in memory until the closure is complete.
+- This intelligence enables closures to use those constants and variables safely and to modify them within the closure block. Similarly, Swift wants to make it clear that the owner of the view property must also be kept in memory until the animation completes, so it requires the `self` keyword.
