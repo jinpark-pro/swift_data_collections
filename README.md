@@ -4771,3 +4771,144 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
           print(data)
       }
     ```
+
+#### Collection Functions Using Closures
+
+- Swift includes some useful functions for iterating over collections that take a closure argument to define common actions. 
+  - You'll learn about `map()`, which allows you to create an array from another array by transforming each value in the collection. 
+  - You'll learn about `filter()`, which takes an array and creates another with only the objects that meet your defined set of rules. 
+  - And you'll learn about `reduce()`, which lets you combine many values into a single value.
+- These functions are extremely powerful and can be chained to create advanced logic. When you're working with arrays, think about whether one of these collection functions can help you write more concise code.
+- **Map**
+  - The `map()` function is an instance method that can be used on an array to create a new array. It takes a closure parameter that tells it what to do to each object before adding it to the new array. In this example, you're starting with an array of first names, but you want an array of full names.
+  - You can use a for-in loop to create the new array:
+
+    - ```swift
+        // Initial array
+        let names = ["Johnny", "Nellie", "Aaron", "Rachel"]
+         
+        // Creates an empty array that will be used to store the full names
+        var fullNames: [String] = []
+
+        for name in names {
+          let fullName = name + " Smith"
+          fullNames.append(fullName)
+        }
+      ```
+
+  - Or you can use the `map()` function. The closure will be executed on each object in the `firstNames` array to create what will be added to the `fullNames` array.
+
+    - ```swift
+        let names = ["Johnny", "Nellie", "Aaron", "Rachel"]
+         
+        // Creates a new array of full names by adding "Smith" to each first name
+        let fullNames = names.map { (name) -> String in
+            return name + " Smith"
+        }
+      ```
+
+  - A shortened version of the map() function works just as well. Recall that $0 is a placeholder for the closure's first parameter—in this case, the current object in the array.
+
+    - ```swift
+        let names = ["Johnny", "Nellie", "Aaron", "Rachel"]
+         
+        // Creates a new array of full names by adding "Smith" to each first name
+        let fullNames = names.map { $0 + " Smith" }
+      ```
+
+  - Each of these examples will result in the same array of full names.
+  - You can use any of these three approaches to transform the array of firstNames into fullNames. As a new programmer, you might find the for-in loop to be the easiest to think through. As you feel more comfortable with Swift and closure syntax, you'll be drawn to the more concise `map()` function. Experienced programmers prefer concise code because it feels cleaner and is easier to read.
+  - Closure syntax can be difficult. It's helpful to pause and break down the syntax of each example. Look at the example above. Try to identify the function call, the parameter, and the closure syntax.
+    - What is the function call? (map())
+    - What is the closure parameter? ({ $0 + " Smith" })
+    - What does the $0 represent? (The individual object in the array that's being worked with.)
+- **Filter**
+  - The `filter()` function creates a new array with only the objects from the starting array that match a specific use case. Filter takes a closure parameter that returns `true` or `false` to determine whether the object should be included in the new array. In this example, you want to filter out all the numbers that are greater than 20.
+  - Here's the code using a traditional for-in loop:
+
+    - ```swift
+        let numbers = [4, 8, 15, 16, 23, 42]
+        var numbersLessThan20: [Int] = []
+         
+        for number in numbers {
+            if number < 20 {
+                numbersLessThan20.append(number)
+            }
+        }
+
+        print(numbersLessThan20)
+        Console Output:
+        [4, 8, 15, 16]
+      ```
+
+  - And here it is using the `filter()` function:
+
+    - ```swift
+        let numbers = [4, 8, 15, 16, 23, 42]
+        let numbersLessThan20 = numbers.filter { (number) -> Bool in
+            return number < 20
+        }
+         
+        print(numbersLessThan20)
+        Console Output:
+        [4, 8, 15, 16]
+      ```
+
+  - And now with the shortened syntax of filter():
+
+    - ```swift
+        let numbers = [4, 8, 15, 16, 23, 42]
+        let numbersLessThan20 = numbers.filter { $0 < 20 }
+        print(numbersLessThan20)
+        Console Output:
+        [4, 8, 15, 16]
+      ```
+
+  - Again, each example yields the same array.
+  - As with the `map()` example, you can use any of these three approaches to filter the array of numbers into `numbersLessThan20`. As you learn more about Swift and closure syntax, you'll find `filter()` is more concise and results in cleaner code. For now, use what's comfortable for you.
+  - Again, to help familiarize yourself with closure syntax, pause and break down the syntax of each example. Try to identify the function call, the parameter, and the closure syntax. In the example just above:
+    - What is the function call? (filter())
+    - What is the closure parameter? ({ $0 < 20 })
+    - What does the $0 represent? (The individual object in the array that is being worked with.)
+- **Reduce**
+  - The `reduce()` function combines all the values in an array into one value. It takes a starting value and a closure that dictates how to combine the items. The code in this example takes an array of numbers and adds them together.
+  - Here's a potential solution using a for-in loop:
+
+    - ```swift
+        let numbers = [8, 6, 7, 5, 3, 0, 9]
+        var total = 0
+         
+        for number in numbers {
+            total = total + number
+        }
+      ```
+
+  - And another using the `reduce()` function:
+
+    - ```swift
+        let numbers = [8, 6, 7, 5, 3, 0, 9]
+        let total = numbers.reduce(0) { (currentTotal, newValue) -> Int in
+            return currentTotal + newValue
+        }
+      ```
+
+  - Or the shortened syntax of `reduce()`. Recall that $0 is a placeholder for the current object, and $1 is a placeholder for the next object in the array.
+
+    - ```swift
+        let numbers = [8, 6, 7, 5, 3, 0, 9]
+        let total = numbers.reduce(0) { $0 + $1 }
+      ```
+
+  - Similar to passing the `<` function in the filter example, you could pass the `+` function to closure parameter on `reduce()`, since its signature matches the requirements of the closure parameter.
+
+    - ```swift
+        let numbers = [8, 6, 7, 5, 3, 0, 9]
+        let total = numbers.reduce(0, +)
+      ```
+
+  - Once again, pause and break down the syntax of each example. Try to identify the function call, the parameter, and the closure syntax. For the example using the shortened syntax of reduce():
+    - What is the function call? (reduce())
+    - What is the starting value in the function call? (0)
+    - What is the closure parameter? ({ $0 + $1 })
+    - What does the $0 represent? (The value of all the items that have been reduced so far.)
+    - What does the $1 represent? (The value of the new item that you are reducing into the total.)
