@@ -4926,3 +4926,147 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
 
 - What if the view property were removed from the screen during this animation? Would the animation stop? Would the code crash, since view would no longer be an accessible property? No worries. Swift is smart. Based on the context, a closure can access, or capture, surrounding constants and variables. This means that, if the view would typically be deallocated when it's removed from the screen, the animate closure will keep the view in memory until the closure is complete.
 - This intelligence enables closures to use those constants and variables safely and to modify them within the closure block. Similarly, Swift wants to make it clear that the owner of the view property must also be kept in memory until the animation completes, so it requires the `self` keyword.
+
+### Lesson 2.2 Extensions
+
+- Extensions allow you to add functionality to a type that's already defined. You can use extensions to create new properties or methods for Swift standard types, such as `Int`, `String`, `Bool`, and `Array`, or custom types that you've defined for your app. Extensions are also useful for organizing your code into logical chunks, such as the code needed for a type to adopt a protocol.
+- In this lesson, you'll learn how and why to use extensions.
+- Most often, you'll use extensions for two things: adding functionality to types you can't edit directly — such as types defined in the Swift standard library — and organizing complex code in a logical way.
+- What kinds of functionality might you want to add to an existing type? You can add computed properties, define methods, provide new initializers, or conform to a protocol.
+- Keep in mind that when you extend an existing type, any new functionality will be available not just on all future instances of that type but also on all existing instances anywhere in your program.
+- To define an extension, use the `extension` keyword, followed by the name of the type you're extending. You'll declare the new functionality inside the braces.
+
+  - ```swift
+      extension SomeType {
+        // New functionality to add to SomeType goes here
+      }
+    ```
+
+#### Adding Computed Properties
+
+- In an earlier lesson, you added computed properties to a Temperature type to allow you to easily read back different temperature measurements from the same instance. You can use an extension to add new computed properties to a type that already exists.
+- The following example extends the `UIColor` type with a `random` static computed property that returns a random color.
+
+  - ```swift
+      extension UIColor {
+          static var random: UIColor {
+              let red = CGFloat.random(in: 0...1)
+              let green = CGFloat.random(in: 0...1)
+              let blue = CGFloat.random(in: 0...1)
+       
+              return UIColor(red: red, green: green, blue: blue, alpha: 1.0)
+          }
+      }
+    ```
+
+- Now you can access the `random` property on any `UIColor` instance in the program using `UIColor.random`.
+
+#### Adding Instance or Type Methods
+
+- You can also use extensions to add new instance or type methods in a simple, clean way.
+- Imagine you're tasked with building a feature that allows the user to pluralize words.
+  - Apple -> Apples
+  - Song -> Songs
+  - Person -> People
+  - Tennis court -> Tennis courts
+- You could extend the `String` class with a `pluralize()` method that changes a string to its pluralized version. Adding a method to an extension is identical to adding a method to a type definition. Just use the `func` keyword, followed by parentheses that contain any parameters, and optionally define a return type.
+- In this example, you're updating the `String` in place, meaning you're performing an action on the current instance, not returning a separate copy. Recall that when you programmatically modify a structure's value in one of its methods, you must include the `mutating` keyword. This is true for extensions to structures as well.
+
+  - ```swift
+      extension String {
+        mutating func pluralize() {
+          // Complex code that modifies the current value (self) to be plural
+        }
+      }
+
+      let apple = "Apple"
+      apple.pluralized()
+      print(apple)
+
+      Console Output:
+      Apples
+    ```
+
+- You can even use an extension to add your own custom initializers to existing types. The code below is an example that only allows you to initialize a `String` that obeys some common best practices for choosing a password:
+
+  - ```swift
+      extension String {
+          init?(passwordSafeString: String) {
+              guard passwordSafeString.rangeOfCharacter(from: .uppercaseLetters) != nil &&
+                  passwordSafeString.rangeOfCharacter(from: .lowercaseLetters) != nil &&
+                  passwordSafeString.rangeOfCharacter(from: .punctuationCharacters) != nil &&
+                  passwordSafeString.rangeOfCharacter(from: .decimalDigits) != nil  else {
+                      return nil
+              }
+
+              self = passwordSafeString
+          }
+      }
+    ```
+
+#### Organizing Code
+
+- You can imagine that organizing code is extremely important when working on any non-trivial program. Many developers work on apps with hundreds or thousands of files that define classes, structures, enumerations, view controllers, and custom controls for the project. Each definition can grow to hundreds or thousands of lines.
+- As you begin working on larger projects, you will use extensions as a way to organize your code.
+- One way you might use extensions is to restrict your base type definition to contain only the properties represented by that type and pull all your methods out into an extension of the type:
+
+  - ```swift
+      struct Restaurant {
+        let name: String
+        var menuItems: [MenuItem]
+        var servers: [Employee]
+        var cookingStaff: [Employee]
+        var customers: [Customer]
+      }
+       
+      extension Restaurant {
+       
+        func add(employee: Employee, to group: StaffGroup) {...}
+        func remove(employee: Employee, from group: StaffGroup) {...}
+        func add(menuItem: MenuItem)
+        func remove(menuItem: MenuItem)
+       
+        func welcome(guest: Customer) {...}
+        func serve(item: MenuItem, to guest: Customer) {...}
+        func prepareCheck(for guest: Customer) -> Check {...}
+       
+        // Other methods related to the Restaurant
+      }
+    ```
+
+- Note that subclasses can't override methods that are defined in an extension. Consider this when writing extension methods for a class and give some thought to how you or others may be using your class in the future. Also, while separating your code like this can be very helpful, be careful not to take it too far. For example, you could carry this to an extreme and put every separate function into an extension, but that would harm readability more than help it.
+- Many developers use extensions to adopt a protocol as a way of logically organizing their code. Imagine you have a `UIViewController` subclass that contains a `UITableView`. To populate the table view, you must implement the required `UITableViewDataSource` methods:
+
+  - ```swift
+      class EmployeeViewController: UIViewController, UITableViewDataSource {
+          // EmployeeViewController implementation methods ...
+
+          public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+              return companyAssets.count
+          }
+
+          public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+              // Configure and return cell
+          }
+      }
+    ```
+
+- If it would help the readability of your code, you could break out the `UITableViewDataSource` method implementations into their own section or even their own file using an extension:
+
+  - ```swift
+      class EmployeeViewController: UIViewController {
+          // EmployeeViewController implementation methods ...
+      }
+
+      extension EmployeeViewController: UITableViewDataSource {
+          public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+              return companyAssets.count
+          }
+       
+          public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+              // Configure and return cell
+          }
+      }
+    ```
+
+- For most developers, deciding how to group things in extensions is a matter of style and preference. As you gain more experience, you'll develop preferences of your own.
