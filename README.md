@@ -5093,3 +5093,17 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
 - **Connect to User Behaviors**
   - You may be the app developer, but you still want your user to feel like they own the app experience. You can use animations to connect the user's behavior to what's happening onscreen — so they know that their actions are causing a result.
   - As an example, try activating Notification Center. As you swipe downward, the appearance of Notification Center reflects the position of your finger. By clearly indicating how you're controlling the view, Notification Center has subtly informed you that you can swipe upward to hide it.
+
+#### What Can Be Animated?
+
+- Core Animation is a set of tools that enable app developers to animate views. UIKit leverages Core Animation to support a set of basic animations that include many of the animations you'll want to create.
+- In this lesson, you'll focus on animating UIView objects using some higher-level syntax for interacting with Core Animation. For more advanced animations, check out the [Core Animation Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CoreAnimation_guide/Introduction/Introduction.html#//apple_ref/doc/uid/TP40004514-CH1-SW1).
+- The `UIView` class defines several properties that can be animated:
+  - alpha
+  - backgroundColor
+  - bounds
+  - center
+  - frame
+  - transform
+- You're familiar with several of these properties already; as you experiment with different animations in this lesson, feel free to reference the documentation for UIView to learn or refresh your memory about what each of the properties represents.
+- So far in this course, you've primarily used Interface Builder to design your views, but you can also work with views programmatically. Ordinarily, when you set a property's value the view will update immediately and without an animation. To animate the change, ​you'll change the property's value in an animation closure, and Core Animation will handle the rest.
