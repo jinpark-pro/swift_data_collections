@@ -5070,3 +5070,26 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
     ```
 
 - For most developers, deciding how to group things in extensions is a matter of style and preference. As you gain more experience, you'll develop preferences of your own.
+
+### Lesson 2.3 Practical Animation
+
+- Take a look through the most popular iOS apps, and you'll see elegant, subtle animations used to create a connection with onscreen content. When implemented in the right places and at the right moments, animation can provide feedback, enhance the sense of direct manipulation, or help users visualize the results of their actions.
+- In this lesson, you'll learn how to use the UIView class and closures to add animations that improve the presentation and functionality of your apps.
+- Animations are used heavily in iOS to help users understand what's happening and to tell them something about the data they're viewing.
+- Imagine you're using a shopping app. You'll see one screen with a list of products and another screen with a checkout workflow. When you tap a product on the list, what do you expect to happen? Most users would expect to see a new scene with details about the selected product, and they'd expect it to animate horizontally (and with great subtlety) onto the screen from the right side of the device — the default behavior when using a show segue in a navigation controller. They also expect to be returned to the product list by tapping the Back button in the top-left corner or by swiping from left to right.
+- When you tap a button to view the cart, what do you expect to happen? Most users would expect the new scene to animate vertically from the bottom of the device onto the screen. This modal transition subtly tells the user that they've shifted contexts, from shopping to checking out. Dismissing the view would return the user back to the shopping context.
+- Animating between different views in an app gives the user a sense of orientation — and familiarity — within the app.
+- Animation can also be used to convey the character or personality of your app. This is where your animation technique matters. Take a look at the following animations for adding a new item to a list.
+- From a functionality point of view, both of these apps communicate the same thing: a new item on the list. But because they animate in different ways, the two apps feel quite distinct. The animation on the left could work well in a game or in a more whimsical app, while the animation on the right is more subtle and would work better in a professional or productivity app.
+
+#### Why Animate?
+
+- Animations should direct the user's attention, keep the user oriented, or connect to user behaviors.
+- **Direct the User's Attention**
+  - An animation can make your user aware that something in the app has changed, or it can draw their attention to a new feature or area of the screen. For example, when a badge is applied in the Home screen, an animation draws attention to the fact that the app has new information or new content.
+- **Keep the User Oriented**
+  - As an app developer, you want your users to know where they are and where they've been. Animations can help you orient them as they move through your app.
+  - Consider the iOS Calendar app as an example. As you navigate from the year view to the month view and finally to the day view, the animation appears to lift the month or day to the current plane, pushing the rest of the year or month offscreen. As you navigate back to the previous level, the current day or month collapses back into the larger context. These animations keep the user oriented and communicate how they got to each screen.
+- **Connect to User Behaviors**
+  - You may be the app developer, but you still want your user to feel like they own the app experience. You can use animations to connect the user's behavior to what's happening onscreen — so they know that their actions are causing a result.
+  - As an example, try activating Notification Center. As you swipe downward, the appearance of Notification Center reflects the position of your finger. By clearly indicating how you're controlling the view, Notification Center has subtly informed you that you can swipe upward to hide it.
