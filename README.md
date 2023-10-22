@@ -5107,3 +5107,164 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
   - transform
 - You're familiar with several of these properties already; as you experiment with different animations in this lesson, feel free to reference the documentation for UIView to learn or refresh your memory about what each of the properties represents.
 - So far in this course, you've primarily used Interface Builder to design your views, but you can also work with views programmatically. Ordinarily, when you set a property's value the view will update immediately and without an animation. To animate the change, ​you'll change the property's value in an animation closure, and Core Animation will handle the rest.
+
+#### Animation Closures
+
+- The UIView class defines several class methods that accept a closure within which you can update the animatable properties on your views. The method then handles the calculations to animate the changes over time.
+- The methods vary in the number of parameters they accept. They all allow you to specify the duration of the animation, and two also allow the animation to be performed after a specified delay. One has properties to make the animation's timing curve correspond to the motion of a physical spring. And three allow another closure to run on completion of the animation. Use the method with the parameters that match your needs.
+ 
+  - [animate(withDuration:animations:)](https://developer.apple.com/documentation/uikit/uiview/1622418-animate)
+
+    - ```swift
+        class func animate(
+            withDuration duration: TimeInterval,
+            animations: @escaping () -> Void
+        )
+      ```
+
+  - [animate(withDuration:animations:completion:)](https://developer.apple.com/documentation/uikit/uiview/1622515-animate)
+
+      - ```swift
+          class func animate(
+              withDuration duration: TimeInterval,
+              animations: @escaping () -> Void,
+              completion: ((Bool) -> Void)? = nil
+          )
+        ```
+
+  - [animate(withDuration:delay:options:animations:completion:)](https://developer.apple.com/documentation/uikit/uiview/1622451-animate)
+
+    - ```swift
+        class func animate(
+            withDuration duration: TimeInterval,
+            delay: TimeInterval,
+            options: UIView.AnimationOptions = [],
+            animations: @escaping () -> Void,
+            completion: ((Bool) -> Void)? = nil
+        )
+      ```
+
+  - [animate(withDuration:delay:usingSpringWithDamping:​initialSpringVelocity:options:animations:completion:)](https://developer.apple.com/documentation/uikit/uiview/1622594-animate)
+
+    - ```swift
+        class func animate(
+            withDuration duration: TimeInterval,
+            delay: TimeInterval,
+            usingSpringWithDamping dampingRatio: CGFloat,
+            initialSpringVelocity velocity: CGFloat,
+            options: UIView.AnimationOptions = [],
+            animations: @escaping () -> Void,
+            completion: ((Bool) -> Void)? = nil
+        )
+      ```
+
+- **Animate with Duration**
+  - The first method requires only the two parameters that are shared by all four methods. The first parameter, `duration`, represents the number of seconds allocated for the animation. The second parameter, `animations`, is a closure that contains changes to the view's animatable properties.
+  - For example, the following code will animate a change to the `alpha` property over the course of two seconds. The change is made within a trailing closure, which you learned about in a previous lesson.
+
+    - ```swift
+        UIView.animate(withDuration: 2.0) {
+            view.alpha = 0.3
+        }
+      ```
+
+  - How simple is that? All you had to do is tell the function the end result, and Core Animation handles rendering each frame. As you can see, you can create a sophisticated animation with only a few lines of code.
+  - Go ahead and try it for yourself. Create a new playground in Xcode called “FlyingSquares.” You'll use a feature called the live view, which allows you to add views and experiment with some of the animation features you'll learn about in this lesson.
+  - Each page in an Xcode playground can have its own live view for displaying a view hierarchy in the assistant editor. To use the live view feature, you'll need to import the `PlaygroundSupport` framework, which gives you access to special playground properties. One of the objects in this framework is called `PlaygroundPage`. Use the `PlaygroundPage.current` property to access the current playground page.
+  - In your playground, create a new `UIView` with a 500-by-500-point frame and set it to the `PlaygroundPage.current.liveView` property.
+
+    - ```swift
+        import UIKit
+        import PlaygroundSupport
+         
+        let liveViewFrame = CGRect(x: 0, y: 0, width: 500, height: 500)
+        let liveView = UIView(frame: liveViewFrame)
+        liveView.backgroundColor = .white
+         
+        PlaygroundPage.current.liveView = liveView
+      ```
+
+  - Open the assistant editor and you'll see a square, white view. To verify that the live view is working correctly, try changing the background color and watch the live view change.
+  - Now create a 100-by-100-point view and add it as a subview to the live view you just created. You'll use this smaller view to experiment with the different animation methods in this lesson.
+
+    - ```swift
+        let smallFrame = CGRect(x: 0, y: 0, width: 100, height: 100)
+        let square = UIView(frame: smallFrame)
+        square.backgroundColor = .purple
+         
+        liveView.addSubview(square)
+      ```
+
+  - Once the live view refreshes, you'll see the new small view in the top-left corner of the live view. Now you're ready to play with some animations.
+  - Add your first animation by using the `UIView.animate(withDuration:animations:)` method to change the background color over three seconds.
+
+    - ```swift
+        UIView.animate(withDuration: 3.0) {
+            square.backgroundColor = .orange
+        }
+      ```
+
+  - Experiment with a few of the different animatable properties of the square instance. Try to make the small view larger and move it to the center of the live view. (Hint: Use the frame or center properties to move the view.)
+
+    - ```swift
+        UIView.animate(withDuration: 3.0) {
+            square.frame = CGRect(x: 100, y: 100, width: 300, height: 300)
+        }
+      ```
+
+  - Once you get the view to move, create another animation that returns the square back to its original size, position, and color.
+
+    - ```swift
+        UIView.animate(withDuration: 3.0) {
+            square.backgroundColor = .orange
+            square.frame = CGRect(x: 100, y: 100, width: 300, height: 300)
+        }
+        UIView.animate(withDuration: 3.0, delay: 3.0) {
+            square.backgroundColor = .purple
+            square.frame = CGRect(x: 0, y: 0, width: 100, height: 100)
+        }
+      ```
+
+  - Were you able to get the second animation to work? If so, nice work! Otherwise, read the following section to figure out how to use a completion handler to execute code after an animation finishes.
+- **Add a Completion Handler**
+  - In the previous example, you tried to animate the size, position, and color of the view back to their original values.
+  - Why didn't this approach work? The main reason is that the second `animate` call is executed immediately after the first call — so Core Animation skipped the first animation and started executing the new instructions. One way to fix this is to call the second animation after the first animation is completed, not after it is called. You can do this by using the `UIView.animate(withDuration:animations:completion:)` method.
+  - Similar to the `animations` parameter, `completion` is also a closure. However, the `completion` closure is executed after your animations have completed (as the name suggests). You can use this closure to run any action you'd like to occur after the animation has finished, including starting another animation.
+  - The following code will animate the background color, update the frame, and, using the completion handler, return the view back to its original size, position, and color:
+
+    - ```swift
+        UIView.animate(withDuration: 3.0, animations: {
+            square.backgroundColor = .orange
+            square.frame = CGRect(x: 150, y: 150, width: 200, height: 200)
+        }) { (_) in
+            UIView.animate(withDuration: 3.0) {
+                square.backgroundColor = .purple
+                square.frame = smallFrame
+            }
+        }
+      ```
+
+  - Replace your `animate(withDuration:animations:)` method with the animate`(withDuration:animations:completion:)` method, and experiment with performing other actions after the animation has completed.
+- **Add a Delay or Custom Options**
+  - The third common method used for animations is `UIView.animate(withDuration:delay:options:animations:completion:)`, which introduces two new parameters. The `delay` parameter represents the number of seconds to delay the start of the animation. The `options` parameter is an array of predefined options for customizing animations. For example, you can set your animation to repeat, or you can set a timing curve for the animation. Check out the documentation for available [UIViewAnimationOptions](https://developer.apple.com/documentation/uikit/uiview/animationoptions).
+  - The following code moves square from the top-left corner to the bottom-right corner over three seconds after a two-second delay, and repeats the animation indefinitely. It uses no completion closure.
+
+    - ```swift
+        UIView.animate(withDuration: 3.0, delay: 2.0, options: [.repeat], animations: {
+            square.backgroundColor = .orange
+            square.frame = CGRect(x: 400, y: 400, width: 100, height: 100)
+        }, completion: nil)
+      ```
+
+  - Take some time to experiment with the different animation options.
+- **Spring Animations**
+  - The fourth method used for animation can really polish your user's interactions — when used with restraint. As you use iOS, you may notice that some interactions and animations feel “bouncy” and can add a spark of joy when you see them. Try the following to move the square from the top-left corner to the center and double its size.
+
+    - ```swift
+        UIView.animate(withDuration: 1.3, delay: 0.0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.3, options: [], animations: {
+            square.frame = CGRect(x: 150, y: 150, width: 200, height: 200)
+        }, completion: nil)
+      ```
+
+  - Notice how the square oscillates as it settles into place, as if it's attached to a spring. This effect can enhance your animations and make your app feel more playful. Try adjusting the duration, damping, and initial velocity values to see how they affect the animation. You may find that it is hard to get these values just right, and certain combinations can lead to unexpected results.
+  - Consider using these animations in your apps where it makes sense, but remember not to overdo it. Your users could quickly become irritated by the effect — but just the right touch can change the entire feel of your apps.
