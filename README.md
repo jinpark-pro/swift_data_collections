@@ -5355,3 +5355,11 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
     ```
 
 - When should you animate constraints instead of modifying the frame or transform properties? Changing the view properties will not modify the position and size of other views on the screen. If, however, you have a series of views whose positions and sizes are based on one another, and you want all the views to update to reflect new constraint values, you should animate the constraints.
+
+#### Animation In Practice
+
+- While it may be tempting to add animations to every view and every action, it's important to have some restraint. In Unit 4, you'll learn more about the Human Interface Guidelines, including those for animations. Here's a quick preview:
+  - Use animation judiciously, as excessive or gratuitous animation can be distracting.
+  - Strive for realism and credibility. Users will accept some artistic license, but onscreen movement should make sense. If the user will reveal a view by swiping down from the top of the screen, they should be able to dismiss it by swiping up. Also, consider how things move in the real world. For example, a car accelerates gradually to the desired speed, then decelerates gradually to come to a stop. Consider using an ease in/out timing curve so that your animated objects mirror this real-world experience of acceleration.
+  - Use consistent animation. iOS users are accustomed to smooth transitions, fluid changes in device orientation, and physics-based scrolling. Unless you’re creating an immersive experience, such as in a game, you'll want to use the built-in animations.
+  - Make animations optional. When the option to reduce motion is enabled in accessibility preferences, your app should minimize or eliminate animations. Use the `UIAccessibilityIsReduceMotionEnabled()` function to check whether reduced motion is enabled.
