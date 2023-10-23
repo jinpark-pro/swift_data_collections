@@ -5329,3 +5329,29 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
 
 - Note that the color is still orange because applying the `identity` property will only undo the `CGAffineTransform` changes.
 - If you're interested in exploring the math involved with these affine transforms, start by checking out the CGAffineTransform Documentation.
+
+#### Animate Constraints
+
+- You have seen that you can animate the properties of a UIView. You can also animate constraints through the constant property on `NSLayoutConstraint` (the class all constraints are instances of). To modify a constraint, you need to have a reference to it in code. Similar to creating outlets to views, you can create an outlet for a constraint.
+  - `@IBOutlet var widthConstraint: NSLayoutConstraint!`
+- To update a constraint, modify the constant value. In the following example, imagine you have a view whose width is defined by `widthConstraint`. When the `buttonTapped(_:)` method is called, the constraint's `constant` is set to `320`, which will update the width the next time that the screen is redrawn.
+
+  - ```swift
+      @IBAction func buttonTapped(_ sender: UIButton) {
+        widthConstraint.constant = 320
+      }
+    ```
+
+- To animate the change in width, iOS needs to be given the instruction to adjust the width over time. To do this, call `layoutIfNeeded()` on the parent view inside an animation closure. The `layoutIfNeeded()` method tells the receiver to lay out its subviews, and doing so within an animation will adjust the layout over a given time.
+
+  - ```swift
+      @IBAction func buttonTapped(_ sender: UIButton) {
+        widthConstraint.constant = 320
+       
+        UIView.animate(withDuration: 0.5) {
+          self.view.layoutIfNeeded()
+        }
+      }
+    ```
+
+- When should you animate constraints instead of modifying the frame or transform properties? Changing the view properties will not modify the position and size of other views on the screen. If, however, you have a series of views whose positions and sizes are based on one another, and you want all the views to update to reflect new constraint values, you should animate the constraints.
