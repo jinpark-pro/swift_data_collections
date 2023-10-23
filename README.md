@@ -5268,3 +5268,64 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
 
   - Notice how the square oscillates as it settles into place, as if it's attached to a spring. This effect can enhance your animations and make your app feel more playful. Try adjusting the duration, damping, and initial velocity values to see how they affect the animation. You may find that it is hard to get these values just right, and certain combinations can lead to unexpected results.
   - Consider using these animations in your apps where it makes sense, but remember not to overdo it. Your users could quickly become irritated by the effect — but just the right touch can change the entire feel of your apps.
+
+#### The Transform Property
+
+- Did you recognize most of animatable properties on the list at the beginning of this lesson? There's probably one that's new to you: the `transform` property. `transform` is an instance of the structure `CGAffineTransform` and can be used to change a view's scale, rotate a view, or move a view without calculating changes to the view's frame.
+- Unless you're really into advanced mathematics, this structure can seem a bit intimidating. An affine transform is a three-by-three matrix that maps each point in an untransformed view to another point, resulting in a transformed view.
+- Because these animations are so common, iOS has helpful initializers for generating transforms that scale, rotate, or translate your views. And you won't need an advanced math degree to use them.
+- | Type | Initializer | Parameter Description |
+  |:---:|:---:|:---:|
+  | Scale | init(scaleX: CGFloat, y: CGFloat) | The factors by which to scale your view. |
+  | Rotate | init(rotationAngle: CGFloat) | The angle (in radians) by which to rotate your view, with a positive value indicating counterclockwise rotation. |
+  | Translate | init(translationX: CGFloat, y: CGFloat) | The value by which to move (shift) your view. |
+- Instead of manually updating the frame, you can use these transforms to animate a change in scale, rotation, or position. Basic transforms may resemble the following:
+
+  - ```swift
+      /* Double the height and width of the view */
+      let scaleTransform = CGAffineTransform(scaleX: 2.0, y: 2.0)
+       
+      /* Rotate the view 180 degrees */
+      let rotateTransform = CGAffineTransform(rotationAngle: .pi)
+       
+      /* Move the view 200 points to the right and 200 points down */
+      let translateTransform = CGAffineTransform(translationX: 200, y: 200)
+    ```
+
+- You'll notice that the `rotationAngle` parameter in the example above is given the value `.pi`. The rotation value is expressed in radians, a standard unit of measure for angles. 180 degrees is the same as π radians.
+- It's also possible to combine transform instances by concatenating them. The following code combines the three transforms in the previous example into a single transform that's assigned to the square view:
+
+  - ```swift
+      UIView.animate(withDuration: 2.0) {
+          square.backgroundColor = .orange
+       
+          let scaleTransform = CGAffineTransform(scaleX: 2.0, y: 2.0)
+          let rotateTransform = CGAffineTransform(rotationAngle: .pi)
+          let translateTransform = CGAffineTransform(translationX: 200, y: 200)
+          let comboTransform = scaleTransform.concatenating(rotateTransform)​.concatenating(translateTransform)
+       
+          square.transform = comboTransform
+      }
+    ```
+
+- There's one more property of the `CGAffineTransform` type that may be useful: `identity`. You use the `identity` property to undo any `CGAffineTransform` animations you have implemented. The following code uses the completion handler to undo the `CGAffineTransform` animations:
+
+  - ```swift
+      UIView.animate(withDuration: 2.0, animations: {
+          square.backgroundColor = .orange
+       
+          let scaleTransform = CGAffineTransform(scaleX: 2.0, y: 2.0)
+          let rotateTransform = CGAffineTransform(rotationAngle: .pi)
+          let translateTransform = CGAffineTransform(translationX: 200, y: 200)
+          let comboTransform = scaleTransform.concatenating(rotateTransform)​.concatenating(translateTransform)
+       
+          square.transform = comboTransform
+      }) { (_) in
+          UIView.animate(withDuration: 2.0, animations: {
+              square.transform = CGAffineTransform.identity
+          })
+      }
+    ```
+
+- Note that the color is still orange because applying the `identity` property will only undo the `CGAffineTransform` changes.
+- If you're interested in exploring the math involved with these affine transforms, start by checking out the CGAffineTransform Documentation.
