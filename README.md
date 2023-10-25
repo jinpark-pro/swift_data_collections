@@ -5363,3 +5363,25 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
   - Strive for realism and credibility. Users will accept some artistic license, but onscreen movement should make sense. If the user will reveal a view by swiping down from the top of the screen, they should be able to dismiss it by swiping up. Also, consider how things move in the real world. For example, a car accelerates gradually to the desired speed, then decelerates gradually to come to a stop. Consider using an ease in/out timing curve so that your animated objects mirror this real-world experience of acceleration.
   - Use consistent animation. iOS users are accustomed to smooth transitions, fluid changes in device orientation, and physics-based scrolling. Unless you’re creating an immersive experience, such as in a game, you'll want to use the built-in animations.
   - Make animations optional. When the option to reduce motion is enabled in accessibility preferences, your app should minimize or eliminate animations. Use the `UIAccessibilityIsReduceMotionEnabled()` function to check whether reduced motion is enabled.
+
+#### Build An Animation Wireframe
+
+- To practice your new animation knowledge, you'll create a wireframe — just the views, without actual functionality — of the Now Playing screen in the Music app.
+- If you have the Music app on an iOS device, take a few minutes to play around with it; otherwise, take a moment to notice the animations in the previous video.
+- Notice that when you tap the play/pause button, reverse button, or forward button, a circle appears — the finger shadow as it depresses the button — and the icon gets smaller. This animation works to tell the user that the button was tapped.
+- Also take note of the album art. When you switch between playing music and pausing music, the album art changes size. The album is large and at full width when playing, and smaller but still centered when paused. This animation keeps the user oriented by signaling that the buttons are affecting the current selection. It also helps inform the user that the song has started or stopped playing.
+- You're now familiar with how animations should be used and some of the code you'll use to build them. You'll apply that knowledge and practice creating animations as you build this wireframe:
+- Not counting the view controller's view, how many subviews are there? What is the finger shadow? Including the stack view containing the buttons, you'll have eight views: an image view, a stack view with three buttons, and three views for the finger shadows.
+- **Set Up the View**
+  - Create a new Xcode project using the iOS App template and name it "MusicWireframe." Once created, open the Main storyboard.
+  - Build a view similar to the one in the earlier video as if the track were playing. Add an image view from the Object library, and use Auto Layout to constrain its top, leading, and trailing edges to the top, leading, and trailing edges of the view margin. Also constrain the view's aspect ratio to 1:1. Since you won't have actual album art to display, adjust the background color so that the view is visible.
+    - <img src="./resources/music_wireframe_image.png" alt="Music Wireframe Image" width="400" />
+  - Next, add the stack view and the buttons. In the Attributes inspector, set the Style to `Default`, delete the buttons' Title text, and set their Image properties to use the system images called `backward.fill`, `play.fill`, and `forward.fill`. Use the Symbol Configuration to adjust their `point size` appropriately. For the center button, configure the `play.fill` image for the `Default` state and the `pause.fill` image for the `Selected` state, then mark the button's State as `Selected` in the Attributes inspector's `Control` section so that the pause image is visible by default.
+  - Use Auto Layout and the stack view to neatly display the buttons below the image view. Your stack view should have the following attributes: `Horizontal` Axis, `Fill` Alignment, and `Equal Spacing` Distribution.
+  - Now add three UIView instances to the view. These will act as the finger shadow. Adjust their color to `Light Gray Color`. Next, add constraints to `center` the views behind each button.
+    - Move the view to the center of the button. To move shortly, Command + Drag the view. Control + Drag from the view to the button. Command + select center vertically and center horizontally.
+  - Set the aspect ratio on each view to `1:1` so that they remain square, then set the height equal to the corresponding button with a multiplier of 1.5 – making them slightly larger.
+    - In Add New Constraints, select Aspect Ratio, and then edit the ratio to 1:1 in Size inspector Aspect Ratio.
+    - Control + Drag from the view to the button, select Equal Height and modify the multiplier to 1.5 in Size inspector Vertical.
+  - <img src="./resources/music_wireframe_buttons.png" alt="Music Wireframe Buttons" width="400" />
+  - Build and run your app to test your constraints. You should see your views laid out correctly.
