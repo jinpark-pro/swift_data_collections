@@ -5385,3 +5385,68 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
     - Control + Drag from the view to the button, select Equal Height and modify the multiplier to 1.5 in Size inspector Vertical.
   - <img src="./resources/music_wireframe_buttons.png" alt="Music Wireframe Buttons" width="400" />
   - Build and run your app to test your constraints. You should see your views laid out correctly.
+- **Add Outlets**
+  - Next, you'll need access to all the views you'll change. Add an `@IBOutlet` to ViewController for each of these views:
+
+    - ```swift
+        @IBOutlet var albumImageView: UIImageView!
+        @IBOutlet var reverseBackground: UIView!
+        @IBOutlet var playPauseBackground: UIView!
+        @IBOutlet var forwardBackground: UIView!
+        @IBOutlet var reverseButton: UIButton!
+        @IBOutlet var playPauseButton: UIButton!
+        @IBOutlet var forwardButton: UIButton!
+      ```
+
+- **Initialize Views**
+  - Building the circular finger shadow view can be a little tricky. You'll need to make the view appear as a circle, and you'll want to hide the view until the user taps the button.
+  - While many view properties are adjustable in Interface Builder, this is one scenario where it is easier to build the view programmatically. You'll need to do some of the initialization in the `viewDidLoad()` method.
+  - To make a square view render as a circle, you'll need to set two properties: the layer's corner radius and `clipsToBounds`. The layer is used by Core Animation to render the view on the screen; setting the corner radius will round the corners of the view, and the `clipsToBounds` property determines whether the view's visible layer should be confined to the bounds of the view. You can learn more about these properties in the [documentation for UIView](https://developer.apple.com/documentation/uikit/uiview).
+  - To make a circle, set the corner radius of the layer to half the height of the view and set the `clipsToBounds` property to `true`. Update your `viewDidLoad()` method to make each of the background views circular:
+
+    - ```swift
+        override func viewDidLoad() {
+            super.viewDidLoad()
+         
+            reverseBackground.layer.cornerRadius = reverseBackground.frame.height / 2
+            reverseBackground.clipsToBounds = true
+         
+            playPauseBackground.layer.cornerRadius = playPauseBackground.frame.height / 2
+            playPauseBackground.clipsToBounds = true
+         
+            forwardBackground.layer.cornerRadius = forwardBackground.frame.height / 2
+            forwardBackground.clipsToBounds = true
+        }
+      ```
+
+  - Build and run the app to see that your background views are now circles.
+  - Finally, set the background views' alpha value to 0 to make them completely transparent when the view loads.
+  - Since you'll be doing the same adjustments to each view, you could opt to use the `forEach(_:)` method on an array of the views, which applies a closure to all its items:
+
+    - ```swift
+        override func viewDidLoad() {
+            super.viewDidLoad()
+         
+            [reverseBackground, playPauseBackground,
+              forwardBackground].forEach { view in
+                view?.layer.cornerRadius = view!.frame.height / 2
+                view?.clipsToBounds = true
+                view?.alpha = 0.0
+            }
+        }
+      ```
+
+  - You can use a `Bool` property value to keep track of whether the song is playing, which will impact your properties. If you'd like, you can also use property observers to automatically update the play/pause button's selection state and, therefore, its image.
+
+    - ```swift
+        class ViewController: UIViewController {
+            var isPlaying: Bool = true {
+                didSet {
+                    playPauseButton.isSelected = isPlaying
+                }
+            }
+            //...
+        }
+      ```
+
+  - If you build and run your app, you should see a very similar screen to your last build, but the finger shadow views are no longer visible. If you'd like to see your circular views, you can comment out the line (or lines) adjusting the alpha. (As you move on, don't forget to uncomment that code.)
