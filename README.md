@@ -5450,3 +5450,27 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
       ```
 
   - If you build and run your app, you should see a very similar screen to your last build, but the finger shadow views are no longer visible. If you'd like to see your circular views, you can comment out the line (or lines) adjusting the alpha. (As you move on, don't forget to uncomment that code.)
+- **Add Album Art Animation**
+  - Now it's time to focus on the animation of the album art. As the user plays or pauses the song, the album art will change: from full size when playing to smaller when paused. To respond to the user tapping the play/pause button (and changing the state of the animation), you'll need to add an `@IBAction` to the button.
+  - Add a new action for the play/pause button: `@IBAction func playPauseButtonTapped() {}`
+  - When the button is tapped, you'll toggle the `isPlaying` property and adjust the image view for its new state. If the song is playing, you'll animate the view to its full size — with a little bit of spring to the animation. Otherwise, when the song is not playing, you'll reduce the image view to 80 percent of its original size — with no spring this time.
+  - Which property should you animate here? If you said the `transform` property, you'd be right. But you may have said `frame` or `bounds`. While you could use either of these properties to adjust the size, it would be easier to use a scale affine transform, which will allow you to adjust the size by a specified factor.
+  - Remember the `CGAffineTransform` type's `identity` property? You'll use that to undo previous transforms and return the image to its original size. The following code shows how to apply the `identity` property. Of course, as with all animations, you'll also need to define a duration.
+
+    - ```swift
+        @IBAction func playPauseButtonTapped() {
+            isPlaying.toggle()
+         
+            if isPlaying {
+                UIView.animate(withDuration: 0.8, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.1, options: [], animations: {
+                    self.albumImageView.transform = CGAffineTransform.identity
+                }, completion: nil)
+            } else {
+                UIView.animate(withDuration: 0.5) {
+                    self.albumImageView.transform = CGAffineTransform(scaleX: 0.8, y: 0.8)
+                }
+            }
+        }
+      ```
+
+  - Build and run your app. At this point, you should be able to tap the play/pause button and see the image view animate as you change from playing to paused.
