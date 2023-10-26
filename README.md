@@ -5474,3 +5474,93 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
       ```
 
   - Build and run your app. At this point, you should be able to tap the play/pause button and see the image view animate as you change from playing to paused.
+- **Add Button Animations**
+  - Are you ready to add the animations that make the buttons look like the user is physically pressing them? Check out the Music app again and see what happens when you touch the button and when you release it. As you release, the finger shadow grows (even as it's fading away), and the icon returns to its normal size.
+  - To accomplish these animations, you'll need to add two actions: one that responds to the touch-down control event and one that responds to the touch-up event. Since these actions will be similar across the three buttons, you can repeat them. But how will you know which button was tapped and which finger shadow to animate? You'll have the sender be an argument to the action function.
+  - Start by adding two actions to the reverse button:
+    - | Connection | Name | Type | Event | Arguments |
+      |---|---|---|---|---|
+      | Action | touchedDown | UIButton | Touch Down | Sender |
+      | Action | touchedUp | UIButton | Touch Up Inside | Sender |
+
+    - ```swift
+        @IBAction func touchedDown(_ sender: UIButton) {}
+         
+        @IBAction func touchedUpInside(_ sender: UIButton) {}
+      ```
+
+  - Next, connect the other two buttons to the same two methods, making sure to connect the correct touch event. It might be helpful to use the assistant editor to drag from the Connections inspector to the view controller class file. 
+  - At this point, you could add print statements to test that your button actions are hooked up and firing correctly. The reverse and forward buttons should have two actions, and the play/pause button should have three (touchedDown, touchedUpInside, playPauseButtonTapped).
+  - You may notice that there are two methods called on a touch-up event for the play/pause button. While not a typical configuration, each method in this case is responsible for different actions/animations, so it's reasonable to separate the functions.
+  - Before you can animate the button views, you'll need to figure out which button was tapped and get the appropriate finger shadow (background) view. Using a switch statement, determine which button was tapped and store the appropriate background view in a constant:
+
+    - ```swift
+        @IBAction func touchedDown(_ sender: UIButton) {
+            let buttonBackground: UIView
+         
+            switch sender {
+            case reverseButton:
+                buttonBackground = reverseBackground
+            case playPauseButton:
+                buttonBackground = playPauseBackground
+            case forwardButton:
+                buttonBackground = forwardBackground
+            default:
+                return
+            }
+        }
+      ```
+
+  - Now that you know the views you'll animate, it's time to make the animation call and update the properties in the closure.
+  - For touchedDown, the button will scale by a factor of 80 percent on both sides, and the background view will have an alpha of 30 percent—just enough to give a subtle appearance.
+
+    - ```swift
+        @IBAction func touchedDown(_ sender: UIButton) {
+            let buttonBackground: UIView
+         
+            switch sender {
+            case reverseButton:
+                buttonBackground = reverseBackground
+            case playPauseButton:
+                buttonBackground = playPauseBackground
+            case forwardButton:
+                buttonBackground = forwardBackground
+            default:
+                return
+            }
+         
+            UIView.animate(withDuration: 0.25) {
+                buttonBackground.alpha = 0.3
+                sender.transform = CGAffineTransform(scaleX: 0.8, y: 0.8)
+            }
+        }
+      ```
+
+  - Now see if you can write code for the touch-up action. In this animation, the background view will disappear (alpha = 0) and expand slightly (say, 120 percent on each side), and the button will return to its original size (use the identity type property). In addition, when the animation is complete (and therefore the background view is invisible), you'll return the view to its original size. Remember that you'll need to determine which button and which background view to animate.
+
+    - ```swift
+        @IBAction func touchedUpInside(_ sender: UIButton) {
+            let buttonBackground: UIView
+         
+            switch sender {
+            case reverseButton:
+                buttonBackground = reverseBackground
+            case playPauseButton:
+                buttonBackground = playPauseBackground
+            case forwardButton:
+                buttonBackground = forwardBackground
+            default:
+                return
+            }
+         
+            UIView.animate(withDuration: 0.25, animations: {
+                buttonBackground.alpha = 0.0
+                buttonBackground.transform = CGAffineTransform(scaleX: 1.2, y: 1.2)
+                sender.transform = CGAffineTransform.identity
+            }) { (_) in
+                buttonBackground.transform = CGAffineTransform.identity
+            }
+        }
+      ```
+
+  - At this point, you should have a working wireframe—complete with animations on the image view, as well as on the buttons and their background views. Nice work!
