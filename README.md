@@ -5686,3 +5686,34 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
 - **Body**
   - The body of a request includes the data that was sent or received. When you receive a response to a GET request, it will also have a body. For example, when you request the information for a website, the resources that make up the site — its HTML, CSS, and images — are all included as bodies of the network request.
   - When your app sends a POST request, it will send a body of information — whether plain text, JSON, or a file — to be posted to the server.
+
+#### Create A URL
+
+- Now that you know what a request is and a little bit about how a response might look, you can start learning the code for creating and sending requests in Swift.
+- Create a new playground called “Working with the Web.” You'll use the playground to learn how to construct URLs in Swift, and you'll create and execute your first network request. Playgrounds are a great place to experiment with writing networking code and printing the results.
+- You'll use the `URL` type in Swift to construct and modify the URL you'll use in your network requests. Creating a `URL` object is simple: Use the `init?(string: String)` initializer, which returns an optional URL.
+- In your playground, create a `URL` object that points to `https://www.apple.com` by adding this line of code: `let url = URL(string: "https://www.apple.com")!`
+- Why does that code use the `!` operator? You've already learned that the failable initializer will return an optional `URL` instance. If you look at the documentation for the initializer, you'll find a discussion that explains when the initializer will fail: `Returns nil if a URL cannot be formed with the string (for example, if the string contains characters that are illegal in a URL, or is an empty string).`
+- In fact, URLs can contain any of the following characters: 
+  - ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=`.
+- As long as you're drawing only from that list of characters, you're set to force - unwrap the optional `URL`. If the unwrap fails, your program will crash — and you'll know there's something wrong with the string you're using to initialize the URL.
+- Now that you know how to initialize a `URL` instance, you can experiment with printing out its different properties. For example, use the `scheme` property on `url` to print the HTTPS protocol, use `host` to print the domain, or use `query` to print the list of query parameters. (Note that if you try to print a property with an optional type, such as `query`, directly, the playground will warn you that it has implicitly coerced the expression. You can get around these errors with judicious use of force-unwrapping.)
+
+  - ```swift
+      let url = URL(string: "https://www.youtube.com/watch?v=ss1eqNJd8kA")!
+
+      print("Protocol: \(url.scheme)")
+      print("Port: \(url.port)")
+      print("Domain: \(url.host)")
+      print("Path: \(url.path)")
+      print("Query Parameters: \(url.query)")
+
+      /* Output */
+      Protocol: Optional("https")
+      Port: nil
+      Domain: Optional("www.youtube.com")
+      Path: /watch
+      Query Parameters: Optional("v=ss1eqNJd8kA")
+    ```
+
+- Take a moment to navigate around your favorite website, looking at how the URL changes from page to page. Can you break it down into parts? If so, you're well on your way to creating and executing network requests.
