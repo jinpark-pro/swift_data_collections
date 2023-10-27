@@ -5564,3 +5564,75 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
       ```
 
   - At this point, you should have a working wireframe—complete with animations on the image view, as well as on the buttons and their background views. Nice work!
+
+#### Lab - Enter to Win a Contest
+
+- The objective of this lab is to help you understand when is a good time to use an animation. You'll create an animation that will help your app be more intuitive for the user.
+- Create a new Xcode project called “Contest” and save it to your projects folder.
+- The app will have the user input an email address to be entered into a contest to win a prize. When the user taps the button to submit their email address, they will be taken to another screen that says they've been entered into the contest.
+- If the user taps the submit button but has not entered an email address, the app will stay on the input view, and the text field will animate to grab the attention of the user — helping them see that they need to fill in the text field to enter the contest.
+
+##### Step 1. Set Up the Storyboard
+
+- On the first view controller of the app, have a label at the top to tell the user that they need to enter an email address to be entered in the contest.
+- Add a text field for the user to input their email address.
+- Add a button to submit the entry to the contest.
+- Add another view controller. Create a segue from the text field of the first view controller to the second view controller. Give the segue an identifier.
+- On the second view controller, add a label to say that the user has successfully entered the contest.
+- Create an `@IBOutlet` for the email text field. Create an `@IBAction` for the submit button.
+
+##### Step 2. Create the animation
+
+- When the user enters an email address, they should be moved to the next screen. Otherwise, the text field should shake a little, indicating to the user that they need to enter an email address.
+- Using what you know of the `animate(withDuration:)` methods, determine how you will compose the animation. Try using `CGAffineTransform(translation)`.
+- Using the text field's `transform` property, move the text field slightly, perhaps to the right.
+- Use the `identity` property to return the text field to its original state.
+
+##### Step 3. Implement the animation
+
+- In the `@IBAction` for the submit button, create an `if-else` statement.
+- If the text field is an empty string, then use the animation code written in Step 2 on the text field.
+- Else, when the text field has a value, perform the segue with the identifier set in Step 1.
+
+  - ```swift
+      @IBAction func submitButtonTapped(_ sender: UIButton) {
+          if let text = emailTextField.text, !text.isEmpty {
+              performSegue(withIdentifier: "Succeed", sender: nil)
+          } else {
+              UIView.animate(withDuration: 0.1, animations: {
+                  self.emailTextField.transform = CGAffineTransform(translationX: 10, y: 10)
+              }) { (_) in
+                  UIView.animate(withDuration: 0.1, animations: {
+                      self.emailTextField.transform = CGAffineTransform(translationX: -10, y:-10)
+                  }, completion: { (_) in
+                      self.emailTextField.transform = CGAffineTransform.identity
+                  })
+              }
+          }
+      }
+    ```
+
+- Great job! You've successfully created an animation that helps the user understand how to use your app. Animations can be a powerful resource for you to use in your apps. Continue to practice and use animations. Be sure to save your project to your projects folder for future reference.
+
+##### Challenge — Extra Shaking
+
+- There's one more animation API that was not discussed: `animateKeyframes(withDuration:delay:options:animations:completion:)`. Study the [documentation for this method](https://developer.apple.com/documentation/uikit/uiview/1622552-animatekeyframes) and try using it to enhance the shake animation by shaking the text field back and forth a few times.
+
+  - ```swift
+      UIView.animateKeyframes(withDuration: 0.6, delay: 0.0, options: .calculationModeCubic, animations: {
+          UIView.addKeyframe(withRelativeStartTime: 0.0, relativeDuration: 0.25) {
+              self.emailTextField.transform = CGAffineTransform(translationX: 10, y: 10)
+          }
+          UIView.addKeyframe(withRelativeStartTime: 0.25, relativeDuration: 0.25) {
+              self.emailTextField.transform = CGAffineTransform(translationX: -10, y: -10)
+          }
+          UIView.addKeyframe(withRelativeStartTime: 0.5, relativeDuration: 0.25) {
+              self.emailTextField.transform = CGAffineTransform(translationX: 10, y: 10)
+          }
+          UIView.addKeyframe(withRelativeStartTime: 0.75, relativeDuration: 0.25) {
+              self.emailTextField.transform = CGAffineTransform(translationX: -10, y: -10)
+          }
+      }, completion: { (_) in
+          self.emailTextField.transform = CGAffineTransform.identity
+      })
+    ```
