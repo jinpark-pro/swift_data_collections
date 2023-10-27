@@ -5636,3 +5636,53 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
           self.emailTextField.transform = CGAffineTransform.identity
       })
     ```
+
+### Lesson 2.4 Working with the Web: HTTP and URL
+
+- So far in this course, you've built apps that allow the user to create data or to use data from their device. But there's an entire world of information out there on the internet. How can you enable users to access it or to send information over the internet directly from your app?
+- In this lesson, you'll learn the basics of how web data is sent and received, how URLs work, and how to fetch data for use in your app. Along the way, you'll build a playground that uses a URLSession to fetch and display a photo. In future lessons, you'll learn how to turn data you fetch from the web into custom model data, where to put code that performs network requests, and best practices for displaying web data in your app.
+- Take a minute to think about some of your favorite apps. How many of them work without a Wi-Fi or cellular data connection? Most apps rely on a network connection to fetch or send data. Safari, Mail, Messages, and the App Store all require an internet connection to browse the web, fetch emails, send and receive messages, or check out the latest apps.
+- As an app developer, you'll undoubtedly want to build apps that require a network connection to communicate with a web service — whether fetching information to display or sending data that the user has entered. So how do you do it?
+- Before digging into the specifics of writing network requests in your app, it's important to understand some basics about how the web works. You'll learn about the HTTP and HTTPS protocols, the most common ways to send information around the web; how URLs are crafted to tell a web server what data you're requesting; and how to use the native `Foundation` APIs to create data tasks for sending and receiving data.
+
+#### The Basics
+
+- When you open a website, you send a network request that travels over the internet until it arrives at a web server — a specialized computer that's programmed to listen for your requests and to respond to them. The web address you use determines which server receives the request and what response you'll get. So when you enter apple.com in your web browser's address bar, you'll see Apple's home page — and you won't see it when you go to any other web address.
+- You probably already know that a web address is also called a URL, which stands for uniform resource locator. But have you ever wondered what all the pieces of those sometimes long URLs are?
+- A URL consists of two required parts:
+  - http://apple.com
+    - http:// : Protocol
+    - apple.com :  Domain
+- URLs can get more specific and more complex by including subdomains, ports, paths, or query parameters.
+  - https://itunes.apple.com/us/app/keynote/id409183694?mt=2
+    - https:// : Protocol
+    - itunes : Subdomain
+    - apple.com : Domain
+    - us/app/keynote/id409183694 : Path
+    - mt=12 : Query
+- Even though URLs may appear long and complicated, you'll find they're easier to understand once you break them down.
+- **Protocol**
+  - Similar to protocols in iOS, a web protocol specifies how the browser and the server communicate with each other. In general, websites use the HTTP or HTTPS protocol. HTTP stands for Hypertext Transfer Protocol, and HTTPS stands for Hypertext Transfer Protocol Secure. Hypertext refers to text or images that link to other hypertext files, and the protocol specifies how to send and request hypertext information. For many years, HTTP was the more common of these two protocols, but most websites have moved, or are moving, to the more secure HTTPS.
+- **Subdomain**
+  - A subdomain can be used to point to a more specific server or to redirect to another URL.
+- **Domain Name**
+  - A domain name is a unique reference to a specific website and always includes a host name (like “apple” or “itunes”) and a top-level domain (like “.com” or “.org”). A domain name points to specific servers that handle all the requests that go to that domain.
+- **Port**
+  - Ports are a standard feature of the Internet Protocol (IP), on which HTTP and HTTPS are built. Every computer connecting to the internet via IP can expose multiple ports, each with its own number. Different ports are associated with different protocols and types of data. By default, websites use the standard ports assigned to web protocols — port 80 (HTTP) or port 443 (HTTPS) — so browsers will first check those ports if the URL doesn't specify a port number. You won't usually see the port number in a URL for that reason.
+- **Path**
+  - The path refers to a specific file or subdirectory on a server. For example, if you navigate to https://apple.com/iphone/ the server will respond with the HTML that displays information about iPhone products.
+- **Query Parameters**
+  - A query provides the server with even more specifics about a request. Queries work like dictionaries in Swift, with keys and values that give the server parameters for generating a page with the desired information. For example, if you navigate to https://www.apple.com/us/search/iPhone?sel=explore&page=2, you're telling the Search page to display the second page of results for the keyword “iPhone” under the Explore tab.
+  - You can think of a URL almost like a function in Swift. Just as a function is called on a specific instance, can take parameters, and returns a value, a URL points to a specific server, can take parameters in the form of a path and queries, and returns information.
+- **Request Type, Headers, and Body**
+  - The most important part of a network request is the URL, which defines where the request should go and passes parameters that the server can use to return the correct information. Network requests can also have a request type, headers, and a body.
+- **Request Type**
+  - The request type is also known as the HTTP method, and the two most common are GET and POST. As you'd expect, GET is used to request information from a server, and POST is used to send a body of information to a server. When you load a website, you're sending a GET request. When you submit a form on a website, you're sending a POST request.
+- **Headers**
+  - Like the path and query parameters, the headers of a network request work in the same way as a dictionary: with keys and values that tell the server how to handle the request. (The URL doesn't include the headers, because the user doesn't usually need to see them.)
+  - One common header parameter, called `User-Agent`, is a string that identifies the system performing the request. The full `User-Agent` header from a network request sent by Safari might look like the following: `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/602.4.8 (KHTML, like Gecko) Version/10.0.3 Safari/602.4.8`
+  - Responses to your request will also have header values. Header values usually describe the data that's being returned, but may include information about how the browser or client should use the information — for example, if the information can be saved and reused later, or when the information will be outdated.
+  - Headers are also used for authentication, which can help you log in to a protected server, or for cookies, which enable the server to keep track of your interactions on the website.
+- **Body**
+  - The body of a request includes the data that was sent or received. When you receive a response to a GET request, it will also have a body. For example, when you request the information for a website, the resources that make up the site — its HTML, CSS, and images — are all included as bodies of the network request.
+  - When your app sends a POST request, it will send a body of information — whether plain text, JSON, or a file — to be posted to the server.
