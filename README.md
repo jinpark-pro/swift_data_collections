@@ -5796,3 +5796,37 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
       ```
 
   - In a real app, you'd use an `else` statement to handle errors returned by the server.
+- **Process the Data**
+  - Is this the first time you've worked with the `Data` type? `Data` is basically a bag of bits that could represent just about anything — in this case, the body of the response. To get an idea of what `Data` looks like, update your code to use the older `NSData` type and print that to the console instead. Here's how it works:
+
+    - ```swift
+        let url = URL(string: "https://www.apple.com")!
+        Task {
+            let (data, response) = try await URLSession.shared.data(from: url)
+         
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                print(data as NSData)
+            }
+        }
+        /* Console Output: */
+        {length = 72386, bytes = 0x0a090a0a 0a090a0a 090a0a0a 090a0a0a ... 090a0a0a 0a090a0a }
+      ```
+
+  - You'll notice the result has a truncated bytes property with incomprehensible values. If the result weren't truncated, it would go on for many pages! This is how computers talk, but — since you're a human — you'll want to convert the data into a more legible string. Fortunately, you can use the `String(init: Data, encoding: String.Encoding)` initializer to return a `String` from `Data`, as long as the initializer can parse the data correctly.
+  - This lesson won't cover the various types of string encoding; just use the `.utf8` option for the `encoding` parameter. Add the initializer as a new line to your if-let statement and update your print statement to use the new string.
+
+    - ```swift
+        let url = URL(string: "https://www.apple.com")!
+        Task {
+            let (data, response) = try await URLSession.shared.data(from: url)
+         
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200, let string = String(data: data, encoding: .utf8) {
+                print(string)
+            }
+        }
+      ```
+
+  - Scroll around in the console to see the HTML for the https://www.apple.com home page.
+  - You may be wondering why you'd want your iOS app to fetch a website's HTML. That's a great question. In fact, fetching HTML isn't very useful at all. HTML describes how a website should be displayed in a browser — not in an iOS app.
+  - More often than not, you'll want to use a network request to fetch raw information (instead of the website's HTML), which you can serialize into model objects and display in your app, just as you've done in previous apps throughout this course.
+  - One of the most common formats on the web is called JavaScript Object Notation, or JSON. You'll do some work with JSON in the next lesson. For now, you'll learn how to request information from a web service, or API, that returns JSON. To wrap up this lesson, you'll print the JSON to the console, just like you did with the HTML in the earlier example.
