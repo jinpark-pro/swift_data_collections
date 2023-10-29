@@ -5717,3 +5717,63 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
     ```
 
 - Take a moment to navigate around your favorite website, looking at how the URL changes from page to page. Can you break it down into parts? If so, you're well on your way to creating and executing network requests.
+
+#### Create and Execute a Network Request
+
+- Now that you've experimented with how to declare simple `URL` instances in Swift, you'll use the `URLSession` class to create and execute your first network request.
+- Any app can access a shared `URLSession` instance by accessing the `shared` type property. This session is in charge of managing all the network requests you send, and it allows you to run code when each request is finished.
+- **Request Data**
+  - Start by requesting data using the shared `URLSession`'s `data(from:delegate:) async throws` method.
+  - The autocompletion placeholders should show you that the `from` parameter needs a `URL` instance and the delegate is an optional `URLSessionTaskDelegate`. The second parameter is useful if you need to keep tabs on the session as data is received, but in this case you won't need one. In fact, this parameter has a default `nil` argument, so you can leave it out altogether — enabling you to write this very simple code: `let (data, response) = URLSession.shared.data(from: url)`
+  - Note that the method returns a Swift `tuple type`.
+    - A tuple type is a comma-separated list of types enclosed in parentheses. A tuple type can be used as the return type of a function to enable the function to return a single tuple containing.
+  - Tuples are a way for functions to return more than one value. Here, `data`, of type `Data`, represents the body of the response, or the data that you requested from the server. The `response`, of type `URLResponse`, represents information about the response itself, including a status code and any included header fields.
+  - But you're not done — you have a handful of compiler errors to address, starting with `'async' call in a function that does not support concurrency.` Option-click the `data` method and check out the full function signature:
+
+    - ```swift
+        func data(from url: URL, delegate: URLSessionTaskDelegate? = nil)
+          async throws -> (Data, URLResponse)
+      ```
+
+  - What does `async` mean? Up to now, all the code you've written has run synchronously. You've assumed, correctly, that each line of code will execute immediately after the one before it. Swift and iOS also support `asynchronous` code. 
+    - `Asynchronous` code runs on separate processor threads, with user interface - related code running on the main thread and all session data tasks running on a background thread.
+  - A function that's marked as async can suspend execution of your code, allow other code to execute, and then resume your code at a later time. Asynchronous code execution is also known as `concurrency`.
+    - `Concurrency` is the idea that a program may run different parts of code - such as networking or animation code - on different threads, or queues, at the same time.
+  - It's important to understand something about how network requests work to understand why concurrency is critical to working with `URLSession`.
+  - You know that a network request is sent across the internet to a server, which then sends a response back to your app. While this exchange might be extremely fast, it isn't guaranteed to be fast. The server might respond with a very large file, or you might have a slow network connection. Either issue could cause the network request to last multiple seconds or tens of seconds — a very long time in the world of code.
+  - The Swift concurrency system uses `actors` to control how asynchronous code runs. 
+    - A Swift `actor` is a reference type. actors allow only one task to access their mutable state at a time, which makes it safe for code in multiple tasks to interact with the same instance of an actor.
+  - iOS creates a main actor that runs all your user interface code by default. You can run most of your code on the main actor without any issues. But if you execute a time-consuming operation (like sending a network request and waiting for the response) synchronously on the main actor, you block it from running anything else — including all the code in `UIKit` that handles touches and draws views. Your app will appear frozen until the network request completes.
+  - That's where asynchronous code comes into play. To avoid blocking the main actor while waiting on long-running work, a `URLSession` sends your request and receives data asynchronously. The main actor can continue updating the user interface and responding to user input while your suspended code waits for the response to your network request.
+  - To call an `async` function, either the function that calls it must also be marked `async` or you must use a `Task`. Playground code has no enclosing function at all, so you'll need to put your code in a task, which is the way asynchronous code runs. You initialize a task with a closure containing the code you want it to run. Update the playground by putting your call to `data(from:delegate:)` in a `Task` (and note how trailing closure syntax makes your code easy to read).
+
+    - ```swift
+        Task {
+            let (data, response) = URLSession.shared.data(from: url)
+        }
+      ```
+
+  - The previous error is gone. Progress! Now you see that Swift wants you to mark the call with the `await` keyword. 
+    - The Swift `await` keyword is used when calling a function that is marked with the `async` keyword, indicating that the caller is aware that the function may suspend execution to run tasks asynchronously.
+  - `await` marks the suspension point in your code where the task may pause its execution while an async function performs work. Add the keyword now:
+
+    - ```swift
+        Task {
+            let (data, response) = await URLSession.shared.data(from: url)
+        }
+      ```
+
+  - Now there's a new error: `Call can throw, but it is not marked with 'try' and the error is not handled.` If you look again at the full method signature, you'll see that in addition to being `async`, `data(from:delegate:)` is marked as a throwing function.
+    - A throwing function is a special type of Swift function that can return specific types of errors.
+  - The function will throw an error if one occurs on the client side while running the network request. If so, you can handle it in your code if you choose.
+  - Add the `try` keyword to indicate that you're prepared to deal with errors. While you're at it, print out the data you receive.
+
+    - ```swift
+        Task {
+            let (data, response) = try await URLSession.shared.data(from: url)
+         
+            print(data)
+        }
+      ```
+
+  - Success! Your code should now compile with no errors.
