@@ -5726,7 +5726,7 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
   - Start by requesting data using the shared `URLSession`'s `data(from:delegate:) async throws` method.
   - The autocompletion placeholders should show you that the `from` parameter needs a `URL` instance and the delegate is an optional `URLSessionTaskDelegate`. The second parameter is useful if you need to keep tabs on the session as data is received, but in this case you won't need one. In fact, this parameter has a default `nil` argument, so you can leave it out altogether — enabling you to write this very simple code: `let (data, response) = URLSession.shared.data(from: url)`
   - Note that the method returns a Swift `tuple type`.
-    - A tuple type is a comma-separated list of types enclosed in parentheses. A tuple type can be used as the return type of a function to enable the function to return a single tuple containing.
+    - A `tuple` type is a comma-separated list of types enclosed in parentheses. A tuple type can be used as the return type of a function to enable the function to return a single tuple containing.
   - Tuples are a way for functions to return more than one value. Here, `data`, of type `Data`, represents the body of the response, or the data that you requested from the server. The `response`, of type `URLResponse`, represents information about the response itself, including a status code and any included header fields.
   - But you're not done — you have a handful of compiler errors to address, starting with `'async' call in a function that does not support concurrency.` Option-click the `data` method and check out the full function signature:
 
@@ -5777,3 +5777,7 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
       ```
 
   - Success! Your code should now compile with no errors.
+- **Execute the Playground to Send the Request**
+  - When you run the playground, the Task will be created and the data method will be executed while the task is suspended. Once the data function has completed, the task will continue executing. If there were no errors, the data and response components of the tuple will be assigned values, and the print statement will execute.
+  - Generally, this is all you need to execute a network request. The Swift concurrency model allows you to write code that looks very much like synchronous code, but enables the data method to wait on the network connection without stopping everything in its tracks.
+  - If you wrote everything correctly, the value of the Data returned from the request will be printed to the console. You should see something like the following: `Console Output: 72386 bytes`
