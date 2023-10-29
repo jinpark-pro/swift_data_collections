@@ -5780,4 +5780,19 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
 - **Execute the Playground to Send the Request**
   - When you run the playground, the Task will be created and the data method will be executed while the task is suspended. Once the data function has completed, the task will continue executing. If there were no errors, the data and response components of the tuple will be assigned values, and the print statement will execute.
   - Generally, this is all you need to execute a network request. The Swift concurrency model allows you to write code that looks very much like synchronous code, but enables the data method to wait on the network connection without stopping everything in its tracks.
-  - If you wrote everything correctly, the value of the Data returned from the request will be printed to the console. You should see something like the following: `Console Output: 72386 bytes`
+  - If you wrote everything correctly, the value of the `Data` returned from the request will be printed to the console. You should see something like the following: `Console Output: 72386 bytes`
+- **Interpret the Response**
+  - At this point you've probably noticed a warning that "'response' was never used." The `response` from a data request can be used to check that the server returned an appropriate response to the request. You may have seen websites return "error 404" when something goes wrong. HTTP requests return a code of 200 if the request is processed normally. Update your code to check the response as follows:
+
+    - ```swift
+        let url = URL(string: "https://www.apple.com")!
+        Task {
+            let (data, response) = try await URLSession.shared.data(from: url)
+         
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                print(data)
+            }
+        }
+      ```
+
+  - In a real app, you'd use an `else` statement to handle errors returned by the server.
