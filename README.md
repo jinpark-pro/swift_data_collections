@@ -5830,3 +5830,32 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
   - You may be wondering why you'd want your iOS app to fetch a website's HTML. That's a great question. In fact, fetching HTML isn't very useful at all. HTML describes how a website should be displayed in a browser — not in an iOS app.
   - More often than not, you'll want to use a network request to fetch raw information (instead of the website's HTML), which you can serialize into model objects and display in your app, just as you've done in previous apps throughout this course.
   - One of the most common formats on the web is called JavaScript Object Notation, or JSON. You'll do some work with JSON in the next lesson. For now, you'll learn how to request information from a web service, or API, that returns JSON. To wrap up this lesson, you'll print the JSON to the console, just like you did with the HTML in the earlier example.
+
+#### Work With An API
+
+- Throughout this course, you've likely seen the acronym API a number of times. API stands for "application programming interface." An API is a set of routines, protocols, or tools for building software applications. Each framework or class you've used as you worked through the lessons, labs, and projects in this course could be considered an API. However, in the context of working with the web, an API usually refers to a website or service that enables information to be sent or received via network requests.
+- Many websites and organizations offer APIs that allow developers to work with different types of information. For example, the NASA Astronomy Picture of the Day (APOD) API serves up a beautiful image daily, along with a brief description of the image — powering the popular [Astronomy Picture of the Day](https://apod.nasa.gov/apod/astropix.html) website. By requesting data from the APOD API, you can build an app that displays the same photo and the same description.
+- Later in this unit, you'll build your own NASA APOD app. In this lesson, you'll learn how the API works and how to fetch and print the data from the API.
+- **API Basics**
+  - You now know that a URL includes a domain name, a path, and optional query parameters. The path and query parameters are passed to the server, which processes them to respond with the appropriate information. Many APIs work exclusively by reading the information you pass to the server in the path and query parameters.
+  - Web services that make their data available publicly will typically share documentation that details how to construct a URL to request data and will show an example of how the response is structured.
+  - Open the documentation for the APOD API, available on NASA's website at https://api.nasa.gov. The page also contains documentation for some of NASA's other APIs, so make sure you locate the APOD section. You can explore the other APIs later.
+  - On the NASA website, you'll find a description of the APOD service, a sample image, a description of the HTTP request, a list of the optional query parameters, and a sample query that includes a reference to an `api_key`. API keys are a common tool that web services use to monitor who is using the API and to make sure they're using the API appropriately. Many web services will provide a demo API key that you can use for a small number of requests. Others require you to register for (and possibly pay for) an API key, so they can monitor usage and contact you if you're going over specific limits or using the API incorrectly.
+  - Navigate to the Authentication section of the NASA API documentation. You'll see the rate limits, or caps on how many requests you can make in a given time period. If you register for an API key, you can perform 1,000 requests per hour. If you use the demo key, you're limited to 30 requests per hour and 50 requests per day. If you exceed the limit, the API will return an error instead of the data you requested.
+  - Given that limit, you should set your playground to run manually so that you won't send a new request to the API every time you modify your code.
+- **Create the API Request**
+  - Go ahead and create your first request to the APOD API. Update the URL in your network request to match the sample query in the documentation. The following code uses the demo API key. If you're completing this lesson in a classroom with other students, you may find that you need to register for your own free API key. If you do register for a key, replace DEMO_KEY with your key.
+
+    - ```swift
+        let url = URL(string: "https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&date=2018-11-27")!
+        Task {
+            let (data, response) = try await URLSession.shared.data(from: url)
+         
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200,
+                let string = String(data: data, encoding: .utf8) {
+                    print(string)
+            }
+        }
+      ```
+
+  - The base URL will always fetch information for today's photo. You can experiment with the URL by adding a date query, using the YYYY-MM-DD format, to access photos from any day after 1995-06-16.
