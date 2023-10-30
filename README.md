@@ -5859,3 +5859,36 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
       ```
 
   - The base URL will always fetch information for today's photo. You can experiment with the URL by adding a date query, using the YYYY-MM-DD format, to access photos from any day after 1995-06-16.
+
+#### Modify a URL with URL Components
+
+- This optional section explores how to use the `URLComponents` type to create URLs without having to manually create a full URL string to pass into the `URL(string:)` initializer.
+- You learned earlier in this lesson that there are restrictions on what can and can't be included in a URL. Looking back at the list of valid URL characters, you'll notice that it doesn't include the space character. There is a workaround for this problem: If you need to build a URL string that contains an invalid character, you can use a special format called percent-encoding, which represents certain characters with the percent sign (`%`) followed by a number. For example, a space is percent-encoded as `%20`.
+- More generally, you'll often need to generate the different parts of a URL dynamically—especially if the URL will have query parameters.
+- Fortunately, there's no need to memorize all the invalid characters and their percent-encoded replacements, nor how to construct valid query strings or other parts of a URL. The `Foundation` framework defines a type called `URLComponents` that will help you parse, read, or create all the parts of a URL in a safe, accurate way. `URLComponents` is especially useful when creating queries for URL instances.
+- Create a new `URLComponents` instance that uses the base URL of the NASA APOD API (https://api.nasa.gov/planetary/apod). Then add `URLQueryItems` for the `api_key` and a `date`.
+- A `URLQueryItem` is simply a single key/value pair, much like a `[String:String]` dictionary with one element. It would be a little bit easier to type if you could supply a dictionary directly — and maybe even easier to read. Use the `map()` function to map a `[String: String]` to an array of `URLQueryItems` to pass to the `queryItems` property on `URLComponents`.
+
+  - ```swift
+      var urlComponents = URLComponents(string: "https://api.nasa.gov/planetary/apod")!
+      urlComponents.queryItems = [
+          "api_key": "DEMO_KEY",
+          "date": "2013-07-16"
+      ].map { URLQueryItem(name: $0.key, value: $0.value) }
+       
+      Task {
+          let (data, response) = try await URLSession.shared.data(from: urlComponents.url!)
+       
+          if let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200,
+              let string = String(data: data, encoding: .utf8) {
+                  print(string)
+          }
+      }
+    ```
+
+- The response you receive with your programmatically generated URL should look similar to your previous result. You can use this same technique in other projects when you need to dynamically generate URLs with queries — which you'll do in later lessons.
+
+#### Wrap-up (HTTP and URL)
+
+- You made it! It's no simple task to understand how networking works and how to perform a simple network request using Swift code. You'll continue building on your skills in the next two lessons. First, you'll learn how to take the data returned from an API and convert it into model objects. Next, you'll learn where to put the networking code in an Xcode project and how to update the user interface with data fetched from an API.
