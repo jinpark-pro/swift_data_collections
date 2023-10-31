@@ -5892,3 +5892,46 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
 #### Wrap-up (HTTP and URL)
 
 - You made it! It's no simple task to understand how networking works and how to perform a simple network request using Swift code. You'll continue building on your skills in the next two lessons. First, you'll learn how to take the data returned from an API and convert it into model objects. Next, you'll learn where to put the networking code in an Xcode project and how to update the user interface with data fetched from an API.
+
+#### Lab - iTunes Search (Part1)
+
+- The objective of this lab is to use URLSession to pull data down from the iTunes API and display it in the console. You'll use a search query dictionary to configure a URL, which the URLSession will use to fetch and print the correct data.
+- Create a new playground called “iTunes Search.”
+
+##### Step 1 Review the iTunes Search API
+
+- Take a few minutes to review the [documentation for the iTunes Search API](https://performance-partners.apple.com/search-api). Find the base URL for search requests, and pay particular attention to the types of queries you can make.
+- Look at the different parameter keys listed in the documentation and their corresponding values. The different keys (term, media, limit, etc.) will be used when you create your query dictionary. Think of some parameters that you might want to include in your query.
+- Create a query `[String: String]` dictionary that looks for your favorite movie or for songs by your favorite music artist. Make sure to use the exact keys and expected values listed in the API documentation. At a minimum, you'll want to use the `term` and `media` keys.
+- Now that you have your query dictionary, create a variable to hold the base URL for the iTunes Search API: https://itunes.apple.com/search.
+- Create an instance of `URLComponents` with the base URL and add `queryItems` by mapping your query dictionary to an array of `URLQueryItems`.
+
+##### Step 2 Pulling Data from the Web
+
+- Now that you have your `URLComponents` configured correctly, you'll use its `url` property to fetch your data from the web.
+- Use the shared `URLSession` and call its `data` method for the specified URL. The return value will give you a tuple containing a `Data` and a `URLResponse` value. Provide appropriate names for the placeholder values.
+- Don't forget to prefix the call with `try` `await` and wrap it in a `Task { .. }` so that it's compatible with the playground.
+- You're now ready to check whether the `data` function has completed with valid data. Create a string from the data that will display the data's contents, then print that string to the console.
+
+  - ```swift
+      import UIKit
+
+      var urlComponents = URLComponents(string: "https://itunes.apple.com/search")!
+
+      urlComponents.queryItems = [
+          "term": "jack+johnson",
+          "limit": "1"
+      ].map { URLQueryItem(name: $0.key, value: $0.value) }
+
+      Task {
+          let (data, response) = try await URLSession.shared.data(from: urlComponents.url!)
+          
+          if let httpResponse = response as? HTTPURLResponse,
+            httpResponse.statusCode == 200,
+            let string = String(data: data, encoding: .utf8) {
+              print(string)
+          }
+      }
+    ```
+
+- Excellent work. You've built a simple script that creates a proper URL using `URLComponents` from a query dictionary and fetches that data from a new API you haven't seen or worked with before. Be sure to save the playground to your project folder for future reference.
