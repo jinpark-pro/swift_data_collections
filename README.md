@@ -6108,3 +6108,29 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
       ```
 
   - Now that you've provided the compiler with the information it needs, it will handle decoding the JSON data into your `PhotoInfo` type.
+- **Update the Request Completion Handler**
+  - Your PhotoInfo type is now ready to be decoded by `JSONDecoder`. Next, you'll need to update the completion handler in your network request so that it uses the new type instead of printing the json value. Add a line to your if-let check to initialize an instance of `PhotoInfo`, then print the value:
+
+    - ```swift
+        Task {
+            let (data, response) = try await URLSession.shared.data(from:
+              urlComponents.url!)
+         
+            let jsonDecoder = JSONDecoder()
+            if let httpResponse = response as? HTTPURLResponse,
+                httpResponse.statusCode == 200,
+                let photoInfo = try? jsonDecoder.decode(PhotoInfo.self,
+                  from: data) {
+                print(photoInfo)
+            }
+        }
+
+        /* Console Result */
+        PhotoInfo(title: "The Moon from Zond 8", description: "Which moon is this? Earth\'s. Our Moon\'s unfamiliar appearance is due partly to an unfamiliar viewing angle as captured by a little-known spacecraft -- the Soviet Union\'s Zond 8 that circled the Moon in October of 1970. Pictured above, the dark-centered circular feature that stands out near the top of the image is Mare Orientale, a massive impact basin formed by an ancient collision with an asteroid. Mare Orientale is surrounded by light colored and highly textured highlands. Across the image bottom lies the dark and expansive Oceanus Procellarum, the largest of the dark (but dry) maria that dominate the side of the Moon that always faces toward the Earth. Originally designed to carry humans, robotic Zond 8 came within 1000 km of the lunar surface, took about 100 detailed photographs on film, and returned them safely to Earth within a week.   Follow APOD on: Facebook (Daily) (Sky) (Spanish) or Google Plus (Daily) (River)", url: https://apod.nasa.gov/apod/image/1307/moon_zond8_960.jpg, copyright: Optional("\nGalspace\n"))
+      ```
+
+  - JSON data can be tricky, and this lesson is only the tip of the iceberg. As you start working with other web services and APIs, you'll encounter more complex, nested JSON data with multiple types. It's not uncommon to reach the point where you expect everything to work — but find that your custom model object refuses to decode correctly. In those instances, here are some things you might try:
+    - Check the JSON structure to make sure you're writing the correct code.
+    - If using one, check your `CodingKeys` enumeration. The keys have to match exactly. Decoding URLs is particularly tricky, because some APIs use "url" and others use "URL". Some prefix the URL with a word or other key, and then use different capitalization, such as "hdUrl", "hdURL", or "hd_url". Always double-check your keys.
+    - Check your network connection. You won't get the correct response if you aren't connected to the internet.
+    - Check your URL and verify the response body contains JSON in the format you are expecting.
