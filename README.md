@@ -5935,3 +5935,59 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
     ```
 
 - Excellent work. You've built a simple script that creates a proper URL using `URLComponents` from a query dictionary and fetches that data from a new API you haven't seen or worked with before. Be sure to save the playground to your project folder for future reference.
+
+### Lesson 2.5 Working with the Web: Decoding JSON
+
+- In the last lesson, you learned how to create and send a network request using the `URLSession` class. You also learned how URLs are constructed and how they can communicate a request to a web server. You requested data from the NASA Astronomy Picture of the Day (APOD) API, and you downloaded and printed the server's response.
+- But what format did the response come in? Many modern web services return data in the JavaScript Object Notation (JSON) format.
+- In this lesson, you'll learn how to read basic JSON. You'll also learn how to convert JSON into Swift types and your own custom model objects by using the `Codable` protocol and a `JSONDecoder`.
+- You know how to pull data from the web, and you know that data is often returned in the form of JavaScript Object Notation, usually called JSON. But what is JSON? JSON defines the way objects are stored and structured in JavaScript, a popular language for building web services. JSON is the de facto format for passing information around the web.
+
+#### JSON Basics
+
+- Working with JSON data is very similar to working with basic Swift types, like numbers, strings, Booleans, dictionaries, and arrays. For example, here's how JSON might represent a Person object:
+
+  - ```json
+      {
+          "name": "Daren Estrada",
+          "favorite_show": {
+              "title": "The Morning Show",
+              "release_year": 2019
+          }
+      }
+    ```
+
+- How does this JSON map to a Swift type? Let's break down how the JSON data is presented:
+  - Curly braces `{ }` encapsulate a dictionary of keys and values.
+  - Square brackets `[ ]` encapsulate an array.
+  - Text inside quotation marks `" "` is a string value.
+  - Numbers and Booleans are written without quotation marks.
+- JSON data can have several nested layers — which, at first glance, may look quite complex. But if you examine the data one layer at a time, you can identify each individual part.
+- Look at the first layer from the previous example:
+
+  - ```json
+      {
+          "name": "Daren Estrada",
+          "favorite_show": {...} 
+      }
+    ```
+
+- Does this pattern look familiar? You'll probably notice that the data is stored in a key-value pair, just like in a dictionary. Here you see a dictionary of type [String: Any], where the value for the key "name" is a string, but the value for the key "favorite_show" is another dictionary. Because the two values are different types, you'd consider the values to be of type Any.
+- What would an array of objects look like in JSON? Check out another representation of JSON data:
+
+  - ```json
+      {
+          "tvShows": [
+              {
+                  "title": "The Morning Show",
+                  "release_year": 2019
+              },
+              {
+                  "title": "Defending Jacob",
+                  "release_year": 2020
+              }
+          ]
+      }
+    ```
+
+- You'll notice that each show's data is structured as a [String: Any] dictionary. The next layer of data (the value for the key tvShows) contains an array in JSON. What type is the array? Consider the type of objects it contains—an array of dictionaries that have String keys and String or Int values (which can both be represented by Any)—or, in Swift, [[String: Any]]
