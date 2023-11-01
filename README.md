@@ -6011,3 +6011,24 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
 
 - The JSON is a simple [String: String] dictionary that is only one level deep, making it the perfect practice ground for decoding JSON data into standard Swift types or your own custom model objects. 
 - In the following steps, you'll update the code to use a JSONDecoder to convert the response to native Swift types.
+
+#### Convert JSON Data to Swift Types
+
+- Instances of `JSONDecoder` have a `decode(_:from:)` method that accepts a parameter of type `Type` and a parameter of type `Data`. You can pass in a class type by using the class name followed by `.self`. For example, passing in a string type would look like `String.self`. The method then attempts to decode the `Data` object passed into the method into the desired type. For the method to work, the type that you've passed in must adopt the `Codable` protocol, and the `Data` must be in a format that can be decoded into that `Codable` type. If either of these requirements is not met, then your code will not compile.
+- `JSONDecoder`'s `decode(_:from:)` method is a throwing function, which you have encountered before. Remember that by pairing a throwing function with the do-try-catch syntax, you can capture and address each specific error that the method can throw. More simply, if you precede a throwing function with `try?`, the function will return an optional value. If there's no error, the optional will hold the expected value; if there is an error, the optional will be `nil`.
+- In your playground, use a `JSONDecoder` to decode the data returned to you from the API into a [String: String] dictionary. Since String already adopts the `Codable` protocol, you do not need to do anything special involving `Codable`. Here's how your code should look:
+
+  - ```swift
+      Task {
+          let (data, response) = try await URLSession.shared.data(from: urlComponents.url!)
+       
+          let jsonDecoder = JSONDecoder()
+          if let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200,
+              let photoDictionary = try? jsonDecoder.decode([String: String].self, from: data) {
+              print(photoDictionary)
+          }
+      }
+    ```
+
+- Since String already adopts Codable, JSONDecoder has a mapping that it can follow to convert JSON data with string keys and string values into a Swift dictionary with keys of type String and values of type String. Your console should show output similar to what you saw before, but now surrounded by the square brackets indicating a Swift dictionary instead of JSON's curly braces.
