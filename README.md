@@ -5991,3 +5991,23 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
     ```
 
 - You'll notice that each show's data is structured as a [String: Any] dictionary. The next layer of data (the value for the key tvShows) contains an array in JSON. What type is the array? Consider the type of objects it contains—an array of dictionaries that have String keys and String or Int values (which can both be represented by Any)—or, in Swift, [[String: Any]]
+
+#### Decoding into Swift Types
+
+- Remember the NASA APOD API you worked with in the last lesson? Now that you can read JSON, you'll do some more work with the JSON data that the API returned.
+- Go ahead and open your “Working with the Web” playground. It should have a network request, directed at the NASA APOD API, that fetches information about a picture. Take a look at the following example and break down the parts of the JSON:
+
+  - ```json
+      {
+        "date": "2017-02-13",
+        "explanation": "Juno just completed its fourth pass near Jupiter...",
+        "hdurl": "https://apod.nasa.gov/apod/image/1702/JupiterSouth_JunoPeach_1200.jpg",
+        "media_type": "image",
+        "service_version": "v1",
+        "title": "Cloud Swirls around Southern Jupiter from Juno",
+        "url": "https://apod.nasa.gov/apod/image/1702/JupiterSouth_JunoPeach_960.jpg"
+      }
+    ```
+
+- The JSON is a simple [String: String] dictionary that is only one level deep, making it the perfect practice ground for decoding JSON data into standard Swift types or your own custom model objects. 
+- In the following steps, you'll update the code to use a JSONDecoder to convert the response to native Swift types.
