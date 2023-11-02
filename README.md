@@ -6225,3 +6225,141 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
 
   - This example highlights the power of Swift's concurrency model. You've implemented a function that asynchronously accesses a network resource, and yet the resulting code looks very much like it would if it had been synchronous code. You used the standard Swift error handling model to propagate errors to the caller and were able to let the compiler help ensure that your implementation of the function met the contract that the function definition offers.
   - Great job! You've now abstracted the network call into a function that will access the fetched `PhotoInfo` instance when the request is completed. Your console output should begin with `Successfully fetched PhotoInfo:`.
+
+  - ```swift
+      import UIKit
+
+      struct PhotoInfo: Codable {
+          var title: String
+          var description: String
+          var url: URL
+          var copyright: String?
+          
+          enum CodingKeys: String, CodingKey {
+              case title
+              case description = "explanation"
+              case url
+              case copyright
+          }
+      }
+
+      enum PhotoInfoError: Error, LocalizedError {
+          case itemNotFound
+      }
+
+      func fetchPhotoInfo() async throws -> PhotoInfo {
+          var urlComponents = URLComponents(string: "https://api.nasa.gov/planetary/apod")!
+          urlComponents.queryItems = [
+              "api_key": "DEMO_KEY",
+              "date": "2013-07-16"
+          ].map { URLQueryItem(name: $0.key, value: $0.value) }
+          
+          let (data, response) = try await URLSession.shared.data(from: urlComponents.url!)
+          
+          guard let httpResponse = response as? HTTPURLResponse,
+                httpResponse.statusCode == 200 else {
+              throw PhotoInfoError.itemNotFound
+          }
+          
+          let jsonDecoder = JSONDecoder()
+          let photoInfo = try jsonDecoder.decode(PhotoInfo.self, from: data)
+          return photoInfo
+      }
+
+      Task {
+          do {
+              let photoInfo = try await fetchPhotoInfo()
+              print("Successfully fetched PhotoInfo: \(photoInfo)")
+          } catch {
+              print("Fetch PhotoInfo failed with error: \(error)")
+          }
+      }
+    ```
+
+#### Decide Where the Function Should Live
+
+- Now that your network call is nicely organized in a function, you can return to the question of where it should be written in your Xcode projects. Should it go on the view controller that performs the network request? Should it be a static function on the `PhotoInfo` type? Should you build a model controller that performs the fetch for you?
+- All three are valid options, depending on the scope of your project. Take a look at how each approach works:
+- **Add to the View Controller**
+
+  - ```swift
+      class PhotoViewController: UIViewController {
+       
+          override func viewDidLoad() {
+              super.viewDidLoad()
+       
+              Task {
+                  do {
+                      let photoInfo = try await fetchPhotoInfo()
+                      updateUI(with: photoInfo)
+                  } catch {
+                      displayError(error)
+                  }
+              }
+          }
+       
+          func updateUI(with photoInfo: PhotoInfo) {...}
+          func displayError(_ error: Error) {...}
+          func fetchPhotoInfo() async throws -> PhotoInfo {...}
+      }
+    ```
+
+- **Static Function on the PhotoInfo Type**
+
+  - ```swift
+      extension PhotoInfo {
+          static func fetchPhotoInfo() async throws -> PhotoInfo {...}
+      }
+      class PhotoViewController: UIViewController {
+       
+          override func viewDidLoad() {
+              super.viewDidLoad()
+       
+              Task {
+                  do {
+                      let photoInfo = try await PhotoInfo.fetchPhotoInfo()
+                      updateUI(with: photoInfo)
+                  } catch {
+                      displayError(error)
+                  }
+              }
+          }
+       
+          func updateUI(with photoInfo: PhotoInfo) {...}
+          func displayError(_ error: Error) {...}
+      }
+    ```
+
+- **Build a Model Controller**
+
+  - ```swift
+      class PhotoInfoController {
+          func fetchPhotoInfo() async throws -> PhotoInfo {...}
+      }
+      class PhotoViewController: UIViewController {
+          let photoInfoController = PhotoInfoController()
+       
+          override func viewDidLoad() {
+              super.viewDidLoad()
+       
+              Task {
+                  do {
+                      let photoInfo = try await
+                        photoInfoController.fetchPhotoInfo()
+                      updateUI(with: photoInfo)
+                  } catch {
+                      displayError(error)
+                  }
+              }
+          }
+       
+          func updateUI(with photoInfo: PhotoInfo) {...}
+          func displayError(_ error: Error) {...}
+      }
+    ```
+
+- As you learn more about writing networking code and architecting your apps, you'll run into the various pros and cons of each of these patterns. At this stage, however, you can use any of them in your code.
+
+#### Wrap-Up Working with the Web: Decoding JSON
+
+- Excellent work! Decoding JSON into custom model objects isn't easy, but you worked through it. You'll continue building on your skills in the next lesson, where you'll put together a full project and update the user interface with data fetched from an API.
