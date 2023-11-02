@@ -6134,3 +6134,94 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
     - If using one, check your `CodingKeys` enumeration. The keys have to match exactly. Decoding URLs is particularly tricky, because some APIs use "url" and others use "URL". Some prefix the URL with a word or other key, and then use different capitalization, such as "hdUrl", "hdURL", or "hd_url". Always double-check your keys.
     - Check your network connection. You won't get the correct response if you aren't connected to the internet.
     - Check your URL and verify the response body contains JSON in the format you are expecting.
+
+#### Where To Put Your Code
+
+- If you've reached this point, your playground has code that creates and sends a network request to the NASA APOD API. When the request is complete, your code decodes the JSON into your custom model object, and finally prints the model object.
+- If you were to move this code into an Xcode project, where would you put it? You'd likely put the model object code into a `PhotoInfo.swift` file. But what about the networking code?
+- This is one place where coding is an art as much as it is a science. There are many different styles and patterns you could follow, but the bottom line is this: Put the code where it makes sense in your project. For a simple project, the right place might be in the view controller that will display the data. For a somewhat more complex but not-too-large project, you might put it in a static method on your model object itself. In a very complex project, it might be in a model controller type for fetching and managing the model data. There's no one right answer.
+- Later in this lesson, you'll see examples of these three strategies. But there's a more basic issue with your code's organization that you'll take care of first.
+- **Move Your Networking Code to a Function**
+  - At the moment, you're using a playground to create and run the network request, which means the network request runs as top-level code — code that's executed automatically when the playground runs. Take a look at your playground, and you'll see that the networking code is not part of a function. This isn't very conducive to being executed repeatedly in a project.
+  - How would you translate the networking code in your playground into a function that fetched a `PhotoInfo` object? What would you name the function? What would it return? How would the function work with this asynchronous approach to running a network request?
+  - Start by creating a new function called `fetchPhotoInfo()`, with no parameters, that returns a `PhotoInfo` object. Move all your networking - related code into the function, including the `baseURL`, `query`, `url`, `task`, and `task.resume` lines of code. (Note that the “date” key has been left out of the query in this implementation. It's an optional parameter; the API will use today's date if it's not included.)
+
+    - ```swift
+        func fetchPhotoInfo() -> PhotoInfo {
+            var urlComponents = URLComponents(string: "https://api.nasa.gov/planetary/apod")!
+            urlComponents.queryItems = [
+                "api_key": "DEMO_KEY"
+            ].map { URLQueryItem(name: $0.key, value: $0.value) }
+         
+            let (data, response) = try await URLSession.shared.data(from: urlComponents.url!)
+         
+            let jsonDecoder = JSONDecoder()
+            if let httpResponse = response as? HTTPURLResponse,
+                httpResponse.statusCode == 200,
+                let photoInfo = try? jsonDecoder.decode(PhotoInfo.self, from: data) {
+                print(photoInfo)
+            }
+        }
+      ```
+
+  - You'll note a couple of compiler error saying something like the following: `'async' call in a function that does not support concurrency Errors thrown from here are not handled`
+  - The compiler offers a fix-it for the first issue that will add async to the function definition. You can do this manually or click the Fix button to fix the error. Your function definition will now look like: `func fetchPhotoInfo() async -> PhotoInfo {`
+  - The second issue can be addressed by adding the `throws` keyword to the function definition so that any errors thrown within your function will be propagated to the caller. The `throws` keyword always follows the `async` keyword. Your function definition should now look like: `func fetchPhotoInfo() async throws -> PhotoInfo {`
+  - You'll note a new compiler error that says something like the following: `Missing return in a function expected to return PhotoInfo`
+  - Where can you return the object? You'll have to return the PhotoInfo instance after the data has been fetched from the server and successfully decoded. Go ahead and update your code as follows, replacing the call to print with a return statement:
+
+    - ```swift
+        let jsonDecoder = JSONDecoder()
+        if let httpResponse = response as? HTTPURLResponse,
+            httpResponse.statusCode == 200,
+            let photoInfo = try? jsonDecoder.decode(PhotoInfo.self, from: data) {
+            return photoInfo
+        }
+      ```
+
+  - Did that solve the problem? `Missing return in a function expected to return PhotoInfo`
+  - Well, this is getting tricky. The problem is that the `PhotoInfo` instance is only returned when the data is successfully fetched from the server and successfully decoded. The function signature guarantees a returned `PhotoInfo` instance — unless it throws an error. You'll need to throw an error if you weren't able to decode a `PhotoInfo` from the server response.
+  - To create a custom error, define an enum that adopts the `Error` and `LocalizedError` protocols, then add cases for the error conditions you need to report. Update your code to add your own error:
+
+    - ```swift
+        enum PhotoInfoError: Error, LocalizedError {
+            case itemNotFound
+        }
+      ```
+
+  - The `JSONDecoder` will already throw an error if it's not able to decode the data, so you can rearrange your code to throw the new error if the `statusCode` from the `URLSession` is not 200 before decoding the JSON and returning the result:
+
+    - ```swift
+        func fetchPhotoInfo() async throws -> PhotoInfo {
+            var urlComponents = URLComponents(string: "https://api.nasa.gov/planetary/apod")!
+            urlComponents.queryItems = [
+                "api_key": "DEMO_KEY"
+            ].map { URLQueryItem(name: $0.key, value: $0.value) }
+         
+            let (data, response) = try await URLSession.shared.data(from: urlComponents.url!)
+         
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                throw PhotoInfoError.itemNotFound
+            }
+         
+            let jsonDecoder = JSONDecoder()
+            let photoInfo = try jsonDecoder.decode(PhotoInfo.self, from: data)
+            return(photoInfo)
+        }
+      ```
+
+  - You can now call your function to verify its operation. Since your function is defined as `throws` and `async`, you will need to `try` and `await` the call. If the call is successful, you'll want to print the results along with a message indicating success. You'll also want to handle any errors that result from calling your function. To handle errors from a throwing function, wrap the call in a do/catch statement. Finally, since the playground is running synchronously, you will need to embed the call in a `Task { ... }`:
+
+    - ```swift
+        Task {
+            do {
+                let photoInfo = try await fetchPhotoInfo()
+                print("Successfully fetched PhotoInfo: \(photoInfo)")
+            } catch {
+                print("Fetch PhotoInfo failed with error: \(error)")
+            }
+        }
+
+  - This example highlights the power of Swift's concurrency model. You've implemented a function that asynchronously accesses a network resource, and yet the resulting code looks very much like it would if it had been synchronous code. You used the standard Swift error handling model to propagate errors to the caller and were able to let the compiler help ensure that your implementation of the function met the contract that the function definition offers.
+  - Great job! You've now abstracted the network call into a function that will access the fetched `PhotoInfo` instance when the request is completed. Your console output should begin with `Successfully fetched PhotoInfo:`.
