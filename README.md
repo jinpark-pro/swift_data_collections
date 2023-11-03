@@ -6363,3 +6363,69 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
 #### Wrap-Up Working with the Web: Decoding JSON
 
 - Excellent work! Decoding JSON into custom model objects isn't easy, but you worked through it. You'll continue building on your skills in the next lesson, where you'll put together a full project and update the user interface with data fetched from an API.
+
+#### Lab - iTunes Search (Part 2)
+
+- The purpose of this lab is to get familiar with decoding JSON data into your custom model objects. You'll start with the “iTunes Search” playground you created in the last lesson. Your task with this lab will be to decode the data you retrieved into a custom model object.
+
+##### Step 1 Create Your Model Object
+
+- Set the "term" in your queryItems to "Apple" to return more than one result. Run the playground and look at the printed results in the console. You can use the following Data extension method to make the printed JSON easier to read.
+
+  - ```swift
+      extension Data {
+          func prettyPrintedJSONString() {
+              guard
+                  let jsonObject = try? JSONSerialization.jsonObject(with: self, options: []),
+                  let jsonData = try? JSONSerialization.data(withJSONObject: jsonObject, options: [.prettyPrinted]),
+                  let prettyJSONString = String(data: jsonData, encoding: .utf8) else {
+                      print("Failed to read JSON Object.")
+                      return
+              }
+              print(prettyJSONString)
+          }
+      }
+       
+      ...
+       
+      Task {
+          let (data, response) = try await URLSession.shared.data(from: urlComponents.url!)
+
+          if let httpResponse = response as? HTTPURLResponse,
+            httpResponse.statusCode == 200 {
+              data.prettyPrintedJSONString()
+          }
+      }
+    ```
+
+- Notice that there's a `results` key with an array of objects. You're going to create a struct model for these objects, so take a moment to identify what properties your model will have. Some of the properties might include `trackName`, `artistName`, `kind`, `description`, and the URL for the artwork.
+- Once you've identified the properties that will make up your object, create a `StoreItem` structure with those properties. Make your `StoreItem` adopt `Codable`, and use a `CodingKeys` enum to map the JSON keys to better-suited property names on your model.
+- You might have noticed that an item can have different types of descriptions. Some items have a description key, while others have a `longDescription` key. Your model object makes no distinction between the two. If the API sends down a value with the description key, that is what you should assign to your model. However, if it sends down a value with the longDescription key and nothing with the description key, you should use that instead. If neither value exists, you'll just assign description to an empty string.
+- ​​To do this, you will need a `CodingKey` for each. But the Encodable protocol doesn't allow you to add cases to CodingKeys that don't match one of your properties, so you can't have a longDescription case. To get around this, create a second nested enumeration called `AdditionalKeys` that adopts `CodingKey` and has a case for `longDescription`. Unfortunately, using this strategy will prevent the compiler from autogenerating Codable method requirements. You'll need to create your own initializer that assigns each value from the JSON payload to its respective property. You can use `try?` when decoding the value for `description`, and if it fails you can decode the value associated with `longDescription` and assign it to the `description` property.​
+- The manual decoding process is relatively straightforward. You start by creating a container of values keyed by your `CodingKeys` enum using the `container(keyedBy:)` method on Decoder. Since you'll also have the second nested enum, `AdditionalKeys`, you'll create a second container keyed by that enum when the value for `description` is `nil`. Take a look at the following `init(from:)` implementation:
+
+  - ```swift
+      init(from decoder: Decoder) throws {
+          let values = try decoder.container(keyedBy: CodingKeys.self)
+          name = try values.decode(String.self, forKey: CodingKeys.name)
+          artist = try values.decode(String.self, forKey: CodingKeys.artist)
+          kind = try values.decode(String.self, forKey: CodingKeys.kind)
+          artworkURL = try values.decode(URL.self, forKey: CodingKeys.artworkURL)
+       
+          if let description = try? values.decode(String.self, forKey: CodingKeys.description) {
+              self.description = description
+          } else {
+              let additionalValues = try decoder.container(keyedBy: AdditionalKeys.self)
+              description = (try? additionalValues.decode(String.self, forKey: AdditionalKeys.longDescription)) ?? ""
+          }
+      }​
+    ```
+
+- The `values` constant is assigned to the returned container keyed by `CodingKeys`, then each model property is assigned to its respective decoded value. Each one of these calls can `throw` if the type does not match or the key does not exist in the encoded value. Finally, an attempt is made to decode `description` using the `values` container; if that fails, a new container `additionalValues` is created, keyed by `AdditionalKeys`. The `longDescription` case is used to decode a value, and if that also fails the `description` property is set to an empty string.
+- Now that you have a `StoreItem` model, think about how you'll get values to create model instances from the JSON response. Remember, they're nested in a results key. What you're after is a [StoreItem] — an array of your models. What you might have come up with is a separate model for the search response itself, perhaps `SearchResponse`. This would be a simple struct only requiring one property, results:​
+
+  - ```swift
+      struct SearchResponse: Codable {
+          let results: [StoreItem]
+      }
+    ```
