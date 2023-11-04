@@ -6442,3 +6442,11 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
   - Set the `queryItems` from the passed in `query` parameter.
   - Call the `data` method on the shared URL session and assign the results to a tuple.
   - Check the status code of the request and throw an error if it's not equal to 200.
+
+##### Step 3 Decode the JSON
+
+- A sample solution is provided at the end of this lab's instructions. Use the sample code for the task's completion handler as a reference if needed, but resist copying and pasting it. You'll learn much more if you try to solve the problem independently and then, if needed, read the code, analyze it, and understand it — and only then type it into your project.
+  - Inside the task's closure, check for an `error`. If one is present, call the completion handler with the error.
+  - Check whether you've received valid data back from the API. If you have, try and decode it into a `SearchResponse` object.
+  - If you successfully unwrapped the data and decoded the `SearchResponse` object, pass the results property on SearchResponse through the completion handler. Remember that the results property on SearchResponse has the array of individual StoreItem objects.
+  - If the JSON fails to decode properly, catch the error and call the completion handler with the error.
