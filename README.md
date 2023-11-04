@@ -6456,3 +6456,110 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
 - With the `StoreItem` struct, the intermediary `SearchResponse` struct, the `fetchItems` function, and your search query, you're ready to call your function and create your model objects.
   - Call the `fetchItems` function and pass in your query. Check for errors and print the decoded [StoreItem] array in a do/catch statement. Remember to use a Task to wrap your function call.
 - You did it! You've fetched data and decoded it into your own custom model object. You'll use code just like this for fetching data to display in your apps. Be sure to save your playground to your project folder for future reference.
+
+  - ```swift
+      import UIKit
+
+      extension Data {
+          func prettyPrintedJSONString() {
+              guard
+                  let jsonObject = try? JSONSerialization.jsonObject(with: self, options: []),
+                  let jsonData = try? JSONSerialization.data(withJSONObject: jsonObject, options: [.prettyPrinted]),
+                  let prettyJSONString = String(data: jsonData, encoding: .utf8) else {
+                  print("Failed to read JSON Object.")
+                  return
+              }
+              print(prettyJSONString)
+          }
+      }
+
+      struct StoreItem: Codable {
+          var name: String
+          var artist: String
+          var kind: String
+          var description: String
+          var artworkURL: URL
+          
+          init(from decoder: Decoder) throws {
+              let values = try decoder.container(keyedBy: CodingKeys.self)
+              
+              name = (try? values.decode(String.self, forKey: CodingKeys.name)) ?? "** No Name **"
+              artist = (try? values.decode(String.self, forKey: CodingKeys.artist)) ?? "** No Artist Name **"
+              kind = (try? values.decode(String.self, forKey: CodingKeys.kind)) ?? "** No Kind **"
+              artworkURL = (try? values.decode(URL.self, forKey: CodingKeys.artworkURL)) ?? URL(string: "https://itunes.apple.com")!
+
+              if let description = try? values.decode(String.self, forKey: CodingKeys.description) {
+                  self.description = description
+              } else {
+                  let additionalValues = try decoder.container(keyedBy: AdditionalKeys.self)
+                  description = (try? additionalValues.decode(String.self, forKey: AdditionalKeys.longDescription)) ?? "** No Description **"
+              }
+          }
+          enum  CodingKeys: String, CodingKey {
+              case name = "trackName"
+              case artist = "artistName"
+              case kind
+              case description
+              case artworkURL = "artworkUrl100"
+          }
+          
+          enum AdditionalKeys: String, CodingKey {
+              case longDescription
+          }
+      }
+
+      enum StoreItemError: Error, LocalizedError {
+          case itemsNotFound
+      }
+      struct SearchResponse: Codable {
+          let results: [StoreItem]
+      }
+
+      func fetchItems(matching query: [String: String]) async throws -> [StoreItem] {
+          var urlComponents = URLComponents(string: "https://itunes.apple.com/search")!
+          urlComponents.queryItems = query.map { URLQueryItem(name: $0.key, value: $0.value) }
+          
+          let (data, response) = try await URLSession.shared.data(from: urlComponents.url!)
+          
+          guard let httpResponse = response as? HTTPURLResponse,
+            httpResponse.statusCode == 200 else {
+              throw StoreItemError.itemsNotFound
+          }
+          
+      //    print(data.prettyPrintedJSONString())
+          let jsonDecoder = JSONDecoder()
+          let searchResponse = try jsonDecoder.decode(SearchResponse.self, from: data)
+          return searchResponse.results
+      }
+
+      let query = [
+          "term": "Apple",
+          "limit": "4",
+      //    "media": "ebook",
+      //    "attribute": "authorTerm",
+      //    "lang": "en_us"
+      ]
+
+      Task {
+          do {
+              let storeItem = try await fetchItems(matching: query)
+              print("Successfully fetched StoreItem: \n")
+              storeItem.forEach {
+                  print("\($0.name): \($0.description)\n")
+              }
+          } catch {
+              print("Fetch StoreItem failed with error: \(error)")
+          }
+      }
+
+      /* Console Result: */
+      Successfully fetched StoreItem: 
+
+      Apple: During a robbery at the grocery mart Dr. Shaun Murphy is shopping at, his communication limitations puts lives at risk. Meanwhile, after Shaun's traumatic day, Dr. Aaron Glassman worries that he isn't doing enough to help Shaun.
+
+      ** No Name **: This is an Apple Books audiobook narrated by a digital voice based on a human narrator.<br /><br />Sometimes the person standing in your way is your only hope...<br /><br />As the director of the Port Provident Animal Shelter, Becca Collins had devoted her life to helping the furriest residents of Port Provident. When a special Labrador retriever, Polly, needs her help on the eve of Hurricane Hope, Becca can't say no—even if it means she'll have to ride out the hurricane on Provident Island. When she shows up on the doorstep of local veterinarian and Army veteran Dr. Ross Reeder, Becca throws a wrench into Ross' plans to evacuate himself and his combat-weary former service dog, Cookie.<br /><br />Ross and Becca are used to disagreeing with one another, but they soon realize the only way they're going to survive the wrath of Hurricane Hope is to put their differences aside and work for the good of the animals who depend totally on them. As they discover they have more in common than they thought and work to rebuild the Texas beach town where they've both put down roots, Becca learns secrets about her past that threaten to change the whole direction of her life.<br /><br />As Becca struggles with love, faith, and lies, will she still need the shelter she's found in Ross' arms or will the aftermath of the storm take away everything they've worked to build?<br /><br />Start reading Shelter from the Storm to find hope, heart, and happily-ever-after today!<br /><br />USA Today bestselling&#xa0;author Kristen Ethridge brings readers home to Port Provident, Texas for the Port Provident: Hurricane Hope series—sweet escape romances full of hope, heart and happily-ever-after. These clean romance novels with a light, uplifting thread of faith and love will sweep you up in the story and leave you with a smile.<br /><br />Enjoy the complete Port Provident: Hurricane Hope series!<br />Shelter from the StormThe Doctor's Unexpected FamilyHis Texas PrincessHoliday of Hope<br />&#xa0;
+
+      ** No Name **: This is an Apple Books audiobook narrated by a digital voice based on a human narrator.<br /><br />She knows she shouldn't cling to memories of a past love.<br /><br />Torn from her high school sweetheart and left to rebuild the pieces of her life, Allison has almost given up on finding love. Ten years have&#xa0;passed, but when she sees Cole again, her pulse kicks up in that old, familiar way. The question is, can they resolve the issues that tore them apart – and can she learn to love again?
+
+      Low (feat. T-Pain): ** No Description **
+    ```
