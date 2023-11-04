@@ -6429,3 +6429,16 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
           let results: [StoreItem]
       }
     ```
+
+##### Step 2 Create a Function to Fetch Items
+
+- Now that you have a `SearchResponse` object, you're ready to fetch the data that you'll decode into your `StoreItem` models.
+  - Create a new `fetchItems` function that takes a query dictionary and returns an array of `StoreItems`. The function should be marked as `async` and `throws`.
+  - `func fetchItems(matching query: [String: String]) async throws -> [StoreItem]`
+- The function should create a URL with the queries and issue a new request with the URL. When the request is complete, the function should check the status code from the request and throw an error if it's not equal to 200. Then it should create a `JSONDecoder`, unwrap the data, and decode it into a `SearchResponse` object. Finally, it should return the `results` from `SearchResponse`.
+- Follow these steps to implement the `fetchItems` function:
+  - Move your `urlComponents` variable inside the function.
+  - Create an enum that adopts the `Error` and `LocalizedError` protocols with at least one case.
+  - Set the `queryItems` from the passed in `query` parameter.
+  - Call the `data` method on the shared URL session and assign the results to a tuple.
+  - Check the status code of the request and throw an error if it's not equal to 200.
