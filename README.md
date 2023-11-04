@@ -6450,3 +6450,9 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
   - Check whether you've received valid data back from the API. If you have, try and decode it into a `SearchResponse` object.
   - If you successfully unwrapped the data and decoded the `SearchResponse` object, pass the results property on SearchResponse through the completion handler. Remember that the results property on SearchResponse has the array of individual StoreItem objects.
   - If the JSON fails to decode properly, catch the error and call the completion handler with the error.
+
+##### Step 4 Call Your Function
+
+- With the `StoreItem` struct, the intermediary `SearchResponse` struct, the `fetchItems` function, and your search query, you're ready to call your function and create your model objects.
+  - Call the `fetchItems` function and pass in your query. Check for errors and print the decoded [StoreItem] array in a do/catch statement. Remember to use a Task to wrap your function call.
+- You did it! You've fetched data and decoded it into your own custom model object. You'll use code just like this for fetching data to display in your apps. Be sure to save your playground to your project folder for future reference.
