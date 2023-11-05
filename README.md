@@ -6559,3 +6559,109 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
           }
       }
     ```
+
+### Lesson 2.6 Working with the Web: Concurrency
+
+- In the previous lesson, you learned how to decode JSON into native Swift types and custom model objects, how to write your own completion handler to handle asynchronous code, and a little bit about how you might approach adding the code to an Xcode project.
+- In this lesson, you'll take the data you receive from a network request, decode it, and display it in your own app. You'll also download and set your first image for display. To make this all happen, you'll learn about the concurrency system in iOS and how to make sure code that updates the user interface is executed in the right place.
+- As you went through the previous two lessons, you used asynchronous programming techniques to handle network requests. You used `await` to call an `async` method, and wrapped your asynchronous code in a `Task`. You also created your own asynchronous throwing method.
+- In this lesson, you'll build an app that pulls data from the NASA Astronomy Picture of the Day (APOD) API and displays the information and the photo in the app. As you build this app, you'll encounter a couple of new issues related to running asynchronous requests, and you'll learn how to address them.
+
+#### Get Started
+
+- Create a new project called "SpacePhoto" using the iOS App template. When creating the project, make sure the Interface option is set to Storyboard. Open the Main storyboard and use a stack view to display an image view and two labels vertically. The image view will display today's photo from the APOD API, the first label will display the description, and the second label will display any available copyright information.
+  - <img src="./resources/space_photo_get_start.png" alt="Space Photo Get Start" width="300" />
+- Embed the scene in a navigation controller. The title of the photo will be set as the title label in the navigation bar.
+- You might consider adding the stack view to a scroll view to accommodate a potentially long photo description. Keep in mind, however, that the purpose of this lesson is to update the app's user interface with the results of a network request — so the particulars of the interface aren't important to the project.
+- Add outlets for the image view and labels to your ViewController file.
+
+#### Import Your Playground Code
+
+- Go ahead and open the “Working with the Web” playground you built in the previous lessons, then migrate the code into the Xcode project. If you didn't complete the previous lesson, no worries. You can copy the code snippets in the instructions that follow.
+- As you learned in the previous lesson, there are many ways to structure the networking code in your app. The sample code in this lesson will add the network request method to a `PhotoInfoController` structure.
+- Create a PhotoInfo.swift file and copy and paste your PhotoInfo structure into the file:
+
+  - ```swift
+      struct PhotoInfo: Codable {
+          var title: String
+          var description: String
+          var url: URL
+          var copyright: String?
+       
+          enum CodingKeys: String, CodingKey {
+              case title
+              case description = "explanation"
+              case url
+              case copyright
+          }
+      }
+    ```
+
+- Create a `PhotoInfoController.swift` file and define a new `PhotoInfoController` class. Add your `PhotoInfoError` enum and your `fetchPhotoInfo()` method to it. The contents of your class should resemble the following:
+
+  - ```swift
+      enum PhotoInfoError: Error, LocalizedError {
+          case itemNotFound
+      }
+       
+      func fetchPhotoInfo() async throws -> PhotoInfo {
+          var urlComponents = URLComponents(string: "https://api.nasa.gov/planetary/apod")!
+          urlComponents.queryItems = [
+              "api_key": "DEMO_KEY",
+          ].map { URLQueryItem(name: $0.key, value: $0.value) }
+       
+          let (data, response) = try await URLSession.shared.data(from: urlComponents.url!)
+       
+          guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+              throw PhotoInfoError.itemNotFound
+          }
+       
+          let jsonDecoder = JSONDecoder()
+          let photoInfo = try jsonDecoder.decode(PhotoInfo.self, from: data)
+          return(photoInfo)
+      }
+    ```
+
+#### Make The Network Request
+
+- Update your ViewController to call the `fetchPhotoInfo()` method and update the `title` and `labels` with the result.
+- You'll want to add a property for an instance of the `PhotoInfoController` that can be used to execute the request. Create the following property within the definition of ViewController: `let photoInfoController = PhotoInfoController()`
+- Add the `fetchPhotoInfo()` method to `viewDidLoad()`. Use a do/catch statement to handle any errors, update the `title` of the view controller, and set values for your label outlets. It's best to clear out the text for the `descriptionLabel` and `copyrightLabel` before the network request runs. Otherwise, the labels will display the text that was set in Interface Builder. You can also use a system - provided image for the image view, to indicate that something will eventually be placed there or that something has failed. (You'll notice you don't yet have any image data. You'll get to that shortly.)
+
+  - ```swift
+      override func viewDidLoad() {
+          super.viewDidLoad()
+       
+          title = ""
+          imageView.image = UIImage(systemName: "photo.on.rectangle")
+          descriptionLabel.text = ""
+          copyrightLabel.text = ""
+       
+          do {
+              let photoInfo = try await photoInfoController.fetchPhotoInfo()
+              self.title = photoInfo.title
+              self.descriptionLabel.text = photoInfo.description
+              self.copyrightLabel.text = photoInfo.copyright
+          } catch {
+              self.title = "Error Fetching Photo"
+              self.imageView.image = UIImage(systemName: "exclamationmark.octagon")
+              self.descriptionLabel.text = error.localizedDescription
+              self.copyrightLabel.text = ""
+          }
+      }
+    ```
+
+- The compiler will indicate `'async' call in a function that does not support concurrency` and offer an option to fix the issue: `Add 'async' to function 'viewDidLoad()' to make it asynchronous`. However, the fix won't work in this case, because `viewDidLoad()` is overridden from `UIViewController`, and the superclass method is not marked `async`. (Recall that asynchronous code can only be called from a function marked `async` or from a `task`.) You've already encountered this problem when using asynchronous code from a playground. The solution is the same: Use a task as a bridge to the asynchronous network code. Update your code to use a `Task` to wrap the asynchronous code.
+- You'll notice that the above code updates the user interface within the `Task` closure. This is possible because a task guarantees that all of its code will execute in the context of the actor that created it — in this case, the `MainActor`.
+- Here's the bottom line: You can expect the code you write in a task to suspend at `async` calls, but you can also assume that the code resumes in the same context. As a rule, you can safely update your UI from code within a task if it's running in a method of a `UIViewController` subclass. (If you're curious, look up `UIViewController` in the documentation. You'll see that its declaration reads `@MainActor class UIViewController : UIResponder`.)
+- If you want, you can annotate your `ViewController` class with `@MainActor` to make this relationship explicit:
+
+  - ```swift
+      @MainActor
+      class ViewController: UIViewController {
+      ...
+      }
+
+- But since `UIViewController` is already annotated this way, your subclass inherits this property and there's no need for you to annotate it.
+- Swift actors and `async` functions are the recommended technology for managing concurrent processing. Grand Central Dispatch is another iOS technology that can be used manage concurrency. While you won't be using Grand Central Dispatch in this course, it can be a useful tool and is worth understanding.
