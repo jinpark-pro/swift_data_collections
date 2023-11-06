@@ -6665,3 +6665,19 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
 
 - But since `UIViewController` is already annotated this way, your subclass inherits this property and there's no need for you to annotate it.
 - Swift actors and `async` functions are the recommended technology for managing concurrent processing. Grand Central Dispatch is another iOS technology that can be used manage concurrency. While you won't be using Grand Central Dispatch in this course, it can be a useful tool and is worth understanding.
+
+#### Grand Central Dispatch
+
+- Threads manage the flow of executing code. In the early days of computing, all code ran on a single thread of execution. Modern operating systems such as iOS provide multiple threads to allow multiple flows of code to run simultaneously. (With today's multicore processors, threads can run on different cores, but even a single core can run multiple threads to provide the illusion of simultaneous execution.) iOS creates a main thread to run all user interface code.
+- Grand Central Dispatch (GCD) is an iOS technology that lets you write asynchronous code by dispatching it to a system of queues, which execute the code on one or more threads managed by GCD, so you don't have to create and maintain the threads yourself. GCD provides one main queue, which runs on the main thread and always has the highest priority, and other background queues that execute at varying levels of priority. The background queues can be used to execute long-running operations that would otherwise clog or block the main queue, making the app appear frozen to the user.
+- Older `URLSession` methods require a closure, which runs on a background queue when the request is complete, to process their results. If you used one of these older methods and needed to update user interface elements from that closure, you'd need to send your user interface code to the main queue, where it would be processed at the highest priority level. To do so, you'd use a DispatchQueue to run a block of code on the main queue. Here's what the code looks like:
+
+  - ```swift
+      DispatchQueue.main.async {
+          // Code here will be executed on the main queue
+      }
+    ```
+
+- Not to bad, right? The `DispatchQueue` class works with the different system queues. `main` refers to the main queue, and `async` tells the main queue to run the following block as soon as possible.
+- Because you've been using `async` methods and tasks in your code, you haven't had to deal with these mechanics. But you may encounter code that doesn't use Swift concurrency, where you'll need to use Grand Central Dispatch.
+- You've only scratched the surface of working with the concurrency tools in iOS. But knowing just a small amount enables you to work with code that runs asynchronously. You'll learn more about Swift concurrency, Grand Central Dispatch, and other iOS tools as you build more complex apps in the future.
