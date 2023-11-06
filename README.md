@@ -6681,3 +6681,87 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
 - Not to bad, right? The `DispatchQueue` class works with the different system queues. `main` refers to the main queue, and `async` tells the main queue to run the following block as soon as possible.
 - Because you've been using `async` methods and tasks in your code, you haven't had to deal with these mechanics. But you may encounter code that doesn't use Swift concurrency, where you'll need to use Grand Central Dispatch.
 - You've only scratched the surface of working with the concurrency tools in iOS. But knowing just a small amount enables you to work with code that runs asynchronously. You'll learn more about Swift concurrency, Grand Central Dispatch, and other iOS tools as you build more complex apps in the future.
+
+#### Fetch And Display The Photo
+
+- At this point, your app should correctly fetch data from the APOD API and display the information on your scene. Now, how will you fetch and display the photo?
+- One approach to solving a problem like this is to trace a path from the information you have to the information you want. In this case, the path is quite short. Your `PhotoInfo` model object has a `url` property that points to the photo you want to display. So the solution would be to download the data, initialize a `UIImage`, and set it to the image view.
+- Downloading the data for an image on the internet is exactly the same as downloading data for a website or from a web service. You'll start by using the shared URL session to initialize a data task pointed at the image's URL. Next, you'll initialize the `UIImage` and set the image view once the data is returned from the URL session.
+- Before you write that code, you'll need to make a couple of changes to your view controller. Take a minute to consider the experience you want the user to have, because that objective will determine where you trigger each network call and where you update the user interface.
+- Note that you'll need to execute two network requests when the view loads. One will fetch the photo information, and one will fetch the photo itself. In this case, you'll probably want to update the user interface only after you've successfully fetched both the information and the image. But you might organize your code differently if you prefer to display information from one request before the other request is finished.
+- So what changes should you make to your code? There are many approaches that you could take, and part of being a software developer is identifying multiple solutions and determining which fits best in your project. One approach you might take is adding a new method to `PhotoInfoController` that fetches the image, then calling that method after you've received the image's URL from your `fetchPhotoInfo()` function.
+- Before looking at the following sample code, try to refactor the view controller to fetch and set the image on your own. It can be challenging to write code without a reference, but the practice is worth it. If you aspire to develop apps independently, you'll need to be able to puzzle through this kind of problem.
+- **Sample Code**
+  - Here's what a new method to fetch the image in `PhotoInfoController` might look like:
+
+    - ```swift
+        import UIKit
+
+        class PhotoInfoController {
+            enum PhotoInfoError: Error, LocalizedError {
+                case itemNotFound
+                case imageDataMissing
+            }
+            
+            func fetchPhotoInfo() async throws -> PhotoInfo {...}
+
+            func fetchImage(from url: URL) async throws -> UIImage {
+                let (data, response) = try await URLSession.shared.data(from: url)
+             
+                guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                    throw PhotoInfoError.imageDataMissing
+                }
+             
+                guard let image = UIImage(data: data) else {
+                    throw PhotoInfoError.imageDataMissing
+                }
+             
+                return image
+            }
+        }
+      ```
+
+  - Your refactored ViewController might look like the following:
+
+    - ```swift
+        override func viewDidLoad() {
+            super.viewDidLoad()
+         
+            title = ""
+            imageView.image = UIImage(systemName: "photo.on.rectangle")
+            descriptionLabel.text = ""
+            copyrightLabel.text = ""
+         
+            Task {
+                do {
+                    let photoInfo = try await photoInfoController.fetchPhotoInfo()
+                    updateUI(with: photoInfo)
+                } catch {
+                    updateUI(with: error)
+                }
+            }
+        }
+         
+        func updateUI(with photoInfo: PhotoInfo) {
+            Task {
+                do {
+                    let image = try await photoInfoController.fetchImage(from: photoInfo.url)
+                    title = photoInfo.title
+                    imageView.image = image
+                    descriptionLabel.text = photoInfo.description
+                    copyrightLabel.text = photoInfo.copyright
+                } catch {
+                    updateUI(with: error)
+                }
+            }
+        }
+         
+        func updateUI(with error: Error) {
+            title = "Error Fetching Photo"
+            imageView.image = UIImage(systemName: "exclamationmark.octagon")
+            descriptionLabel.text = error.localizedDescription
+            copyrightLabel.text = ""
+        }
+      ```
+
+  - Now that you've made these changes, what would you expect to happen when you run the app? Check it out. If it doesn't work as expected, try to debug the issue using breakpoints and the debug console. Pay attention to any messages that may have printed to the debug console. (If you get a message about App Transport Security blocking a resource, read the next section.)
