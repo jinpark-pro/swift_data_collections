@@ -6570,7 +6570,7 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
 #### Get Started
 
 - Create a new project called "SpacePhoto" using the iOS App template. When creating the project, make sure the Interface option is set to Storyboard. Open the Main storyboard and use a stack view to display an image view and two labels vertically. The image view will display today's photo from the APOD API, the first label will display the description, and the second label will display any available copyright information.
-  - <img src="./resources/space_photo_get_start.png" alt="Space Photo Get Start" width="300" />
+  - <img src="./resources/space_photo_get_start.png" alt="Space Photo Get Start" width="400" />
 - Embed the scene in a navigation controller. The title of the photo will be set as the title label in the navigation bar.
 - You might consider adding the stack view to a scroll view to accommodate a potentially long photo description. Keep in mind, however, that the purpose of this lesson is to update the app's user interface with the results of a network request — so the particulars of the interface aren't important to the project.
 - Add outlets for the image view and labels to your ViewController file.
@@ -6765,3 +6765,41 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
       ```
 
   - Now that you've made these changes, what would you expect to happen when you run the app? Check it out. If it doesn't work as expected, try to debug the issue using breakpoints and the debug console. Pay attention to any messages that may have printed to the debug console. (If you get a message about App Transport Security blocking a resource, read the next section.)
+
+#### App Transport Security and the HTTP Protocol
+
+- Depending on the image of the day, an error may have been printed to the console when you tried to execute a network request for the photo.
+  - `App Transport Security has blocked a cleartext HTTP (http://) resource load since it is insecure. Temporary exceptions can be configured via your app's Info.plist file.`
+- What's App Transport Security? App Transport Security, or ATS, improves user security and privacy by requiring apps to use secure network connections over HTTPS. Why haven't you seen this error in the last two lessons? Because you were working in playgrounds, and ATS doesn't prevent network requests in playground files. Even if that weren't the case, you accessed the Apple website and the NASA APOD API using URLs with the HTTPS protocol, so you would not have encountered this error.
+- If you received this error, you'll notice that the image URL on the `PhotoInfo` object uses the HTTP protocol. So that's where ATS kicked in, blocking your request to an insecure URL. As the error indicates, you can update your app's Info file with a key that will grant you a temporary exemption.
+- **Updating `Info` for HTTP Exemption**
+  - Updating the `Info` file with the exemption will only work temporarily. Support for the exemption was originally scheduled to end in December 2016, but has been extended indefinitely. Because you'll need to use the exemption later, this section will briefly show how to add the exemption key. But when possible, such as in this project, use the solution in the following section to update insecure URLs to use the HTTPS protocol.
+  - You've seen the `Info` file before; it's basically a dictionary of information about your app that is used when deploying your app or submitting it to the App Store. By including the ATS exemption key, you're saying that your app might access insecure URLs.
+  - Open the `Info` file to view the default set of keys associated with a new iOS app. Hover over the top key, “Information Property List,” and a plus sign (+) will appear. Click it to begin adding a new key to the file.
+  - To allow HTTP connections, you'll need to add the key `App Transport Security Settings`. As you start typing the key, the autocomplete menu should appear. Once it does, go ahead and press Return to add the key.
+  - The value for App Transport Security Setting is another dictionary. Click the triangle next to the key name to expand the contents, then hover over the key name and click the plus sign (+).
+  - “You'll need to add the key `Allow Arbitrary Loads` to the new dictionary. Start typing and let autocompletion finish for you. Press Return. The value for this key is a Boolean that you should set to `YES`.
+  - Again, where possible you should always try to use a URL that supports HTTPS. But if you are working with a web API that simply does not support the more secure protocol, you can add this key to allow HTTP access.
+- **Updating the URL to Use HTTPS**
+  - In this project, the NASA APOD API does support fetching the image with the more secure HTTPS protocol, so you can simply update the `PhotoInfo` URL to use it.
+  - How can you change the URL programmatically? Remember that the URLComponents class provides helpful tools for parsing and adding to URLs. You've used the queryItems property to safely encode query parameters on a URL.
+  - In this example, you'll update the passed URL in the `fetchImage()` method on `PhotoInfoController` so that the scheme property is always "https". Here's how the beginning of the updated method should look:
+
+    - ```swift
+        func fetchImage(from url: URL) async throws -> UIImage {
+            var urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: true)
+            urlComponents?.scheme = "https"
+         
+            let (data, response) = try await URLSession.shared.data(from: urlComponents!.url!)
+         
+            //...
+        }
+      ```
+
+  - Load up your app in Simulator or on your testing device to see your code in action. At this point, your app should be working as expected. Your code will fetch the JSON data from the APOD API, decode the JSON into your PhotoInfo model object, fetch the accompanying photo, and update the user interface with all the data.
+  - Take a moment to appreciate everything you've done. Working with network requests, decoding data, and loading images asynchronously are pretty advanced jobs for a new developer!
+  - But wait. There's one small tweak that will make your app even better. If your code isn't working, read the next section about videos. Otherwise you can jump to the following section about using the network activity indicator.
+- **A Note about Videos**
+  - You may have noticed a `media_type` key in the JSON body when decoding the response body. Even though APOD is short for Astronomy Picture of the Day, NASA will occasionally include a video instead of an image. Embedding video in an app is beyond the scope of this lesson, but here's a quick approach to supporting a video response.
+  - Start by updating your code to check the value of the `media_type` key. If today's post is a video, you could open the URL directly in a Safari view controller or you could use the `UIApplication.shared.open(url: URL, options: [String : Any], completionHandler: ((Bool) -> Void)?)` method.
+  - If the API is returning a video today and you want to verify that your app works without making those changes, there's a workaround. You can change the query to another date that will return a photo instead of a video. To add a date query, use the format in the NASA API documentation.
