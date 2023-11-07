@@ -6803,3 +6803,12 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
   - You may have noticed a `media_type` key in the JSON body when decoding the response body. Even though APOD is short for Astronomy Picture of the Day, NASA will occasionally include a video instead of an image. Embedding video in an app is beyond the scope of this lesson, but here's a quick approach to supporting a video response.
   - Start by updating your code to check the value of the `media_type` key. If today's post is a video, you could open the URL directly in a Safari view controller or you could use the `UIApplication.shared.open(url: URL, options: [String : Any], completionHandler: ((Bool) -> Void)?)` method.
   - If the API is returning a video today and you want to verify that your app works without making those changes, there's a workaround. You can change the query to another date that will return a photo instead of a video. To add a date query, use the format in the NASA API documentation.
+
+#### Use the Network Activity Indicator
+
+- As you've progressed through this course, you've learned that it's important for the user to know what's happening in your apps. You want your app to feel familiar — and that's a good reason to use the system views and controls whenever possible.
+- Another thing that users expect is some sort of indication that the app is executing a network request and waiting on a response. If you're running a request that might take longer than a few seconds, you might consider adding a [UIActivityIndicatorView](https://developer.apple.com/documentation/uikit/uiactivityindicatorview) or [UIProgressView](https://developer.apple.com/documentation/uikit/uiprogressview) somewhere on your interface. For more information on how to design your app with these views, take a look at [Human Interface Guidelines: Progress Indicators](https://developer.apple.com/design/human-interface-guidelines/progress-indicators).
+
+#### Wrap-Up (Concurrency)
+
+- Congratulations! You've learned a lot about how to work with the web in your iOS projects. As you build more dynamic apps using network APIs, you can refer to these lessons and the accompanying labs as a resource. Browse the internet, and you'll find many open APIs to use as launching pads for experimentation with web service – enabled apps.
