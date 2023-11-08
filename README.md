@@ -6812,3 +6812,26 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
 #### Wrap-Up (Concurrency)
 
 - Congratulations! You've learned a lot about how to work with the web in your iOS projects. As you build more dynamic apps using network APIs, you can refer to these lessons and the accompanying labs as a resource. Browse the internet, and you'll find many open APIs to use as launching pads for experimentation with web service – enabled apps.
+
+### Lab - iTunes Search (Part 3)
+
+- The objective of this lab is to integrate your iTunes Search network requests into an actual app and apply the lessons you've learned about concurrency to the project. You'll create an app that will allow the user to search for different media types and view the results in a table view. To improve the performance of the table view, you'll also learn how to update the size of the URL cache to temporarily save images.
+- In your student resources folder, open the starter project called “iTunesSearch.” The app includes an initial view controller with a table view for listing search results, a search bar for entering a query, and a segmented control for narrowing the search results to a particular media type.
+- The `StoreItemListTableViewController` class has placeholder properties and functions that handle the search bar and segmented control and display a list of items in the table view. Before continuing with the following steps, take a moment to review the project's code and storyboard to understand how the app is set up.
+
+#### Step 1 Import Your Playground Code
+
+- Open the “iTunes Search” playground you created in the previous two lessons.
+- Create a `StoreItem.swift` file and copy your `StoreItem` structure definition into the file. Also copy your intermediary `SearchResponse` struct into this file, outside the declaration of StoreItem.
+- Create a `StoreItemController.swift` file and define a new `StoreItemController` class. Copy your `fetchItems` function into the controller.
+
+#### Step 2 Add the Request to the View Controller
+
+- Remember that the `StoreItemListTableViewController` has already implemented the code for the segmented control and the search bar and for supplying data to the table view. But right now, it's set up to use an array of String instances. You'll update the view controller to use the `StoreItemController` to fetch items based on the media type selected in the segmented control and the query in the search bar. Once the items are returned, you'll reload the table view to display the results.
+- When the user starts entering or editing text in the search bar, the app will display a Search button. What happens next? If you look at the bottom of the code, you'll notice that the search bar uses the delegate pattern to call the `fetchMatchingItems()` function when the user taps the Search button. The `fetchMatchingItems()` function resets `self.items` and reloads the table view to clear the old data. The function then captures the text from the search bar and the correct media type from the segmented control.
+- You'll implement the rest of the `fetchMatchingItems()` function to set up a query dictionary and make the network request. Here's how to go about it:
+  - Add a new `StoreItemController` property to the list view controller. You'll use this instance to run the network request to fetch the matching `StoreItem` objects.
+  - Update the items array to the [StoreItem] type.
+  - Update the `configure(cell: UITableViewCell, forItemAt indexPath: IndexPath)` function to set the cell's `name` to `item.name`, `artist` to `item.artist`, and `artworkImage` to `nil`.
+  - In the `fetchMatchingItems()` function, within the `if !searchTerm.isEmpty` braces, set up a query dictionary, setting the `"term"` and `"media"` keys to their respective values. You might also want to use the `"limit"` key to limit the number of results or the `"lang": "en_us"` key-value pair to limit results to items in U.S. English.
+  - Call the `fetchItems(matching:)` method on the `StoreItemController` instance, passing the query dictionary in a do/catch statement within a `Task`. In the case for success, set the returned [StoreItem] as the `self.items` property on the view controller and reload the table. In the case for failure, print the associated `Error` to the console.
