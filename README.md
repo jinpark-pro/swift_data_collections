@@ -6835,3 +6835,8 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
   - Update the `configure(cell: UITableViewCell, forItemAt indexPath: IndexPath)` function to set the cell's `name` to `item.name`, `artist` to `item.artist`, and `artworkImage` to `nil`.
   - In the `fetchMatchingItems()` function, within the `if !searchTerm.isEmpty` braces, set up a query dictionary, setting the `"term"` and `"media"` keys to their respective values. You might also want to use the `"limit"` key to limit the number of results or the `"lang": "en_us"` key-value pair to limit results to items in U.S. English.
   - Call the `fetchItems(matching:)` method on the `StoreItemController` instance, passing the query dictionary in a do/catch statement within a `Task`. In the case for success, set the returned [StoreItem] as the `self.items` property on the view controller and reload the table. In the case for failure, print the associated `Error` to the console.
+
+#### Step 3 Review Your Progress
+
+- At this stage, when the user types text into the search bar and taps the Search button, your app should trigger a network request and return an array of `StoreItem` objects. When your table view is reloaded, it should display the results.
+- Run the app in Simulator to verify that it works as expected. If it doesn't, try to figure out why. Use breakpoints and the debugging console to find out whether the network request was executed and whether the completion handler is getting called.
