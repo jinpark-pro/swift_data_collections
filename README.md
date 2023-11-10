@@ -6813,19 +6813,19 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
 
 - Congratulations! You've learned a lot about how to work with the web in your iOS projects. As you build more dynamic apps using network APIs, you can refer to these lessons and the accompanying labs as a resource. Browse the internet, and you'll find many open APIs to use as launching pads for experimentation with web service – enabled apps.
 
-### Lab - iTunes Search (Part 3)
+#### Lab - iTunes Search (Part 3)
 
 - The objective of this lab is to integrate your iTunes Search network requests into an actual app and apply the lessons you've learned about concurrency to the project. You'll create an app that will allow the user to search for different media types and view the results in a table view. To improve the performance of the table view, you'll also learn how to update the size of the URL cache to temporarily save images.
 - In your student resources folder, open the starter project called “iTunesSearch.” The app includes an initial view controller with a table view for listing search results, a search bar for entering a query, and a segmented control for narrowing the search results to a particular media type.
 - The `StoreItemListTableViewController` class has placeholder properties and functions that handle the search bar and segmented control and display a list of items in the table view. Before continuing with the following steps, take a moment to review the project's code and storyboard to understand how the app is set up.
 
-#### Step 1 Import Your Playground Code
+##### Step 1 Import Your Playground Code
 
 - Open the “iTunes Search” playground you created in the previous two lessons.
 - Create a `StoreItem.swift` file and copy your `StoreItem` structure definition into the file. Also copy your intermediary `SearchResponse` struct into this file, outside the declaration of StoreItem.
 - Create a `StoreItemController.swift` file and define a new `StoreItemController` class. Copy your `fetchItems` function into the controller.
 
-#### Step 2 Add the Request to the View Controller
+##### Step 2 Add the Request to the View Controller
 
 - Remember that the `StoreItemListTableViewController` has already implemented the code for the segmented control and the search bar and for supplying data to the table view. But right now, it's set up to use an array of String instances. You'll update the view controller to use the `StoreItemController` to fetch items based on the media type selected in the segmented control and the query in the search bar. Once the items are returned, you'll reload the table view to display the results.
 - When the user starts entering or editing text in the search bar, the app will display a Search button. What happens next? If you look at the bottom of the code, you'll notice that the search bar uses the delegate pattern to call the `fetchMatchingItems()` function when the user taps the Search button. The `fetchMatchingItems()` function resets `self.items` and reloads the table view to clear the old data. The function then captures the text from the search bar and the correct media type from the segmented control.
@@ -6836,7 +6836,63 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
   - In the `fetchMatchingItems()` function, within the `if !searchTerm.isEmpty` braces, set up a query dictionary, setting the `"term"` and `"media"` keys to their respective values. You might also want to use the `"limit"` key to limit the number of results or the `"lang": "en_us"` key-value pair to limit results to items in U.S. English.
   - Call the `fetchItems(matching:)` method on the `StoreItemController` instance, passing the query dictionary in a do/catch statement within a `Task`. In the case for success, set the returned [StoreItem] as the `self.items` property on the view controller and reload the table. In the case for failure, print the associated `Error` to the console.
 
-#### Step 3 Review Your Progress
+##### Step 3 Review Your Progress
 
 - At this stage, when the user types text into the search bar and taps the Search button, your app should trigger a network request and return an array of `StoreItem` objects. When your table view is reloaded, it should display the results.
 - Run the app in Simulator to verify that it works as expected. If it doesn't, try to figure out why. Use breakpoints and the debugging console to find out whether the network request was executed and whether the completion handler is getting called.
+
+##### Step 4 Display Images in the Cells
+
+- In earlier projects, you used the `cellForRow` data source function to configure your table view cells. In this app, however, the configuration is more complex. You'll need to set the cell's `name`, `artist`, and `artworkImage` — but in this case, you don't have the image. You only have an image URL. So you'll need to fetch the image before you can set it on the image view.
+- Because there's more work involved in configuring the cell, the code has been abstracted to a separate `configure(cell: UITableViewCell, forItemAt indexPath: IndexPath)` function. Right now, the function sets the cell's text `String` properties to display the name and artist of the `StoreItem`. You'll update it to download the media artwork and display the image.
+- It's possible that your cell could be displayed before the image view has an image. The cell in the starter project has been configured to show the system image `"photo"` to act as a placeholder if the `artworkImage` is `nil` so that your cell will always have an image — if it were blank, your layout would look strange.
+  - Use the shared `URLSession` to request the artwork image using the item's `artworkURL`. Then, upon success, unwrap the image data, initialize a `UIImage` from the data, and assign the image to the cell's `artworkImage` property. Consider adding a method inside `StoreItemController` to make the network request and return the result.
+
+    - ```swift
+        func fetchImage(from url: URL) async throws -> UIImage {
+            var urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: true)
+            urlComponents?.scheme = "https"
+            let (data, response) = try await URLSession.shared.data(from: urlComponents!.url!)
+            
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                throw StoreItemError.imageDataMissing
+            }
+            
+            guard let image = UIImage(data: data) else {
+                throw StoreItemError.imageDataMissing
+            }
+            
+            return image
+        }
+      ```
+
+- You'll notice that the starter project contains a property called `imageLoadTasks`. This property is a dictionary where the keys are `IndexPaths` and the values are of the type `Task<Void, Never>`. (This is syntax for a generic type, which you'll learn about later — for now, just consider it a kind of `Task`.) It's a good idea to cancel tasks that are no longer needed. For example, once a cell is scrolled off the screen there is no point fetching its associated artwork. The sample project implements an additional `TableViewDelegate` method that is called when a row in the table view will be moved offscreen. The method cancels any task that may still be pending to download the artwork:
+
+  - ```swift
+      override func tableView(_ tableView: UITableView, didEndDisplaying
+        cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+          // Cancel the image fetching task if it's no longer needed
+          imageLoadTasks[indexPath]?.cancel()
+      }
+    ```
+
+- You can populate this dictionary when you start an image fetching task for a cell, and set the entry to `nil` once the image has been downloaded:
+
+  - ```swift
+      // Initialize a network task to fetch the item's artwork, keeping track of the task
+      // in imageLoadTasks so they can be cancelled if the cell will not be shown after
+      // the completes
+      imageLoadTasks[indexPath] = Task {
+          // Your code to fetch the image using the URL
+          do {
+              let image = try await storeItemController.fetchImage(from: item.artworkURL)
+              cell.artworkImage = image
+          } catch {
+              print("Fetch image failed with error: \(error)")
+          } 
+          // Once the task is complete remove it from the list of pending tasks
+          imageLoadTasks[indexPath] = nil
+      }
+    ```
+
+- At this point, you should be able to enter a search term, execute the search, and view the results — including the correct artwork — in the table view. Run the app in Simulator. Does it work as expected?
