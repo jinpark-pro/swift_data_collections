@@ -6896,3 +6896,16 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
     ```
 
 - At this point, you should be able to enter a search term, execute the search, and view the results — including the correct artwork — in the table view. Run the app in Simulator. Does it work as expected?
+
+##### Step 5 Cache URL Results
+
+- Caching the results of your URL requests reduces the number of requests that need to be made to the server and improves your app's user experience by making certain data from the server more readily available — even when the user is offline, experiencing a slow network connection, or requesting a large piece of data that would typically take time to download, such as an image or video. The shared `URLSession` (`URLSession.shared`) will by default use `URLCache.shared`, which is preconfigured — but sometimes its a good idea to increase its capacity.
+- If you cache images in this app, they will load significantly faster after the first time they've been downloaded from the server, because they won't need to be downloaded a second time. To increase the cache capacity, all you need to do is put the following code in the `application(_ :didFinishLaunchingWithOptions:)` method in your app's `AppDelegate`:
+
+  - ```swift
+      URLCache.shared.memoryCapacity = 25_000_000
+      URLCache.shared.diskCapacity = 50_000_000
+    ```
+
+- This adjusts the default system - provided cache instance so that memoryCapacity and diskCapacity are 25 megabytes and 50 megabytes, respectively. Depending on your app and its data, you can decide what values provide the best user experience.
+- Congratulations! You've made a more complex app that fetches a list of iTunes store items, loads their respective images, and displays them in a table view. Be sure to save it to your project folder for future reference.
