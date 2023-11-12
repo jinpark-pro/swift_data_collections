@@ -6941,3 +6941,28 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
     - `/menu`: A GET request to this endpoint will return the full array of menu items. It can also be combined with the query parameter `category` to return a subset of items. The array will be available under the key items in the JSON.
     - `/images`: Combined with the name of the image, a GET request to this endpoint will return the image data associated with a menu item.
     - `/order`: A POST to this endpoint with a collection of menu item `id` values will submit the order and will return a response with the estimated time before the order will be ready. The IDs you send need to be contained in JSON data under the key `menuIds`. When you parse the JSON, the estimated time before the order is ready will be under the key `preparation_time`.
+
+#### Part Two. Project Planning
+
+- Think of how you view a traditional menu when you enter a restaurant. Items are sorted into categories and have a title, description, price, and maybe an accompanying image. In this project, you can customize the appearance and presentation of the menu, but the workflow should remain fairly standard.
+- **Features**
+  - As with any list-based app, it's pretty easy to establish the basic features for your menu app:
+    - Display the list of available items
+    - Add items to an order
+    - Display the current order
+    - Submit the order
+  - In this project, the menu list comes from an API — a good idea for a restaurant. By storing the list on a server, the restaurant can update the menu without requiring customers to update the app they're using. As long as the features of the app don't change, the content that the app displays can be adjusted to reflect the restaurant's latest offerings.
+- **Workflow**
+  - Since a menu is a list, you've probably guessed that you'll be working with table views. Each cell can display one item from the list of data that's returned from an API. Using the `/categories` and `/menu` endpoints, the API can return a list of menu categories and the items associated with each category.
+  - It might make the most sense if the first screen displays the categories and tapping a cell displays another table view listing the items in the category. Tapping a menu item could then display details on the next screen, along with a button that adds the item to the order.
+  - So far, so good. But what if the customer wants to view the items they've added to their order? Whenever you need to provide easy access to a view — at any point in the user's workflow — a tab bar controller is a good way to contain the view. Tabs allow the user to switch quickly between contexts, without disrupting their experience.
+- **Controllers**
+  - As you learned earlier in this unit, you can place networking code in a number of different places. For this project, the best place is inside a controller object. Why structure the code this way, versus adding the networking logic to a view controller? A controller object adds a layer of separation between the view controller and the networking code. Instead of packing the necessary networking code into one or several view controllers, you can have your view controllers access a controller object that contains the network request code. And because all your networking code is in a single location, it will be easier to make future updates to network requests or reuse your code across multiple view controllers.
+- **Views**
+  - You already know that your app will rely heavily on table views. The standard `UITableViewCell` class has the correct number of text labels to display all the necessary data, so you're good to go. If you prefer to give your app a unique appearance, you can refer to previous lessons on creating and working with `UITableViewCell` subclasses.
+  - Your app will also have two screens that don't use table views. You can customize these views to your liking, but you won't need to create any `UIView` subclasses to make them work.
+- **Models**
+  - Your app is primarily concerned with one model: the item on the menu. When you issue a query to the `/menu` endpoint, the `JSON` data will include a collection of dictionaries, each of which can be serialized into a structure.
+  - What about using a structure for the data returned from the `/categories` endpoint? A category is a string, and when you query the endpoint, the API will return an array of strings. Typically, this form of data would be considered so simple that there's no need to create a more complex data structure. However, this app plans to use Codable, and the highest level of information returned by the API for `/categories` is a key called categories. This can't be decoded directly into a Swift type, so you'll need an intermediary object conforming to `Codable` that contains a property called categories.
+  - Similarly, you'll need a `PreparationTime` intermediary object for the `/order` endpoint, since it returns an integer representing the time until an order will be completed under the key `preparation_time`.
+  - The server has no GET endpoint for orders; they’re constructed and stored exclusively in the client app. But even though you won’t be decoding orders from JSON, you should still formalize their existence using an Order model object. The view controller you’ll create later to manage the order will display data from this object. The order structure itself will be very simple: a single property that stores an array of MenuItems.
