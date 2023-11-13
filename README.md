@@ -6966,3 +6966,102 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
   - What about using a structure for the data returned from the `/categories` endpoint? A category is a string, and when you query the endpoint, the API will return an array of strings. Typically, this form of data would be considered so simple that there's no need to create a more complex data structure. However, this app plans to use Codable, and the highest level of information returned by the API for `/categories` is a key called categories. This can't be decoded directly into a Swift type, so you'll need an intermediary object conforming to `Codable` that contains a property called categories.
   - Similarly, you'll need a `PreparationTime` intermediary object for the `/order` endpoint, since it returns an integer representing the time until an order will be completed under the key `preparation_time`.
   - The server has no GET endpoint for orders; they’re constructed and stored exclusively in the client app. But even though you won’t be decoding orders from JSON, you should still formalize their existence using an Order model object. The view controller you’ll create later to manage the order will display data from this object. The order structure itself will be very simple: a single property that stores an array of MenuItems.
+
+#### Part Three. Set Up The Storyboard Workflow
+
+- Now that you've thought through the project, its views, and its models, it's time to make your app happen.
+- **Project Setup**
+  - As you learned in a previous lesson, iOS applications need explicit permission to access APIs that use HTTP instead of HTTPS. But because it takes quite a few steps to set up the server to use HTTPS, you'll allow your menu app to run over HTTP.
+  - Create a new project using the iOS App template and name it "OrderApp." When creating the project, make sure the interface option is set to "Storyboard."
+  - Before you can begin developing the app, you'll need to add an entry to `Info.plist` to allow the app to make requests to your server. Click `Info` to open the `Info.plist` file to view the default set of keys associated with a new iOS app. Hover over the top key, `Information Property List`, and a plus sign (+) will appear. Click it to begin adding a new key to the file.
+  - To allow HTTP connections, you'll need to add the key called `App Transport Security Settings`. As you start typing the name of the key, you can allow autocompletion to fill in the rest. Press Return to add the key.
+  - The value for App Transport Security Settings is another dictionary. Click the triangle next to the key name to expand the contents, then hover over the key name and click the plus sign (+).
+  - Next, you'll add the key Allows Local Networking to the new dictionary, available in the dropdown. The value for this setting is a Boolean, which you should change to YES.
+  - With these new entries in the App Transport Security Settings dictionary, you're ready to begin developing an app that works with a local HTTP server.
+- **Set Up the Tab Controller**
+  - In the project planning phase, you established that you'll use a tab bar controller. Start by clicking Main to open `Main.storyboard` and deleting the view controller in the scene.
+  - Think ahead for a second. What will your tabs do? In this design, the first view controller will display a list of the menu categories, and the second view controller will display a list of the items the user has already added to the order. Therefore, each tab should use a subclass of `UITableViewController`.
+  - From the Object library, drag two `UINavigationController` objects onto the storyboard canvas. Each `UINavigationController` object has a `UITableViewController` attached to it.
+  - Select the top navigation controller's navigation bar and, in the `Attributes inspector`, check `Prefers Large Titles`. Later, when you add additional view controllers to this navigation stack, be sure to set their navigation item's Large Title property in the Attributes inspector to Never, so that only the first table view controller displays a large title.
+  - With both navigation controllers selected, choose Editor > Embed In > Tab Bar Controller. Then select the tab bar controller and, in the Attributes inspector, choose Is Initial View Controller. Since you won't be using the original view controller provided in the storyboard, you can delete its scene, if you haven't already. You can also delete the ViewController file from the Project navigator.
+    - <img src="./resources/tab_bar_controller.png" alt="Tab Bar Controller" width="600" />
+  - You've learned that a tab can display text and an icon. To update each tab, select the tab bar at the bottom of each `UINavigationController` in the scene, then use the Attributes inspector to give the bar item a title. Name the first tab “Menu” and the second tab “Your Order.” If you like, you can also add icons that represent a menu and an order — the system-provided `list.bullet` and `bag` images work well.
+  - Now build and run the app. At the bottom of the screen, you should see a tab bar with your two titles (and icons, if you added them). Each should be associated with an empty table.
+- **Create Table and Detail View Controllers**
+  - Take a moment to think about how the user will interact with the menu. When first launched, the app will display the list of categories in the first tab, and tapping a category will display its list of items. The second tab will display a list of ordered items. That's three `UITableViewController` subclasses that you'll need to create.
+  - Create a new Cocoa Touch Class called `CategoryTableViewController`, and make it a subclass of `UITableViewController`. Repeat this step two times, using `MenuTableViewController` and `OrderTableViewController` as the other class names.
+  - Back in the Main storyboard, you'll need to adjust the class attribute of each table view controller in the scene. 
+    - Select the table view controller in the first tab, then open the Identity inspector and set the Custom Class to `CategoryTableViewController`.
+    - Next, select the table view controller in the second tab and set its Custom Class to `OrderTableViewController`.
+  - When a table cell in `CategoryTableViewController` is tapped, it should push to the `MenuTableViewController`. 
+    - Drag another table view controller from the Object library and position it to the right of the `CategoryTableViewController`. In the Identity inspector, set its Custom Class to `MenuTableViewController`. Now Control-drag from the prototype cell of `CategoryTableViewController` to the `MenuTableViewController`, creating a `Show` segue from one view controller to the next.
+  - Now you have your three table view controllers. What about the detail screen? When the user taps a table cell in `MenuTableViewController`, it should push to a screen with information about the selected menu item. 
+    - Drag a `UIViewController` from the Object library onto the canvas and position it to the right of the `MenuTableViewController`. Control-drag from the prototype cell in `MenuTableViewController` to the new view controller to create another `Show` segue. 
+    - Before you forget, create another Cocoa Touch Class named `MenuItemDetailViewController` that's a subclass of `UIViewController`, then use the Identity inspector to customize the class of the new scene to `MenuItemDetailViewController`.
+  - Since `CategoryTableViewController` is displayed within a navigation controller, it has a title at the top of the screen. “Categories” doesn't sound very engaging for a restaurant menu. Think of a clever name to give your restaurant and make that the title — or simply use “Restaurant.”
+- **Define the Models**
+  - Now you're ready to begin constructing the data for each item in the menu. Create a new Swift file called “MenuItem.swift” and define a `MenuItem` structure. Each item should have properties that correspond to the keys listed in each dictionary in the API. You can reference the earlier section on JSON structure to review how the properties work.
+  - Similar to previous lessons, you'll make your structure adopt the `Codable` protocol. There are two JSON keys of concern for decoding. One, `image_url`, uses an underscore instead of the Swift-preferred camel case. The other, description, is a common property name in the API (it's declared in `NSObject` as well as in the Swift `CustomStringConvertible` protocol). So you'll need to create custom, non-matching properties for these keys. However, since you'll be using all the key/value pairs in the JSON data, you won't need a custom implementation of `init(from:)`. As long as you properly declare your `CodingKeys`, the compiler will take care of the rest.
+
+    - ```swift
+        struct MenuItem: Codable {
+            var id: Int
+            var name: String
+            var detailText: String
+            var price: Double
+            var category: String
+            var imageURL: URL
+         
+            enum CodingKeys: String, CodingKey {
+                case id
+                case name
+                case detailText = "description"
+                case price
+                case category
+                case imageURL = "image_url"
+            }
+        }
+      ```
+
+  - The API can be used to return lists of categories and menu items. These responses include an array of strings and an array of objects under the keys `categories` and `items`, respectively. A reasonable approach to this pattern is to create a Response model defining the web API's response for each endpoint. The models will be structures that `adoptCodable`. Create a new Swift file called “ResponseModels.swift” to hold all the `Response` structures.
+  - The /menu endpoint returns an object with an `items` key that contains the `MenuItem` objects you're interested in. This response model can be defined as:
+
+    - ```swift
+        struct MenuResponse: Codable {
+            let items: [MenuItem]
+        }
+      ```
+
+  - For the /categories endpoint, the model will be `CategoriesResponse` and should have a property called `categories` of type [String]:
+
+    - ```swift
+        struct CategoriesResponse: Codable {
+            let categories: [String]
+        }
+      ```
+
+  - Finally, you'll need a response model for the value that comes with `preparation_time`. This is returned from the /order endpoint and represents the amount of time until an order will be ready. Since the key in JSON uses an underscore, you should create a custom key so your property can be named according to proper Swift convention. This structure can also be included in `ResponseModels`.
+
+    - ```swift
+        struct OrderResponse: Codable {
+            let prepTime: Int
+            
+            enum CodingKeys: String, CodingKey {
+              case prepTime = "preparation_time"
+            }
+        }
+      ```
+
+  - You'll need one last model object. The order model object will contain a simple list of the items the user has added. Put this in a new file called “Order.swift.”
+
+    - ```swift
+        struct Order: Codable {
+            var menuItems: [MenuItem]
+         
+            init(menuItems: [MenuItem] = []) {
+                self.menuItems = menuItems
+            }
+        }
+      ```
+
+  - With the `MenuItem`, `MenuResponse`, `CategoriesResponse`, `OrderResponse`, and `Order` structures defined, you can begin to write the networking code, as well as the code to handle the data that's returned from the API.
