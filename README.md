@@ -7065,3 +7065,232 @@ As you've learned and practiced in earlier lessons, persistence requires you to 
       ```
 
   - With the `MenuItem`, `MenuResponse`, `CategoriesResponse`, `OrderResponse`, and `Order` structures defined, you can begin to write the networking code, as well as the code to handle the data that's returned from the API.
+
+#### Part Four. Add Networking Code
+
+- So far, you've set up your data to be retrieved from the server, created models to represent the server data, and defined the basic workflow for the app. But before you can begin displaying categories, you need to request the list from the API.
+You already decided to pack all the networking code — creating the proper URLs, performing the request, and processing the JSON results — into a single controller object. This abstraction will reduce the amount of code in the table view controllers and will also simplify any future code updates.
+- **Define the Methods**
+  - Create a new Swift file called “MenuController.swift” and define a `MenuController` class within it. Since all the network calls in this class use the same protocol and host (http://localhost:8080/), you can define a constant that holds this value.
+
+    - ```swift
+        class MenuController {
+            let baseURL = URL(string: "http://localhost:8080/")!
+        }
+      ```
+
+  - Consider the API requests that your app is going to make. You'll have a GET for the categories, a GET for the items within a category, and a POST containing the user's order when it's time to communicate back to the restaurant's server. That means you'll need to define three methods, one for each request.
+    1. Review the list of server endpoints at the beginning of this project. For the request to /categories, you know that there are no query parameters or additional data to send and that the response JSON will contain an array of strings. So the method should have no parameters and should return an array of strings: [String]. As with the examples of networking functions from previous lessons, the function should throw any errors and be marked as `async`, since it will be awaiting the results from the URLSession.
+
+       - ```swift
+           func fetchCategories() async throws -> [String] {
+            
+           }
+         ```
+
+       - Recall that your function should throw a custom error if the server doesn't return a status code of 200. The `Error` enum to support the `fetchCategories()` method will need at least one case:
+
+         - ```swift
+             enum MenuControllerError: Error, LocalizedError {
+                 case categoriesNotFound
+             }
+           ```
+
+    2. The request to /menu includes a query parameter: the category string. The JSON that's returned contains an array of dictionaries, and you'll want to deserialize each dictionary into a `MenuItem` object. So the method that will perform the request to /menu should have one parameter — the category string — and return and array of menu items.
+
+       - ```swift
+           func fetchMenuItems(forCategory categoryName: String) async throws ->[MenuItem] {
+            
+           }
+         ```
+
+       - It would be helpful to have a unique error case for this function, so go ahead and add an additional case to the Error enum: menuItemsNotFound.
+
+         - ```swift
+             enum MenuControllerError: Error, LocalizedError {
+                 case categoriesNotFound
+                 case menuItemsNotFound
+             }
+           ```
+
+    3. The POST to /order will need to include the collection of menu item IDs that the user selected, and the response will be an integer specifying the number of minutes the order will take to prep. The method that will perform this network call should have a single parameter — an array of integers to hold the IDs — and return `Int`.
+
+       - ```swift
+          func submitOrder(forMenuIDs menuIDs: [Int]) async throws -> Int {
+           
+          }
+         ```
+
+       - You can also add another case to the Error enum to identify issues with this request: orderRequestFailed.
+
+         - ```swift
+            enum MenuControllerError: Error, LocalizedError {
+                case categoriesNotFound
+                case menuItemsNotFound
+                case orderRequestFailed
+            }
+           ```
+
+       - There's one thing you could do to make the `submitOrder(forMenuIDs:)` method easier to understand. You're writing the method, so you know what the returned `Int` value represents. But will someone else reading or working on your code know?
+  - Swift has a feature called [type aliases[(https://docs.swift.org/swift-book/documentation/the-swift-programming-language/thebasics/#Type-Aliases)] that allows you to provide an additional name — an alias — for an existing type. This can be a simple way to communicate the meaning of a value to other developers without creating a whole new type. Update your `submitOrder(forMenuIDs:)` definition with the following:
+
+    - ```swift
+        typealias MinutesToPrepare = Int
+         
+        func submitOrder(forMenuIDs menuIDs: [Int]) async throws ->
+          MinutesToPrepare {
+         
+        }
+      ```
+
+  - Now it is very clear what the value means, and Option-clicking `MinutesToPrepare` reveals that it's simply an alias for `Int`.
+- **Make Requests with URL Session**
+  - Each method will take the `baseURL` you defined earlier and adjust it in some way. For fetching the categories, it's as simple as appending the endpoint:
+
+    - ```swift
+        func fetchCategories() async throws -> [String] {
+            let categoriesURL = baseURL.appendingPathComponent("categories")
+        }
+      ```
+
+  - But there's an additional step for fetching the menu items in a category: adding the query parameter. You can use `URLComponents` to append a collection of `URLQueryItem` objects. In this case, there's only one query item in the collection, and the value should be equal to the supplied argument:
+
+    - ```swift
+        func fetchMenuItems(forCategory categoryName: String) async throws -> [MenuItem] {
+            let baseMenuURL = baseURL.appendingPathComponent("menu")
+            var components = URLComponents(url: baseMenuURL, resolvingAgainstBaseURL: true)!
+            components.queryItems = [URLQueryItem(name: "category", value: categoryName)]
+            let menuURL = components.url!
+        }
+      ```
+
+  - There's a lot of force-unwrapping in the code that creates these URLs from strings. Do you think you should be concerned? Since you're not using server-side data to generate the URLs, it's safe to assume that if the URL can be built successfully once, it will work all the time.
+  - Like all the requests you made in previous lessons, you can use the shared instance of `URLSession` to make your requests. You'll call a method on the shared `URLSession` for each request, and you'll await the results. For both `GET` requests, the code should look fairly similar:
+
+    - ```swift
+        func fetchCategories() async throws -> [String] {
+            let categoriesURL = baseURL.appendingPathComponent("categories")
+            let (data, response) = try await URLSession.shared.data(from: categoriesURL)
+        }
+         
+        func fetchMenuItems(forCategory categoryName: String) async throws -> [MenuItem] {
+            let initialMenuURL = baseURL.appendingPathComponent("menu")
+            var components = URLComponents(url: initialMenuURL, resolvingAgainstBaseURL: true)!
+            components.queryItems = [URLQueryItem(name: "category", value: categoryName)]
+            let menuURL = components.url!
+            let (data, response) = try await URLSession.shared.data(from: menuURL)
+        }
+      ```
+
+  - Placing an order also starts by appending the API endpoint to the baseURL:
+
+    - ```swift
+        func submitOrder(forMenuIDs menuIDs: [Int]) async throws -> MinutesToPrepare {
+            let orderURL = baseURL.appendingPathComponent("order")
+        }
+      ```
+
+  - However, the POST request for placing the order is different. First, you'll create a `URLRequest` to specify the details of the request rather than directly submitting the request with a `URL`. You'll need to modify the request's type, which defaults to GET, to a POST. Then, you'll tell the server you'll be sending JSON data.
+
+    - ```swift
+        var request = URLRequest(url: orderURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+      ```
+
+  - Next, you'll store the array of menu IDs in JSON under the key `menuIds`. To do this, create a dictionary of type [String: [Int]], a type that can be converted to or from JSON by an instance of `JSONEncoder`:
+
+    - ```swift
+        let menuIdsDict = ["menuIds": menuIDs]
+        let jsonEncoder = JSONEncoder()
+        let jsonData = try? jsonEncoder.encode(menuIdsDict)
+      ```
+
+  - Where does this data need to be stored in the request? Unlike a GET, which appends query parameters to the URL, the data for a POST must be stored within the body of the request. Once that's in place, you can submit the request using the shared `URLSession`'s `data(for:delegate:)` method. Just like in `data(from:delegate:)`, the `delegate` has a default value of `nil`, so you can leave it out:
+
+    - ```swift
+        request.httpBody = jsonData
+        let (data, response) = try await URLSession.shared.data(for: request)
+      ```
+
+  - Here's the method in its entirety so far:
+
+    - ```swift
+        func submitOrder(forMenuIDs menuIDs: [Int]) async throws -> MinutesToPrepare {
+            let orderURL = baseURL.appendingPathComponent("order")
+            var request = URLRequest(url: orderURL)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+         
+            let menuIdsDict = ["menuIds": menuIDs]
+            let jsonEncoder = JSONEncoder()
+            let jsonData = try? jsonEncoder.encode(menuIdsDict)
+            request.httpBody = jsonData
+         
+            let (data, response) = try await URLSession.shared.data(for: request)
+        }
+      ```
+
+- **Parse the Responses**
+  - Each of the `URLSession` requests will return the requested data and information about the response or will throw an error, which your method will propagate to its caller. You'll want to check the status code from the response to ensure that the server returned the data you requested. If the status code is not 200, you'll want to throw an error appropriate to the function. For example, the `fetchCategories()` function's check would look like:
+
+    - ```swift
+        guard let httpResponse = response as? HTTPURLResponse,
+          httpResponse.statusCode == 200 else {
+            throw MenuControllerError.categoriesNotFound
+        }
+      ```
+
+  - Code that handles the errors — for example, when the server is down or when the device can't access the internet — is just as important as code that handles the case where everything works as expected. Since the server for this project in running on your Mac, it's unlikely anything will fail, but it's a good practice to always handle errors, even at a basic level. Ignoring an error is a surefire way to become confused and frustrated when something starts to silently fail.
+  - The /categories endpoint will need to be decoded into a `CategoriesResponse` object, and for that you'll need to create a `JSONDecoder`. If the data is successfully decoded, return the `categories` from the `CategoriesResponse` object.
+
+    - ```swift
+        /* fetchCategories */
+        let (data, response) = try await URLSession.shared.data(from: categoriesURL)
+         
+        guard let httpResponse = response as? HTTPURLResponse,
+          httpResponse.statusCode == 200 else {
+            throw MenuControllerError.categoriesNotFound
+        }
+         
+        let decoder = JSONDecoder()
+        let categoriesResponse = try decoder.decode(CategoriesResponse.self, from: data)
+         
+        return categoriesResponse.categories
+      ```
+
+  - The data retrieved from /menu will be converted into an array of `MenuItem` objects. You'll first need to create a `JSONDecoder` for decoding the JSON data returned by the API. You'll use the `JSONDecoder` to decode the data into a single `MenuResponse` object. If the data is successfully decoded, return the `items` from the `MenuResponse` object.
+
+    - ```swift
+        /* fetchMenuItems */
+        let (data, response) = try await URLSession.shared.data(from: menuURL)
+         
+        guard let httpResponse = response as? HTTPURLResponse,
+          httpResponse.statusCode == 200 else {
+            throw MenuControllerError.menuItemsNotFound
+        }
+         
+        let decoder = JSONDecoder()
+        let menuResponse = try decoder.decode(MenuResponse.self, from: data)
+         
+        return menuResponse.items
+      ```
+
+  - Finally, the POST you make to /order will also return JSON data that can be decoded into your response model, `OrderResponse`. The value returned by the endpoint is the number of minutes it will take for the order to be prepared, which you can use to inform the user.
+
+    - ```swift
+        /* submitOrder */
+        let (data, response) = try await URLSession.shared.data(for: request)
+         
+        guard let httpResponse = response as? HTTPURLResponse,
+          httpResponse.statusCode == 200 else {
+            throw MenuControllerError.orderRequestFailed
+        }
+         
+        let decoder = JSONDecoder()
+        let orderResponse = try decoder.decode(OrderResponse.self, from: data)
+         
+        return orderResponse.prepTime
+      ```
+
+  - You've spent some time defining all the network requests that will take place at some point in the app. Now it's time to put them to work. With the model controller methods in place, you can begin to display the results of the data in the proper tables.
