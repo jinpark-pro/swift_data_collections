@@ -7294,3 +7294,76 @@ You already decided to pack all the networking code — creating the proper URLs
       ```
 
   - You've spent some time defining all the network requests that will take place at some point in the app. Now it's time to put them to work. With the model controller methods in place, you can begin to display the results of the data in the proper tables.
+
+#### Part Five. Categories
+
+- The first request in your workflow is to display the menu categories. Open the `Main` storyboard and find the `CategoryTableViewController`. How will each cell look? How will you identify the cells so you can use them in code?
+- **Basic Table Setup**
+  - Select the prototype cell, then open the Attributes inspector. All you need to display is a single string, so set the Style to `Basic`. Use “Category” for the identifier, then set the Accessory to `Disclosure Indicator`, which will make it clear to the user that tapping the cell will take them to a new screen.
+  - Open `CategoryTableViewController` and create an instance of `MenuController` so that you can make the appropriate network request in `viewDidLoad()`. You will use a do/catch statement to catch any errors. If the request succeeded, you'll pass that data into a method that will set the property and update the interface appropriately. If it failed, you'll display an error using `UIAlertController`. In this example, either the method `updateUI(with:)` or the method `displayError(_:title:)` is called — a pattern that you'll repeat for other view controllers.
+
+    - ```swift
+        @MainActor
+        class CategoryTableViewController: UITableViewController {
+            let menuController = MenuController()
+            var categories = [String]()
+         
+            override func viewDidLoad() {
+                super.viewDidLoad()
+         
+                Task.init {
+                    do {
+                        let categories = try await menuController.fetchCategories()
+                        updateUI(with: categories)
+                    } catch {
+                        displayError(error, title: "Failed to Fetch Categories")
+                    }
+                }
+            }
+         
+            func updateUI(with categories: [String]) {
+                self.categories = categories
+                self.tableView.reloadData()
+            }
+         
+            func displayError(_ error: Error, title: String) {
+                guard let _ = viewIfLoaded?.window else { return }
+         
+                let alert = UIAlertController(title: title, message: error.localizedDescription, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "Dismiss", style: .default, handler: nil))
+                self.present(alert, animated: true, completion: nil)
+            }
+        }
+      ```
+
+  - Remember that user interface code needs to run on the main actor and that the task will inherit the context from where it is called. Since a `UITableViewController` executes on the main actor, all the code in the closure will also be bound to the main actor, and it's safe to make UI calls within the closure. While not strictly necessary, the above code explicitly marks the class as being bound to the MainActor with `@MainActor` before the class definition.
+  - The `displayError(error:title:)` function contains a check to make sure that the view associated with the `TableViewController` is currently in a window. This way you don't try to post an alert on a view that is not visible. Without this check, the alert would not be shown but you would see a warning in the console. Since the network request is running asynchronously, it's possible for the user to navigate away from a particular view before the network request completes. The statement checks whether the view has been loaded using a property that won't cause it to load the view if it has not been loaded yet. If the view exists and its window is currently set, the method will continue; otherwise it returns.
+    - `guard let _ = viewIfLoaded?.window else { return }`
+  - Next, you'll flesh out the methods that define how many rows the table view will have and create a cell for each row to display. The number of rows (and cells) is equal to the number of items in the categories property, and the text of each cell will display a string. You can clean up the appearance of a category string by capitalizing it when it's displayed in a cell.
+
+    - ```swift
+        override func numberOfSections(in tableView: UITableView) -> Int {
+            return 1
+        }
+         
+        override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+            return categories.count
+        }
+         
+        override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+            let cell = tableView.dequeueReusableCell(withIdentifier: "Category", for: indexPath)
+            configureCell(cell, forCategoryAt: indexPath)
+         
+            return cell
+        }
+         
+        func configureCell(_ cell: UITableViewCell, forCategoryAt indexPath: IndexPath) {
+            let category = categories[indexPath.row]
+            var content = cell.defaultContentConfiguration()
+            content.text = category.capitalized
+            cell.contentConfiguration = content
+        }
+      ```
+
+  - The `configureCell(_:forCategoryAt:)` method does not set the cell's `textLabel` property directly, but rather uses the modern approach of updating the text property of the cell's `contentConfiguration` property. Recall that to use content configurations, you first ask for the `defaultContentConfiguration` of the cell (which it inherits in this case from the prototype cell you defined in the storyboard) and then you set up all the characteristics you want the configuration to impart to the final cell when it's rendered (in this case the main text for the cell). Then you set that configuration on the cell. Using this approach, you never have to worry about the existing state of the cell, and the system can efficiently update the display as needed. You'll see other examples of using cell configurations later.
+  - Build and run your app with the server running. You should see a list of the categories defined in `menu.json`. If you see the message "Failed to Fetch Categories," check that you have the server application running and that you have clicked the Start button.
