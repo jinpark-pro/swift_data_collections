@@ -7367,3 +7367,40 @@ You already decided to pack all the networking code — creating the proper URLs
 
   - The `configureCell(_:forCategoryAt:)` method does not set the cell's `textLabel` property directly, but rather uses the modern approach of updating the text property of the cell's `contentConfiguration` property. Recall that to use content configurations, you first ask for the `defaultContentConfiguration` of the cell (which it inherits in this case from the prototype cell you defined in the storyboard) and then you set up all the characteristics you want the configuration to impart to the final cell when it's rendered (in this case the main text for the cell). Then you set that configuration on the cell. Using this approach, you never have to worry about the existing state of the cell, and the system can efficiently update the display as needed. You'll see other examples of using cell configurations later.
   - Build and run your app with the server running. You should see a list of the categories defined in `menu.json`. If you see the message "Failed to Fetch Categories," check that you have the server application running and that you have clicked the Start button.
+- **Pass Category Data**
+  - When the user taps a cell with a category name, it will push to the `MenuTableViewController`, which currently displays an empty table. The `MenuTableViewController` should be initialized with a category, which it will use to make a network request for the category's `MenuItems`. You will be using an `@IBSegueAction` when the cell is selected to initialize the new instance of `MenuTableViewController`. Create a custom initializer in `MenuTableViewController` that receives the required `NSCoder` and the `category` string.
+
+    - ```swift
+        class MenuTableViewController: UIViewController {
+         
+            let category: String
+         
+            init?(coder: NSCoder, category: String) {
+                self.category = category
+                super.init(coder: coder)
+            }
+         
+            required init?(coder: NSCoder) {
+                fatalError("init(coder:) has not been implemented")
+            }
+        }
+      ```
+
+  - In `CategoryTableViewController`, create the `@IBSegueAction` from the segue between `CategoryTableViewController` and `MenuTableViewController`. ​Name it “showMenu” and set the arguments to `Sender`.
+    - <img src="./resources/segueAction_showMenu.png" alt="segueAction showMenu" width="500" />
+  - The code for this method will look like the following:
+
+    - ```swift
+        @IBSegueAction func showMenu(_ coder: NSCoder, sender: Any?) -> MenuTableViewController? {
+            guard let cell = sender as? UITableViewCell, 
+                let indexPath = tableView.indexPath(for: cell) else {
+                return nil
+            }
+         
+            let category = categories[indexPath.row]
+            return MenuTableViewController(coder: coder, category: category)
+        }
+      ```
+
+  - First you cast the `sender` argument to a `UITableViewCell` (the cell that was selected). Then you look up its `IndexPath` and use that to determine the category that was selected. Next, you use your custom initializer to create and return a new instance of `MenuTableViewController`.
+  - Build and run your app, then select a category from the list. The `MenuTableViewController` will be displayed, but it doesn't yet use the data it was handed.
