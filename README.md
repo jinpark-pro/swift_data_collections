@@ -7404,3 +7404,146 @@ You already decided to pack all the networking code — creating the proper URLs
 
   - First you cast the `sender` argument to a `UITableViewCell` (the cell that was selected). Then you look up its `IndexPath` and use that to determine the category that was selected. Next, you use your custom initializer to create and return a new instance of `MenuTableViewController`.
   - Build and run your app, then select a category from the list. The `MenuTableViewController` will be displayed, but it doesn't yet use the data it was handed.
+
+#### Part Six. Menu Items
+
+- So far, you've made the request for the list of categories from the server, and the user can select a category from the list. With that data available in `MenuTableViewController`, you can query for menu items listed in the category.
+- The menu item screen shares many attributes with the categories screen in the previous section. They both use a `UITableViewController` subclass, they both use a network request to fetch the appropriate data, and selected cells in both screens push to a new screen. Because of those similarities, the code patterns in the following section should feel pretty familiar to you.
+- **Basic Table Setup**
+  - The prototype cell needs to display two strings: the name of the menu item on the left and the price of the item on the right. Later on in the project, you'll add a thumbnail image to the cell. For now, select the cell and set its Style property to `Right Detail`. Use “MenuItem” as the identifier and set the Accessory to `Disclosure Indicator`.
+  - Open `MenuTableViewController` and define an array of `MenuItem` objects to be displayed in the table. Create an instance of `MenuController` so that you can make the appropriate network request in `viewDidLoad()`. Once the request is finished, use the result that was returned and pass that data into a method that will set the property and update the interface appropriately; otherwise, display any error that is caught.
+
+    - ```swift
+        @MainActor
+        class MenuTableViewController: UITableViewController {
+         
+            let category: String
+            let menuController = MenuController()
+            var menuItems = [MenuItem]()
+         
+            init?(coder: NSCoder, category: String) {
+                self.category = category
+                super.init(coder: coder)
+            }
+         
+            required init?(coder: NSCoder) {
+                fatalError("init(coder:) has not been implemented")
+            }
+         
+            override func viewDidLoad() {
+                super.viewDidLoad()
+                title = category.capitalized
+         
+                Task.init {
+                    do {
+                        let menuItems = try await menuController.fetchMenuItems(forCategory: category)
+                        updateUI(with: menuItems)
+                    } catch {
+                        displayError(error, title: "Failed to Fetch Menu Items for \(self.category)")
+                    }
+                }
+            }
+            func updateUI(with menuItems: [MenuItem]) {
+                self.menuItems = menuItems
+                self.tableView.reloadData()
+            }
+         
+            func displayError(_ error: Error, title: String) {
+                guard let _ = viewIfLoaded?.window else { return }
+                let alert = UIAlertController(title: title, message: error.localizedDescription, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "Dismiss", style: .default, handler: nil))
+                self.present(alert, animated: true, completion: nil)
+            }
+        }
+      ```
+
+  - Notice that the `title` property was updated as part of `viewDidLoad()`. You can set the title to anything you wish, either in code or in the storyboard. In this example, the category name has been capitalized and displayed.
+  - Your table will have one section, and the number of cells in your table should be equal to the number of menu items in the array. The left label of the cell should display the name of the item, and the right label should display the price along with a currency symbol.
+
+    - ```swift
+        override func numberOfSections(in tableView: UITableView) -> Int {
+            return 1
+        }
+         
+        override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+            return menuItems.count
+        }
+         
+        override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+            let cell = tableView.dequeueReusableCell(withIdentifier: "MenuItem", for: indexPath)
+            configure(cell, forItemAt: indexPath)
+            return cell
+        }
+         
+        func configure(_ cell: UITableViewCell, forItemAt indexPath: IndexPath) {
+            let menuItem = menuItems[indexPath.row]
+         
+            var content = cell.defaultContentConfiguration()
+            content.text = menuItem.name
+            content.secondaryText = "$\(menuItem.price)"
+            cell.contentConfiguration = content
+        }
+      ```
+
+  - Build and run your app. After you select a category, you should see the list of items assigned to the category in `menu.json`. Great work!
+  - But you may have noticed a slight bug in the detail text label — it's only displaying one decimal place if the last digit is a zero. String interpolation does its best to create reasonable values for escaped expressions, but in this case its behavior doesn't match your intentions. When displaying currencies, you should use the `formatted` function on the price to make sure things look just the way you want them to.
+  - Just like you saw in a previous lesson with Date objects, you can control the formatting of number types, like the `MenuItem`'s `price`, which is of type `Double`. Use the `formatted` method when setting the cell content configuration's `secondaryText` to specify that the value should be formatted as a currency, using the appropriate representation for US dollars: `content.secondaryText = menuItem.price.formatted(.currency(code: "usd"))`
+  - Build and run the app again to see the properly formatted values.
+- **Pass Menu Item Data**
+  - Similar to the category table view, tapping a cell in the menu table view will push to the next screen — in this case, the detail screen. But right now, no data is being passed to that view controller. Once again, you'll use an `@IBSegueAction` and a custom initializer to solve this.
+  - Open `MenuItemDetailViewController`, add a MenuItem property, and create a custom initializer that accepts an NSCoder and MenuItem and sets the new MenuItem property.
+
+    - ```swift
+        @MainActor
+        class MenuItemDetailViewController: UIViewController {
+         
+            let menuItem: MenuItem
+         
+            init?(coder: NSCoder, menuItem: MenuItem) {
+                self.menuItem = menuItem
+                super.init(coder: coder)
+            }
+         
+            required init?(coder: NSCoder) {
+                fatalError("init(coder:) has not been implemented")
+            }
+        }
+      ```
+
+  - Open the Main storyboard with `MenuTableViewController` in the assistant editor. Select the segue between `MenuTableViewController` and `MenuItemDetailViewController` and Control-drag into `MenuTableViewController` to add a new `@IBSegueAction` named “showMenuItem” with Arguments set to Sender.
+  - The implementation for `showMenuItem` should be a familiar pattern to you from the last segue action:
+
+    - ```swift
+        @IBSegueAction func showMenuItem(_ coder: NSCoder, sender: Any?) -> MenuItemDetailViewController? {
+            guard let cell = sender as? UITableViewCell, let indexPath = tableView.indexPath(for: cell) else {
+                return nil
+            }
+         
+            let menuItem = menuItems[indexPath.row]
+            return MenuItemDetailViewController(coder: coder, menuItem: menuItem)
+        }
+      ```
+
+  - Build and run your app. You've made tremendous progress so far! You have two table view controllers that are requesting data over the network and displaying the data returned from the API. Now you're ready to add items to the order.
+- **Shared Menu Controller**
+  - Pause for a moment to consider the `MenuController` objects that you defined in both `CategoryTableViewController` and `MenuTableViewController`. Each `MenuController` object performs a network request. Is there any reason to have more than one instance of the object?
+  - One solution could be to pass the controller property from one view controller to the next in their `@IBSegueAction` methods. That way, you create only one instance of the object. (This pattern is called “dependency injection,” and it's common in complex apps, especially when structuring code to be easily tested.) But think about the view controller that will be responsible for submitting the order to the server. It's completely separate from `CategoryTableViewController`, so it can't pass the controller object across without accessing the view controllers contained by the root tab bar controller. That kind of access would be clumsy, and it's not recommended.
+  - The better solution in this case is to create an instance of `MenuController` that's shared across all the view controllers in your app — identical to using the shared instance of `URLSession` when you created the `URLSessionDataTask` subclasses. (This pattern is called a “singleton,” and it's also widely used.) To create the shared instance, define a static let property in the `MenuController` class that's the same type:
+
+    - ```swift
+        class MenuController {
+          static let shared = MenuController()
+         
+          // The rest of the MenuController definition has been omitted
+        }
+      ```
+
+  - Now you can delete the `menuController` properties in the two table view controllers and reference the shared instance instead.
+
+    - ```swift
+        let categories = try await MenuController.shared.fetchCategories()
+         
+        let menuItems = try await MenuController.shared.fetchMenuItems(forCategory: category)
+      ```
+
+  - Creating a shared instance may seem like a small adjustment, but consider the advantages in a much larger app. This approach reduces the number of properties you'll need to create in any view controllers that will be making a network request, while simplifying any updates in the app's future.
