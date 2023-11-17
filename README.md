@@ -7547,3 +7547,67 @@ You already decided to pack all the networking code — creating the proper URLs
       ```
 
   - Creating a shared instance may seem like a small adjustment, but consider the advantages in a much larger app. This approach reduces the number of properties you'll need to create in any view controllers that will be making a network request, while simplifying any updates in the app's future.
+
+#### Part Seven. Menu Details
+
+- Your user has tapped an item on the `MenuTableViewController`. Next, they'll want some information on a details screen to help them make a decision. Even though they've already viewed the item's name, price, and image (which you'll add later in the project), it's a nice idea to repeat the same information on the next screen they'll see.
+- What else can you offer them? The other information available is the `detailText`, which might or might not be represented by a large chunk of text. A larger image would be nice, too.
+- **Item Details Interface**
+  - Here's a walkthrough of one approach to an interface for the details screen:
+    - <img src="./resources/menu_item_detail.png" alt="Menu Item Detail View" width="400" />
+  - Start by laying out an image view and three labels representing the item name, price, and details as you see them in the design, doing your best to match their sizes and colors. Have the image view show the `photo.on.rectangle` system image as a placeholder. The item detail label should have Lines set to 0.
+  - Next, place the name and price labels in a horizontal stack view by selecting them both and choosing Embed in Stack View. When you use this feature, Interface Builder will infer that you want a horizontal stack view, based on their existing arrangement. Now select the image view, your horizontal stack view, and your item detail label and choose Embed in Stack View again. This will create a vertical stack view.
+  - Your vertical stack view now needs some constraints. Create top, leading, and trailing constraints pinned to the Safe Area with 15 points of padding. Both the vertical and horizontal stack views should have Alignment and Distribution set to `Fill` and Spacing set to 8.
+  - At this point, there are still some constraint issues to resolve. First, the width of your image view is defined, but not the height. Set the height of the image view equal to the height of the superview with a multiplier of 0.25.
+    - Select View and Image View, click Add New Constraints, and check Equal Heights
+    - On the Size inspector of the Image View, Click Edit of Equal Height, and change Mulitplier to 0.25
+  - Next, select the Item Name label and, in the Size inspector, set its Horizontal Content Hugging Priority to 250. This will allow the name label to fill the available width between itself and the price label.
+  - The last layout item is the Add To Order button at the bottom. Add a `Filled Button` from the object library and set the title to `Add To Order`.
+  - Now pin the button's trailing, bottom, and leading edges to the Safe Area with a padding of 15 and set its height to 44. At this point, your layout should be set. You can compare your constraints and layout to the image above.
+- **Create Outlets and Display Data**
+  - With your interface in place, you can now create outlets for each view. Open `MenuItemDetailViewController` in the assistant editor. Control-drag from the image view, labels, and button to an available spot within the class definition. Following are examples of outlet names:
+
+    - ```swift
+        class MenuItemDetailViewController: UIViewController {
+            @IBOutlet var nameLabel: UILabel!
+            @IBOutlet var imageView: UIImageView!
+            @IBOutlet var priceLabel: UILabel!
+            @IBOutlet var detailTextLabel: UILabel!
+            @IBOutlet var addToOrderButton: UIButton!
+         
+            // The rest of the MenuItemDetailViewController definition has been omitted.
+        }
+      ```
+
+  - Since you'll want to use data to update the outlets, create a method called `updateUI()` and call it in `viewDidLoad()`. This method should update properties on each of the outlets to match the values in the `menuItem`. (You can continue to ignore the image, since you haven't yet requested the image data.)
+  - Back in `MenuItemDetailViewController` create the `updateUI()` method and call it in `viewDidLoad()`.
+
+    - ```swift
+        override func viewDidLoad() {
+            super.viewDidLoad()
+         
+            updateUI()
+        }
+         
+        func updateUI() {
+            nameLabel.text = menuItem.name
+            priceLabel.text = menuItem.price.formatted(.currency(code: "usd"))
+            detailTextLabel.text = menuItem.detailText
+        }
+      ```
+
+  - Build and run your app. Your detail view's custom interface should display the item name, price, and description as well as the Add To Order button. Great job!
+
+- **Customize the Button**
+  - Wouldn't it be nice if the user had some feedback — maybe a quick bounce animation — after adding an item to the order? Create an action for the `Add To Order` button by Control-dragging from the button to an available space in the `MenuItemDetailViewController` class. Name the action “addToOrderButtonTapped.” Within this method, you can perform modifications to the button's transform property. First, scale the X and Y values to two times their original size; next, scale them back to the original size. Place these calls inside the `animate(withDuration:animations:)` method, and set the duration to 0.5.
+
+    - ```swift
+        @IBAction func orderButtonTapped(_ sender: UIButton) {
+            UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.1, options: [], animations: {
+                self.addToOrderButton.transform = CGAffineTransform(scaleX: 2.0, y: 2.0)
+                self.addToOrderButton.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
+            }, completion: nil)
+        }
+      ```
+
+  - Run your app again and try tapping the button to see it bounce a little. Play around with the values to customize the animation to your liking. For example, you can increase or decrease the amount of time it takes the animation to complete, adjust the damping and initial spring velocity, or add additional modifications to transform during the animation process. Have fun creating your own unique animation!
