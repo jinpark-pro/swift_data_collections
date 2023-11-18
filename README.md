@@ -7611,3 +7611,175 @@ You already decided to pack all the networking code — creating the proper URLs
       ```
 
   - Run your app again and try tapping the button to see it bounce a little. Play around with the values to customize the animation to your liking. For example, you can increase or decrease the amount of time it takes the animation to complete, adjust the damping and initial spring velocity, or add additional modifications to transform during the animation process. Have fun creating your own unique animation!
+
+#### Part Eight. View And Edit Order
+
+- Where are you now? You've laid out the interface for displaying the menu in its entirety, from the list of categories all the way down to the details of a single item. But the Add To Order button still doesn't do anything beyond its animation, because there's no order being tracked. The app needs to be able to keep track of the user's order and submit it back to the restaurant.
+- **Display Order**
+  - Open `OrderTableViewController` and create a property that will hold the order. Since it won't be received using a segue, it doesn't need to be optional. Just create an empty Order that will be filled in item by item. Unlike most of your screens, this one can be presented even if its table view contents are empty.
+
+    - ```swift
+        class OrderTableViewController: UITableViewController {
+            var order = Order()
+        }
+      ```
+
+  - Have you noticed that `OrderTableViewController` and `MenuTableViewController` both display a collection of `MenuItem` objects? The two controllers rely on similar logic. The number of cells is equal to the number of items in the `menuItems` property, and the cells in both controllers display identical data.
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+            return order.menuItems.count
+        }
+         
+        override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+            let cell = tableView.dequeueReusableCell(withIdentifier: "Order", for: indexPath)
+            configure(cell, forItemAt: indexPath)
+            return cell
+        }
+         
+        func configure(_ cell: UITableViewCell, forItemAt indexPath: IndexPath) {
+            let menuItem = order.menuItems[indexPath.row]
+         
+            var content = cell.defaultContentConfiguration()
+            content.text = menuItem.name
+            content.secondaryText = menuItem.price.formatted(.currency(code: "usd"))
+            cell.contentConfiguration = content
+        }
+      ```
+
+  - Before you can build and run your app, open the Main storyboard and find the `OrderTableViewController`. Select the prototype cell and set its Identifier to “Order” and its Style to `Right Detail`. Adjust the labels to indicate that they will show an item's name and price. 
+  - You now have a properly configured table, but there are still no instances of `MenuItem` to display.
+- **Create Ordering Functionality**
+  - Even though you have an Add To Order button on the `MenuItemDetailViewController`, you don't have a way to pass the `MenuItem` data over to the `OrderTableViewController`. How can you hand information from one view controller to another without a segue?
+  - Since you already have a shared `MenuController`, you can make the order one of its properties. This decision assumes that your app will handle only one order. If you decide later to handle multiple orders, you’ll have to change all references to the order property. But the advantage of this approach is that the controller has quick access to an order, without needing to pass it around in notifications or protocol methods. If you decide to handle multiple orders in the future, you'll already be touching all the parts of your app that access the order property.
+- **Create the Order Property**
+  - In `MenuController`, create and initialize a new property for the order: `var order = Order()`
+  - Now go back to your `OrderTableViewController` and remove the order property. Any time you refer to it, you'll access the `MenuController`'s property instead.
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+            return MenuController.shared.order.menuItems.count
+        }
+         
+        func configure(_ cell: UITableViewCell, forItemAt indexPath: IndexPath) {
+            let menuItem = MenuController.shared.order.menuItems[indexPath.row]
+         
+            var content = cell.defaultContentConfiguration()
+            content.text = menuItem.name
+            content.secondaryText = menuItem.price.formatted(.currency(code: "usd"))
+            cell.contentConfiguration = content
+        }
+      ```
+
+  - Your `MenuItemDetailViewController` can now append the ordered item to the shared object.
+
+    - ```swift
+        @IBAction func orderButtonTapped(_ sender: UIButton) {
+            UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.1, options: [], animations: {
+                self.addToOrderButton.transform = CGAffineTransform(scaleX: 2.0, y: 2.0)
+                self.addToOrderButton.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
+            }, completion: nil)
+         
+            MenuController.shared.order.menuItems.append(menuItem)
+        }
+      ```
+
+- **Notify of Order Changes**
+  - There's one issue that you haven't addressed yet. If you add items to the shared order from your `MenuItemDetailViewController`, there's no way for your `OrderTableViewController` to know that it's changed. You can observe this by adding a few items to the order, switching tabs to see them, then adding another item and viewing your order again.
+  - Why did you see the first items but not the subsequent ones? The `OrderTableViewController`'s view isn't loaded until the first time you tap its tab. So the table view sees the initial state of the order as it loads and displays its data — but there's no code to respond to subsequent changes.
+  - The easiest way to fix this problem is with `NotificationCenter`. In Lesson 1.4, you learned how to respond to keyboard show and hide notifications. But you're not limited to responding to system notifications — you can create and send your own. Start by adding a static property to your `MenuController` that defines the name of the order - change notification. (The naming strategy for notifications is largely a matter of style, but keep in mind that notification names are strings under the surface, so it's possible to choose a name that collides with one that iOS is using.)
+    - `static let orderUpdatedNotification = Notification.Name("MenuController.orderUpdated")`
+  - When should you send this notification? The easiest solution is to observe changes to the order property. That way, whenever it's modified, all observers will have a chance to react. Sending a notification is as simple as specifying a name and an object. The object parameter is a way for observers to filter notifications if they arrive in different contexts or from different sources. But since this is a simple implementation, you can set the object parameter to `nil`.
+
+    - ```swift
+        var order = Order() {
+            didSet {
+                NotificationCenter.default.post(name: MenuController.orderUpdatedNotification, object: nil)
+            }
+        }
+      ```
+
+  - Now you'll create an observer for your new notification in `OrderTableViewController`. Add the notification observation code to your `viewDidLoad()` method. When the order is updated, you'll reload the table view, so the observer will be the view controller's tableView property. Specify the `reloadData()` method of `UITableView` as the selector, and set the last argument to `nil` again.
+
+    - ```swift
+        override func viewDidLoad() {
+            super.viewDidLoad()
+         
+            NotificationCenter.default.addObserver(tableView!, selector: #selector(UITableView.reloadData), name: MenuController.orderUpdatedNotification, object: nil)
+        }
+      ```
+
+  - Build and run your app. When you add items, you can change tabs to see them in the order list. Great job!
+- **Update the Order Badge**
+  - The Add To Order button animates when the order list is updated, but you can provide extra feedback to the user. A nice touch is to update the badge value of the Order tab to match the number of items in the order. Then the user can see that they've successfully added an item without needing to switch tabs.
+  - Which object should be responsible for updating the badge? You might think to add the code to `OrderTableViewController`. After all, it's already handling the order update notification. But doing so would require it to know the view controller hierarchy: It's contained inside a navigation controller inside the second tab of the root tab bar controller. The view controller would also need to know that the tab bar item with the badge belongs to the navigation controller (since it's the direct child of the tab bar controller).
+  - In fact, it’s better for a view controller to be ignorant of its ancestors. That way, you’ll have more flexibility to use it in different ways — without breaking your code if you should change the navigation structure of your app.
+  - So which object should know how your `OrderTableViewController` is contained in parent view controllers? It should be the first object of a type that you provide that can address these view controllers as descendants. Since the parent navigation controller and its parent tab bar controller are system - provided objects, this knowledge is best contained in your scene delegate, which is specifically tasked with managing the scene's window and root view controller.
+  - To start, you'll need to keep a reference to the tab bar item you want to update. Make the following changes in `SceneDelegate`. Add a new property for the tab bar item, and make it an implicitly unwrapped optional, since badge updates should always work. If it crashes, that means you've broken your assumptions about the app's UI.
+    - `var orderTabBarItem: UITabBarItem!`
+  - Add a method to update the item’s badge. To use `updateOrderBadge()` as a selector in your call to `addObserver(_:selector:name:object:)`, you'll need to annotate the function with `@objc`.
+
+    - ```swift
+        @objc func updateOrderBadge() {
+            orderTabBarItem.badgeValue = String(MenuController.shared.order.menuItems.count)
+        }
+      ```
+
+  - Now you need to set the property when the app first launches and observe the `orderUpdatedNotification` as you did in `OrderTableViewController`. Add this code to `scene(_:willConnectTo:options:)`:
+
+    - ```swift
+        NotificationCenter.default.addObserver(self, selector: #selector(updateOrderBadge), name: MenuController.orderUpdatedNotification, object: nil)
+         
+        orderTabBarItem = (window?.rootViewController as? UITabBarController)?.viewControllers?[1].tabBarItem
+      ```
+
+  - Build and run your app, then try adding an item to the order. The Add To Order button animates and the tab's badge updates. If you switch tabs, you can see the item displayed in the order view. Well done!
+  - (Note: If you were thinking that the technique for accessing the tab bar item from the scene delegate is similar to the approach you'd take for adding a `MenuController` to all your view controllers using dependency injection — you'd be right. In that scenario, the scene delegate would create and own the `MenuController` instance.)
+- **Delete Items from Order**
+  - What if the user changes their mind? In iOS, it's common to reveal a red Delete button when the user swipes left. Tapping the button would remove the item from the order and update the order table.
+  - To add swipe-to-delete functionality to your order table view controller's cells, you'll need to override the `tableView(_:canEditRowAt:)` method. You could use the `indexPath` property to choose which cells are editable - but since all cells in this app can be selected, simply return `true`.
+  - Uncomment the following implementation in `OrderTableViewController` (or add it if it is not present):
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+            return true
+        }
+      ```
+
+  - How will the deletion be executed? Uncomment or add the override of the `tableView(_:commit:forRowAt:)` method. In its implementation, verify that the Delete button triggered the method call, then delete the item from the order. The table view and badge updates will be handled automatically by your notification code.
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+            if editingStyle == .delete {
+                MenuController.shared.order.menuItems.remove(at: indexPath.row)
+            }
+        }
+      ```
+
+  - Since some iOS users are unfamiliar with swipe-to-delete, you'll want to also add an Edit button as a left bar button in `viewDidLoad()`:
+
+    - ```swift
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            navigationItem.leftBarButtonItem = editButtonItem
+         
+            NotificationCenter.default.addObserver(tableView!, selector: #selector(UITableView.reloadData), name: MenuController.orderUpdatedNotification, object: nil)
+        }
+      ```
+
+  - Build and run your app. Add some items to the order, then remove them using swipe-to-delete or the Edit button.
+  - There's one small bit of finesse left. If you delete all the items from your order, the badge remains on the tab with a value of zero — which is inconsistent with the app's launch state, where the badge is absent. It’s also inelegant, since the user can infer an empty order from an absent badge.
+  - To correct the issue, modify the `updateOrderBadge()` method in `SceneDelegate`. A simple fix would be to use an if-else statement, but there's a more concise way using switch. In the case where the count is zero, you can set the badge value to `nil`. Otherwise, you can use case let to assign the value of the switch expression to a local variable count. This code is cleaner than having to write `MenuController.shared.order.menuItems.count` multiple times.
+
+    - ```swift
+        @objc func updateOrderBadge() {
+            switch MenuController.shared.order.menuItems.count {
+            case 0:
+                orderTabBarItem.badgeValue = nil
+            case let count:
+                orderTabBarItem.badgeValue = String(count)
+            }
+        }
+      ```
+
+  - Build and run your app to test the new functionality.
