@@ -7783,3 +7783,130 @@ You already decided to pack all the networking code — creating the proper URLs
       ```
 
   - Build and run your app to test the new functionality.
+
+#### Part Nine. Submit Order
+
+- Now you're ready to send data back to the restaurant server. It makes sense for the user to submit the order directly from the `OrderTableViewController`. Add a bar button item to the upper - right corner of the order screen, and set its title to `Submit`.
+- What should happen when the user taps the button? When there's a monetary transaction involved, it's standard practice to ask the user to confirm their choice. If this were a real app, you'd begin processing payment when the user confirms the order, and you'd inform the user that the order has been placed only after you'd received notification of a successful payment. In this project, you'll confirm the user's order, then let them know how long their order is expected to take.
+- **Build Order Confirmation**
+  - You've reached the final screen in the workflow. The user needs confirmation that the order has been received from the server. When the server responds with a preparation time, you can display the confirmation screen. Since you have to wait for a server response before presenting the screen, you'll perform the segue programmatically.
+  - Create a new file for a subclass of `UIViewController` called `OrderConfirmationViewController`. Next, open the Main storyboard; add a new view controller from the Object library and set its class to “OrderConfirmationViewController.” Position the view controller to the right of OrderTableViewController, then Control-drag from the table view controller to the new view controller to create a programmatic modal segue.
+  - You'll be using an `@IBSegueAction` to segue to the confirmation screen and pass the preparation time. At this point, you're probably familiar with this pattern. Create a custom initializer on `OrderConfirmationViewController` that accepts the preparation time parameter and sets it on a new property, `minutesToPrepare`.
+
+    - ```swift
+        class OrderConfirmationViewController: UIViewController {
+         
+            let minutesToPrepare: Int
+         
+            init?(coder: NSCoder, minutesToPrepare: Int) {
+                self.minutesToPrepare = minutesToPrepare
+                super.init(coder: coder)
+            }
+         
+            required init?(coder: NSCoder) {
+                fatalError("init(coder:) has not been implemented")
+            }
+        }
+      ```
+
+  - Create an `@IBSegueAction` in `OrderTableViewController` from your new segue between `OrderTableViewController` and `OrderConfirmationViewController`. Name it “confirmOrder” and set Arguments to None. When you implement the method, you'll pass in the number of minutes to prepare the order. But where will you get the preparation time? It will come from the server once the user has submitted the order. Create a property on `OrderTableViewController` that will store the value when it is returned so that you can access it in this method.
+    - `var minutesToPrepareOrder = 0`
+  - Now you can pass that to your @IBSegueAction.
+
+    - ```swift
+        @IBSegueAction func confirmOrder(_ coder: NSCoder) -> OrderConfirmationViewController? {
+            return OrderConfirmationViewController(coder: coder, minutesToPrepare: minutesToPrepareOrder)
+        }
+      ```
+
+  - But how will you call this method? You don't have an `NSCoder` to pass. Previously, your `@IBSegueActions` were called by an action like selecting a cell, but to initiate this call you will need to use the method `shouldPerformSegue(withIdentifier:sender:)`. Go back to the storyboard and set an identifier on your segue named “confirmOrder.”
+  - You can design the order confirmation screen however you like. The most important piece of information is the time until the user can pick up their order. To keep things simple, you might include two objects: a label that displays the number of minutes before the food is ready and a button that unwinds back to the tabs. 
+  - Drag a label and a button onto the scene. Embed them in a vertical stack view. Add the following constraints to the stack view:
+    - Center vertically within the view.
+    - Align the leading edges to the Safe Area, allowing for some padding.
+    - Align the trailing edges to the Safe Area, allowing for some padding.
+    - <img src="./resources/order_confirmation_view.png" alt="Order Confirmation View" width="500" />
+  - Set the label's number of lines to 0 and center the text alignment. The label's text will change based on the response from the server, so you'll need to create an outlet to the label.
+
+    - ```swift
+        class OrderConfirmationViewController: UIViewController {
+            @IBOutlet var confirmationLabel: UILabel!
+         
+            // The rest of the OrderConfirmationViewController definition has been omitted.
+        }
+      ```
+
+  - Set the button's title to Dismiss and center it horizontally within its view. When the user taps the Dismiss button, it's logical to unwind back to the order screen. First, you'll need to define a method in `OrderTableViewController` that will be called when the unwind is triggered. Here's an example:
+    - `@IBAction func unwindToOrderList(segue: UIStoryboardSegue) {}`
+  - Next, Control-drag from the Dismiss button to the Exit button at the top of `OrderConfirmationViewController` and select the name of the method you just created. This will create an unwind segue. Using the Attributes inspector, give the segue an identifier of “dismissConfirmation.”
+  - The confirmation screen is now in place, but you can't present it until you've submitted the user's order and received confirmation from the server.
+- **Submit and Alert**
+  - Open the Main storyboard and create an `@IBAction` named “submitTapped” for the Submit button on `OrderTableViewController`. The action will alert the user that their order will be submitted if they continue.
+  - The simplest approach is to present a `UIAlertController` that will display the order's total and ask the user if they wish to proceed. For the total, you can use the reduce method to add all the menu item prices, then format the price (as you've done previously). If the user chooses to continue, call a new method, `uploadOrder`. Here's how that all works together:
+
+    - ```swift
+        @IBAction func submitTapped(_ sender: Any) {
+            let orderTotal = MenuController.shared.order.menuItems.reduce(0.0) { (result, menuItem) -> Double in
+                return result + menuItem.price
+            }
+         
+            let formattedTotal = orderTotal.formatted(.currency(code: "usd"))
+         
+            let alertController = UIAlertController(title: "Confirm Order", message: "You are about to submit your order with a total of \(formattedTotal)", preferredStyle: .actionSheet)
+            alertController.addAction(UIAlertAction(title: "Submit", style: .default, handler: { _ in
+                self.uploadOrder()
+            }))
+         
+            alertController.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+         
+            present(alertController, animated: true, completion: nil)
+        }
+      ```
+
+  - The `uploadOrder()` method is just like the other network requests you've written in this project. Make the request using the `submitOrder` method you defined in `MenuController`, passing in a collection of menu `IDs` as the argument. Use a do/catch statement to check for errors. If the request succeeds, you'll keep the returned value in the `minutesToPrepareOrder` property and initiate the segue; otherwise, display the error.
+
+    - ```swift
+        func uploadOrder() {
+            let menuIds = MenuController.shared.order.menuItems.map { $0.id }
+            Task.init {
+                do {
+                    let minutesToPrepare = try await MenuController.shared.submitOrder(forMenuIDs: menuIds)
+                    minutesToPrepareOrder = minutesToPrepare
+                    performSegue(withIdentifier: "confirmOrder", sender: nil)
+                } catch {
+                    displayError(error, title: "Order Submission Failed")
+                }
+            }
+        }
+         
+        func displayError(_ error: Error, title: String) {
+            guard let _ = viewIfLoaded?.window else { return }
+            let alert = UIAlertController(title: title, message: error.localizedDescription, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Dismiss", style: .default, handler: nil))
+            self.present(alert, animated: true, completion: nil)
+        }
+      ```
+
+  - Calling `self.performSegue(withIdentifier: "confirmOrder", sender: nil)` will invoke the `confirmOrder(_:) @IBSegueAction`, which will initialize a new `OrderConfirmationViewController` with the `minutesToPrepare` value returned from the server. How will you incorporate it into the label you added to the screen a few steps ago? The message can read anything you wish.
+
+    - ```swift
+        override func viewDidLoad() {
+            super.viewDidLoad()
+         
+            confirmationLabel.text = "Thank you for your order! Your wait time is approximately \(minutesToPrepare) minutes."
+        }
+      ```
+
+  - If you build and run your app, you should be able to follow the entire workflow. You can select items, view your order, submit the order, and receive a confirmation with the wait time. Excellent job!
+- **Clear Out Old Order Data**
+  - There's one piece of cleanup that you still need to address. After the user has submitted the order, the order data is no longer needed. The best time to remove the order list is when the confirmation screen is dismissed. Luckily, you already have an unwind segue — the perfect way to perform this work. Check the segue's identifier to verify that you're unwinding from the order confirmation screen, then remove all order items. Once again, your notification observation code will do the rest.
+
+    - ```swift
+        @IBAction func unwindToOrderList(segue: UIStoryboardSegue) {
+            if segue.identifier == "dismissConfirmation" {
+                MenuController.shared.order.menuItems.removeAll()
+            }
+        }
+      ```
+
+  - Now when you return to the list of tabs, a new order is ready to be created.
