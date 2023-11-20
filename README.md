@@ -7790,7 +7790,8 @@ You already decided to pack all the networking code — creating the proper URLs
 - What should happen when the user taps the button? When there's a monetary transaction involved, it's standard practice to ask the user to confirm their choice. If this were a real app, you'd begin processing payment when the user confirms the order, and you'd inform the user that the order has been placed only after you'd received notification of a successful payment. In this project, you'll confirm the user's order, then let them know how long their order is expected to take.
 - **Build Order Confirmation**
   - You've reached the final screen in the workflow. The user needs confirmation that the order has been received from the server. When the server responds with a preparation time, you can display the confirmation screen. Since you have to wait for a server response before presenting the screen, you'll perform the segue programmatically.
-  - Create a new file for a subclass of `UIViewController` called `OrderConfirmationViewController`. Next, open the Main storyboard; add a new view controller from the Object library and set its class to “OrderConfirmationViewController.” Position the view controller to the right of OrderTableViewController, then Control-drag from the table view controller to the new view controller to create a programmatic modal segue.
+  - Create a new file for a subclass of `UIViewController` called `OrderConfirmationViewController`. Next, open the Main storyboard; add a new view controller from the Object library and set its class to “OrderConfirmationViewController.” Position the view controller to the right of OrderTableViewController.
+    - Control-drag from the table view controller in the navigation to the new view controller to create a programmatic modal segue.
   - You'll be using an `@IBSegueAction` to segue to the confirmation screen and pass the preparation time. At this point, you're probably familiar with this pattern. Create a custom initializer on `OrderConfirmationViewController` that accepts the preparation time parameter and sets it on a new property, `minutesToPrepare`.
 
     - ```swift
@@ -7836,9 +7837,9 @@ You already decided to pack all the networking code — creating the proper URLs
         }
       ```
 
-  - Set the button's title to Dismiss and center it horizontally within its view. When the user taps the Dismiss button, it's logical to unwind back to the order screen. First, you'll need to define a method in `OrderTableViewController` that will be called when the unwind is triggered. Here's an example:
+  - Set the button's title to `Dismiss` and center it horizontally within its view. When the user taps the Dismiss button, it's logical to unwind back to the order screen. First, you'll need to define a method in `OrderTableViewController` that will be called when the unwind is triggered. Here's an example:
     - `@IBAction func unwindToOrderList(segue: UIStoryboardSegue) {}`
-  - Next, Control-drag from the Dismiss button to the Exit button at the top of `OrderConfirmationViewController` and select the name of the method you just created. This will create an unwind segue. Using the Attributes inspector, give the segue an identifier of “dismissConfirmation.”
+  - Next, Control-drag from the Dismiss button to the Exit button at the `OrderConfirmationViewController` in the navigation and select the name of the method you just created. This will create an unwind segue. Using the Attributes inspector, give the segue an identifier of “dismissConfirmation.”
   - The confirmation screen is now in place, but you can't present it until you've submitted the user's order and received confirmation from the server.
 - **Submit and Alert**
   - Open the Main storyboard and create an `@IBAction` named “submitTapped” for the Submit button on `OrderTableViewController`. The action will alert the user that their order will be submitted if they continue.
@@ -7910,3 +7911,11 @@ You already decided to pack all the networking code — creating the proper URLs
       ```
 
   - Now when you return to the list of tabs, a new order is ready to be created.
+
+- **Fixed an issue related to Order Submit**
+  - Issue:
+    - Previously, I created confirmOrder segue from the submit button because I couldn't create the segue from OrderTableView to OrderConfirmView. The Control+Drag didn't work.
+    - So, when the user clicked the submit button, the alert didn't show and prepare minutes didn't work.
+  - Solution:
+    - I deleted the confirmOrder segue and Control+Drag from OrderTableView in the Document Outline to OrderConfirmView.
+    - And then, set the identifier to "ConfirmOrder," re-created @IBSegueAction confirmOrder on OrderTableViewController.
