@@ -7943,3 +7943,34 @@ You already decided to pack all the networking code — creating the proper URLs
       ```
 
   - Now, whenever you make requests for images from the server, the data will be placed automatically into this larger cache.
+- **Add a Placeholder Image**
+  - Since you're running the server for this project on your Mac, images should appear almost instantaneously. But in most real-world scenarios, image data takes time to load. Some sort of placeholder image will reassure the user as the images are being fetched. For the purposes of this project, the system-provided `photo.on.rectangle` image that you are already using for the image view is sufficient.
+  - In `MenuTableViewController`, update the `configure(_:forItemAt:)` method to add the `photo.on.rectangle` image to the content configuration for the cell:
+
+    - ```swift
+        func configure(_ cell: UITableViewCell, forItemAt indexPath: IndexPath) {
+            let menuItem = menuItems[indexPath.row]
+         
+            var content = cell.defaultContentConfiguration()
+            content.text = menuItem.name
+            content.secondaryText = menuItem.price.formatted(.currency(code: "usd"))
+            content.image = UIImage(systemName: "photo.on.rectangle")
+            cell.contentConfiguration = content
+        }
+      ```
+
+  - Repeat this for the `OrderTableViewController’s` `configure(_:forItemAt:)` method:
+
+    - ```swift
+        func configure(_ cell: UITableViewCell, forItemAt indexPath: IndexPath) {
+            let menuItem = MenuController.shared.order.menuItems[indexPath.row]
+         
+            var content = cell.defaultContentConfiguration()
+            content.text = menuItem.name
+            content.secondaryText = menuItem.price.formatted(.currency(code: "usd"))
+            content.image = UIImage(systemName: "photo.on.rectangle")
+            cell.contentConfiguration = content
+        }
+      ```
+
+  - Build and run your app. You should see the placeholder image on the menu item cells, on the order item cells, and on the item details screen.
