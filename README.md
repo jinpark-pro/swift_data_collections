@@ -7919,3 +7919,27 @@ You already decided to pack all the networking code — creating the proper URLs
   - Solution:
     - I deleted the confirmOrder segue and Control+Drag from OrderTableView in the Document Outline to OrderConfirmView.
     - And then, set the identifier to "ConfirmOrder," re-created @IBSegueAction confirmOrder on OrderTableViewController.
+
+#### Part Ten. Request Images
+
+- The final part of this project — adding images — is one of the most important pieces of the app. Why wait until the end to begin requesting image data?
+- When you develop complex apps, it's important to build the workflow first and worry about the details later. If you realize during user testing that your workflow is incorrect, you'll have a lot of code to move around. In this project, you're working with data from a server, so it's crucial to verify that you're requesting and parsing the data correctly before you shift attention to the other features of your app.
+- Now that every view controller contains the right data, it's easy to add images to the screens.
+- **Set the URL Cache Size**
+  - Your app has at least three view controllers that might display image data. In the `MenuTableViewController` and the `OrderTableViewController`, you could add a `thumbnail` image near the left edge of every cell. And you'll want to display a larger version of the image on the `MenuItemDetailViewController`, depending on how you customized the layout of the details screen.
+  - The workflow allows you to move quickly and easily between these screens, but it doesn't make sense to keep fetching the same image for every single screen. To resolve this, you can increase the size of the URL cache to hold larger amounts of image data. After the image is downloaded, it will remain in the cache, and subsequent requests for the same data will check the cache first before contacting the server. For an app of this size, using 25 megabytes of memory and 50 megabytes of disk space is a reasonable set of values for the URL cache.
+  - To set the cache size, create a new `URLCache` inside `AppDelegate` so that the cache has been created before any network requests are made. Store this cache in your app's temporary directory, then assign it to the shared cache that the shared `URLSession` will use when performing requests.
+
+    - ```swift
+        class AppDelegate: UIResponder, UIApplicationDelegate {
+            func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+                let temporaryDirectory = NSTemporaryDirectory()
+                let urlCache = URLCache(memoryCapacity: 25_000_000, diskCapacity: 50_000_000, diskPath: temporaryDirectory)
+                URLCache.shared = urlCache
+         
+                return true
+            }
+        }
+      ```
+
+  - Now, whenever you make requests for images from the server, the data will be placed automatically into this larger cache.
