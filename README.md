@@ -8154,7 +8154,7 @@ You already decided to pack all the networking code — creating the proper URLs
       ```
 
   - This code will get the `defaultContentConfiguration` for the cell and update it for the current state (you'll learn more about `UICellConfigurationState` later). It then updates the content from the cell's `itemName` and `price` and makes sure that the `text` and `secondaryText` will be displayed side by side. Finally, it checks for an image and sets a default image if there is not one; otherwise, it sets the image from the cell's `image` property. Then it updates the cell's `contentConfiguration`, resulting in the cell being updated on the display.
-  - To use this new cell, you'll want to open the `Main` storyboard, locate the prototype cell for the `MenuTableViewController`, and change its class from `UITableViewCell` to `MenuItemCell`. Then, in `MenuTableViewController`, replace the existing `configure(_:forIndexPath:)` with the following:
+  - To use this new cell, you'll want to open the `Main` storyboard, locate the prototype cell for the `MenuTableViewController`, and change its class from `UITableViewCell` to `MenuItemCell`. Then, in `MenuTableViewController`, replace the existing `configure(_:forItemAt:)` with the following:
 
     - ```swift
         func configure(_ cell: UITableViewCell, forItemAt indexPath: IndexPath) {
@@ -8181,6 +8181,39 @@ You already decided to pack all the networking code — creating the proper URLs
   - Now you just update the properties of the cell to appropriate values as you get them, and allow the cell configuration machinery to update the rendering of the cell.
   - Notice that you initially set the `cell.image` to `nil`. This is so that the `MenuItemCell` will set the placeholder image if your image has not been fetched yet. Recall that you may be reusing this cell from a previous row, so you want to configure all the properties to the values that you want when you set the cell up.
   - The `MenuItemCell` is also configured appropriately to be used for the `OrderTableViewController`. Repeat this process for `OrderTableViewController`. Remember to update the prototype cell for the `OrderTableViewController` in the storyboard to be `MenuItemCell` rather than the base `UITableViewCell`.
+
+    - ```swift
+        class OrderTableViewController: UITableViewController {
+            var imageLoadTasks: [IndexPath: Task<Void, Never>] = [:]
+            override func viewDidDisappear(_ animated: Bood) {
+              super.viewDidDisappear(animated)
+
+                imageLoadTasks.forEach { key, value in
+                    value.cancel()
+                }
+            }
+            /* ... */
+            func configure(_ cell: UITableViewCell, forItemAt indexPath: IndexPath) {
+                guard let cell = cell as? MenuItemCell else { return }
+                let menuItem = MenuController.shared.order.menuItems[indexPath.row]
+
+                cell.itemName = menuItem.name
+                cell.price = menuItem.price
+                cell.image = nil
+
+                imageLoadTasks[indexPath] = Task.init {
+                    if let image = try? await MenuController.shared.fetchImage(from: menuItem.imageURL) {
+                        if let currentIndexPath = self.tableView.indexPath(for: cell),
+                            currentIndexPath == indexPath {
+                                cell.image = image.resizeImageTo(size: CGSize(width: 50, height: 50))
+                        }
+                    }
+                }
+                imageLoadTasks(indexPath) = nil
+            }
+        }
+      ```
+
   - While the images are appearing, the standard cell design may not be best for this layout. It would be good practice to investigate ways to update the cell content configuration for `MenuItemCell` to have a more consistent layout when loading images of different sizes — but it is not required.
   - For `MenuItemDetailViewController`, the code is much easier. Set the image view once you've received the data:
 
@@ -8200,3 +8233,45 @@ You already decided to pack all the networking code — creating the proper URLs
       ```
 
   - Build and run your app, and you should see images appear in the table view cells and on the detail screen. Nice work! Now your images can help the user decide which menu items are most appealing.
+
+- **Fix Issue**
+  - Issue:
+    - When the category was clicked, items on the menu items page weren't displayed because they went down.
+    - The reason was that the images of items were too big.
+  - Solution:
+    - I added resizeImageTo method to MenuTableViewController file and resized the images in `configure(_ forItemAt:)` method. And then, the items were shown well.
+
+    - ```swift
+        extension UIImage {
+            func resizeImageTo(size: CGSize) -> UIImage? {
+                UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
+                self.draw(in: CGRect(origin: CGPoint.zero, size: size))
+                let resizedImage = UIGraphicsGetImageFromCurrentImageContext()!
+                UIGraphicsEndImageContext()
+                return resizedImage
+            }
+        }
+
+        @MainActor
+        class MenuTableViewController: UITableViewController {
+            /* ... */
+            func configure(_ cell: UITableViewCell, forItemAt indexPath: IndexPath) {
+                guard let cell = cell as? MenuItemCell else { return }
+                let menuItem = menuItems[indexPath.row]
+
+                cell.itemName = menuItem.name
+                cell.price = menuItem.price
+                cell.image = nil
+
+                imageLoadTasks[indexPath] = Task.init {
+                    if let image = try? await MenuController.shared.fetchImage(from: menuItem.imageURL) {
+                        if let currentIndexPath = self.tableView.indexPath(for: cell),
+                            currentIndexPath == indexPath {
+                              cell.image = image.resizeImageTo(size: CGSize(width: 50, height: 50))
+                        }
+                    }
+                    imageLoadTasks[indexPath] = nil
+                }
+            }
+        }
+      ```
