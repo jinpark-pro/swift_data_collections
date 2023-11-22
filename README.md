@@ -7974,3 +7974,229 @@ You already decided to pack all the networking code — creating the proper URLs
       ```
 
   - Build and run your app. You should see the placeholder image on the menu item cells, on the order item cells, and on the item details screen.
+- **Request the Right Image**
+  - The placeholder is in place. How will you find the right image? In each `MenuItem` is a property, `imageURL`, that says where to retrieve its corresponding image. You'll request that image whenever the cell is about to be displayed. Behind the scenes, `URLSession` will check the URL cache to see whether it's already retrieved the image. If it has, it will skip the network request entirely and fetch the image from memory; otherwise, it'll continue with the request to retrieve the image data. Either way, the process looks the same to your code.
+  - Define a new method in `MenuController` that takes in an image URL as the first parameter and returns the `UIImage` data. This method is very similar to other requests you've written — except that you don't need to parse any JSON. Instead, you'll attempt to convert the data into an image and return it, or you'll throw an error if there's a failure.
+  - You can add another case to the `Error` enum to identify issues with this request: `imageDataMissing`. 
+
+    - ```swift
+        enum MenuControllerError: Error, LocalizedError {
+            case categoriesNotFound
+            case menuItemsNotFound
+            case orderRequestFailed
+            case imageDataMissing
+        }
+        func fetchImage(from url: URL) async throws -> UIImage {
+            let (data, response) = try await URLSession.shared.data(from: url)
+         
+            guard let httpResponse = response as? HTTPURLResponse, 
+              httpResponse.statusCode == 200 else {
+                throw MenuControllerError.imageDataMissing
+            }
+         
+            guard let image = UIImage(data: data) else {
+                throw MenuControllerError.imageDataMissing
+            }
+         
+            return image
+        }
+      ```
+
+  - Important: To reference `UIImage` in your code, you'll need to import `UIKit`.
+  - When you configure the cell in `MenuTableViewController`, request the image data using `fetchImage`. In the case of success, you'll have an image to use; otherwise, you can return immediately from the method.
+  - While the image is nice to have, it's not worth alerting the user if it fails to load, so you'll ignore any errors that are thrown by using an optional try statement - `try?` - rather than a do/catch statement. In a real-world situation, you might choose to log the error somewhere.
+
+    - ```swift
+        func configure(_ cell: UITableViewCell, forItemAt indexPath: IndexPath) {
+            let menuItem = menuItems[indexPath.row]
+         
+            var content = cell.defaultContentConfiguration()
+            content.text = menuItem.name
+            content.secondaryText = menuItem.price.formatted(.currency(code: "usd"))
+            content.image = UIImage(systemName: "photo.on.rectangle")
+            cell.contentConfiguration = content
+            Task.init {
+                if let image = try? await MenuController.shared.fetchImage(from: menuItem.imageURL) {
+                    // Image was returned
+                }
+            }
+        }
+      ```
+
+  - Now that you've verified that you have an image, you can load it into the cell configuration's image property. That's an update to the interface, but since you have inherited the context of the `MainActor` in the `Task.init` closure, you can make that update directly.
+  - But wait: For table view cells, you'll need to make an additional check. Recall that, in longer lists of data, cells will be recycled and reused as you scroll up and down the table. Since you don't want to put the wrong image into a recycled cell, check the index path where the cell is now located. If it's changed, you can skip setting the image view. The final step in the process is to update the cell's `contentConfiguration`, which will cause the cell to update its layout to accommodate the new image.
+
+    - ```swift
+        func configure(_ cell: UITableViewCell, forItemAt indexPath: IndexPath) {
+            let menuItem = menuItems[indexPath.row]
+         
+            var content = cell.defaultContentConfiguration()
+            content.text = menuItem.name
+            content.secondaryText = menuItem.price.formatted(.currency(code: "usd"))
+            content.image = UIImage(systemName: "photo.on.rectangle")
+            cell.contentConfiguration = content
+            Task.init {
+                if let image = try? await MenuController.shared.fetchImage(from: menuItem.imageURL) {
+                    if let currentIndexPath = self.tableView.indexPath(for: cell),
+                            currentIndexPath == indexPath {
+                        var content = cell.defaultContentConfiguration()
+                        content.text = menuItem.name
+                        content.secondaryText = menuItem.price.formatted(.currency(code: "usd"))
+                        content.image = image
+                        cell.contentConfiguration = content
+                    }
+                }
+            }
+        }
+      ```
+
+  - You might recall from the `iTunesSearch` project from a previous lesson that it is a good idea to cancel `Tasks` if the results will never be used. Since the `TableViewCells` can be scrolled off the screen and the images for those cells will no longer be needed, you can keep track of any image loading task for an `IndexPath` and cancel that `Task` if the cell is scrolled off the screen.
+  - Start by adding a property to the `MenuTableViewController` that is a dictionary with keys of type `IndexPath` and values of type `Task<Void, Never>` (the return type of `Task.init`):
+    - `var imageLoadTasks: [IndexPath: Task<Void, Never>] = [:]`
+  - Now add an override for the `UITableViewDelegate` method `tableView(_:didEndDisplaying:forRowAt:)` to cancel the appropriate `Tasks`:
+
+    - ```swift
+        override func tableView(_ tableView: UITableView, didEndDisplaying cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+            // Cancel the image fetching task if it's no longer needed
+            imageLoadTasks[indexPath]?.cancel()
+        }
+      ```
+
+  - The entire view can also disappear before all the tasks finish loading the images. You should cancel any outstanding image loading tasks in the `viewDidDisappear(:)` method:
+
+    - ```swift
+        override func viewDidDisappear(_ animated: Bool) {
+            super.viewDidDisappear(animated)
+         
+            // Cancel image fetching tasks that are no longer needed
+            imageLoadTasks.forEach { key, value in value.cancel() }
+        }
+      ```
+
+  - You can populate the `imageLoadTasks` dictionary when you set up each cell's image fetch and remove the entry once the image fetch task has completed:
+
+    - ```swift
+        imageLoadTasks[indexPath] = Task.init {
+            if let image = try? await MenuController.shared.fetchImage(from: menuItem.imageURL) {
+                if let currentIndexPath = self.tableView.indexPath(for: cell),
+                      currentIndexPath == indexPath {
+                    var content = cell.defaultContentConfiguration()
+                    content.text = menuItem.name
+                    content.secondaryText = menuItem.price.formatted(.currency(code: "usd"))
+                    content.image = image
+                    cell.contentConfiguration = content
+                }
+            }
+            imageLoadTasks[indexPath] = nil
+        }
+      ```
+
+  - You might have noticed that you need to repeat the configuration of all the details of the cell's `contentConfiguration` when the image becomes available. The system will efficiently make these updates as it renders the new cell, but you can make the code clearer and give the system more opportunities to optimize the image update by creating a new table view cell class.
+  - Start by adding a new `.swift` file to your project called `MenuItemCell`, and define your new class as follows:
+
+    - ```swift
+        import UIKit
+         
+        class MenuItemCell: UITableViewCell {
+         
+        }
+      ```
+
+  - You'll want to add three properties to `MenuItemCell` for the item name, the price, and the image. These properties will have a special characteristic where they will invoke `setNeedsUpdateConfiguration()` on the cell if they change when they are set. `setNeedsUpdateConfiguration()` will tell the cell that it needs to render the change. `MenuItemCell` should look like the following:
+
+    - ```swift
+        import UIKit
+         
+        class MenuItemCell: UITableViewCell {
+            var itemName: String? = nil
+            {
+                didSet {
+                    if oldValue != itemName {
+                        setNeedsUpdateConfiguration()
+                    }
+                }
+            }
+            var price: Double? = nil
+            {
+                didSet {
+                    if oldValue != price {
+                        setNeedsUpdateConfiguration()
+                    }
+                }
+            }
+            var image: UIImage? = nil
+            {
+                didSet {
+                    if oldValue != image {
+                        setNeedsUpdateConfiguration()
+                    }
+                }
+            }
+        }
+      ```
+
+  - When `setNeedsUpdateConfiguration()` is called, the cell's `updateConfiguration(using:)` method will be invoked to update the cell's configuration. The contents of this method will look familiar from the `configure(_:forItemAt:)` method you wrote earlier. Add the following to your `MenuItemCell` class:
+
+    - ```swift
+        override func updateConfiguration(using state: UICellConfigurationState) {
+            var content = defaultContentConfiguration().updated(for: state)
+            content.text = itemName
+            content.secondaryText = price?.formatted(.currency(code: "usd"))
+            content.prefersSideBySideTextAndSecondaryText = true
+         
+            if let image = image {
+                content.image = image
+            } else {
+                content.image = UIImage(systemName: "photo.on.rectangle")
+            }
+            self.contentConfiguration = content
+        }
+      ```
+
+  - This code will get the `defaultContentConfiguration` for the cell and update it for the current state (you'll learn more about `UICellConfigurationState` later). It then updates the content from the cell's `itemName` and `price` and makes sure that the `text` and `secondaryText` will be displayed side by side. Finally, it checks for an image and sets a default image if there is not one; otherwise, it sets the image from the cell's `image` property. Then it updates the cell's `contentConfiguration`, resulting in the cell being updated on the display.
+  - To use this new cell, you'll want to open the `Main` storyboard, locate the prototype cell for the `MenuTableViewController`, and change its class from `UITableViewCell` to `MenuItemCell`. Then, in `MenuTableViewController`, replace the existing `configure(_:forIndexPath:)` with the following:
+
+    - ```swift
+        func configure(_ cell: UITableViewCell, forItemAt indexPath: IndexPath) {
+            guard let cell = cell as? MenuItemCell else { return }
+         
+            let menuItem = menuItems[indexPath.row]
+         
+            cell.itemName = menuItem.name
+            cell.price = menuItem.price
+            cell.image = nil
+         
+            imageLoadTasks[indexPath] = Task.init {
+                if let image = try? await MenuController.shared.fetchImage(from: menuItem.imageURL) {
+                    if let currentIndexPath = self.tableView.indexPath(for: cell),
+                          currentIndexPath == indexPath {
+                        cell.image = image
+                    }
+                }
+                imageLoadTasks[indexPath] = nil
+            }
+        }
+      ```
+
+  - Now you just update the properties of the cell to appropriate values as you get them, and allow the cell configuration machinery to update the rendering of the cell.
+  - Notice that you initially set the `cell.image` to `nil`. This is so that the `MenuItemCell` will set the placeholder image if your image has not been fetched yet. Recall that you may be reusing this cell from a previous row, so you want to configure all the properties to the values that you want when you set the cell up.
+  - The `MenuItemCell` is also configured appropriately to be used for the `OrderTableViewController`. Repeat this process for `OrderTableViewController`. Remember to update the prototype cell for the `OrderTableViewController` in the storyboard to be `MenuItemCell` rather than the base `UITableViewCell`.
+  - While the images are appearing, the standard cell design may not be best for this layout. It would be good practice to investigate ways to update the cell content configuration for `MenuItemCell` to have a more consistent layout when loading images of different sizes — but it is not required.
+  - For `MenuItemDetailViewController`, the code is much easier. Set the image view once you've received the data:
+
+    - ```swift
+        func updateUI() {
+            nameLabel.text = menuItem.name
+            priceLabel.text = menuItem.price.formatted(.currency(code: "usd"))
+            detailTextLabel.text = menuItem.detailText
+         
+            Task.init {
+                if let image = try? await
+                  MenuController.shared.fetchImage(from: menuItem.imageURL) {
+                    imageView.image = image
+                }
+            }
+        }
+      ```
+
+  - Build and run your app, and you should see images appear in the table view cells and on the detail screen. Nice work! Now your images can help the user decide which menu items are most appealing.
