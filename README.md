@@ -8275,3 +8275,13 @@ You already decided to pack all the networking code — creating the proper URLs
             }
         }
       ```
+
+#### Guided Project - Wrap-Up
+
+- Congratulations! This guided project required a lot of knowledge and setup to work with the server. You also created more view controllers than in any app you've built in this course. By now, you should feel very comfortable with passing data between view controllers and working with data that's not stored locally on the device. Be sure to save the completed project to your projects folder.
+- As you build larger and more complex apps, you have more things to consider, such as how data is stored and where to keep network request logic. If you need more explanation about asynchronous requests, queues, and updating the user interface with server data, you can always reread the applicable lessons in this unit. In addition, you'll find that the labs are a great way to get more practice performing requests and updating views.
+- **Stretch Goals**
+  - Here are some things you can try adding to your menu app that would improve the experience for users in the real world:
+    - Keep the order confirmation screen updated by calculating the number of minutes remaining for the order to be prepared and add a UIProgressView that fills up as time passes.
+    - Create a local notification that's displayed 10 minutes before the order will be ready. For example, if the order will take 30 minutes, fire the alert on the user's device in 20 minutes.
+  - Looking for even more of a stretch? In the following section, you can learn about state restoration by adding on to the Restaurant project. It's a stretch goal that's worth exploring in detail.
