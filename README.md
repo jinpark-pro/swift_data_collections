@@ -8285,3 +8285,56 @@ You already decided to pack all the networking code — creating the proper URLs
     - Keep the order confirmation screen updated by calculating the number of minutes remaining for the order to be prepared and add a UIProgressView that fills up as time passes.
     - Create a local notification that's displayed 10 minutes before the order will be ready. For example, if the order will take 30 minutes, fire the alert on the user's device in 20 minutes.
   - Looking for even more of a stretch? In the following section, you can learn about state restoration by adding on to the Restaurant project. It's a stretch goal that's worth exploring in detail.
+
+### Project Extension - State Restoration
+
+- Consider the following scenario. A user starts an order by adding a menu item or two. Then they’re interrupted by an iMessage notification that results in 15 minutes of texting, emails, and web browsing. By the time the user comes back to your app, it's been terminated. Instead of resuming where they left off, they have to create the order from scratch — not a good experience! And their menu browsing state has been reset to the category list — another annoyance if your menu hierarchy is deep and you have a lot of items. (You've probably noticed these deficiencies as you've been developing the app.)
+By implementing state restoration, you can make sure the user doesn't perceive any interruption in their activity. This is also crucial for iPad apps that support multiple windows to provide a good user experience.
+- Beginning with iOS 13, state restoration is handled by your `UIWindowSceneDelegate` and achieved using the `NSUserActivity` class. `NSUserActivity` is a lightweight object that enables many different features across Apple platforms, including state restoration, handoff, Spotlight search indexing, and SiriKit. You can create `NSUserActivity` instances at key moments and provide the contextual information necessary to perform these tasks.
+- In this extension to the guided project, you'll add state restoration to OrderApp. For this app, you'll maintain an `NSUserActivity` instance on `MenuController` that holds the current Order as well as the items needed to re-create the view controllers in your app that your user may have left off on.
+- Here’s how it works. While the user is using your app, you'll track key pieces of information in an `NSUserActivity`'s `userInfo` dictionary. When your scene is sent to the background, iOS will request an `NSUserActivity` instance to be used the next time the scene is connected. When the scene reconnects, you will be provided with the same NSUserActivity instance, which you can use to rebuild the app's state so that the user can continue what they were doing.
+
+#### Part 1. ​Handle the Order
+- The most important thing to preserve in your app is the user's order. All your other model objects are fetched directly from the web service on demand, but orders need to be stored locally. Here’s how to persist an order model object.
+- **Add Data Persistence for the Order**
+  - You'll be using `NSUserActivity`'s `userInfo` dictionary to track information regarding your app's state. The dictionary's values can be of the following types: `Array`, `Data`, `Date`, `Dictionary`, `NSNumber`, `Set`, `String`, or `URL`. Notice that you cannot include custom types — or even `Codable` types. To get around this limitation, you'll store the `Order` as an encoded JSON Data object, created the same way as when you send an `Order` to the server.
+  - First, create a new Swift file named “Restoration.swift” that will hold details specific to your state restoration strategy. In this file, create a new extension for `NSUserActivity` with the following order property:
+
+    - ```swift
+        extension NSUserActivity {
+         
+            var order: Order? {
+                get {
+                    guard let jsonData = userInfo?["order"] as? Data else {
+                        return nil
+                    }
+         
+                    return try? JSONDecoder().decode(Order.self, from: jsonData)
+                }
+                set {
+                    if let newValue = newValue, let jsonData = try? JSONEncoder().encode(newValue) {
+                        addUserInfoEntries(from: ["order": jsonData])
+                    } else {
+                        userInfo?["order"] = nil
+                    }
+                }
+            }
+        }
+      ```
+
+  - When in use, this will appear to be a stored property on `NSUserActivity`, though it's more of a facade. The `get` implementation attempts to load an `Order` from the underlying `userInfo` dictionary, and set takes the provided `Order` instance and encodes it to `userInfo` as JSON data, both using the same order key. You can now easily get and set an Order on an instance of `NSUserActivity`, but where will the activity instance live? A good place would be right alongside your existing shared `order` instance on `MenuController`.
+  - Create a new property on `MenuController`: `var userActivity = NSUserActivity(activityType: "com.example.OrderApp.order")`
+  - The activity type parameter is a `String` in a reverse - DNS format that should be unique to your identity and app. Typically this will include your company's website domain, the app name, and any further information to distinguish what the activity is for.
+- **Save and Load the Order**
+  - When should you set order on your new `userActivity` instance? A good time would be whenever the model changes. You already have `didSet` implemented for the order property on `MenuController` to post a notification. Update the `MenuController`'s `didSet` implementation for the order property to assign it to the `userActivity`.
+
+    - ```swift
+        var order = Order() {
+            didSet {
+                NotificationCenter.default.post(name: MenuController.orderUpdatedNotification, object: nil)
+                userActivity.order = order
+            }
+        }
+      ```
+
+  - Now it's time to get into the state restoration APIs.
