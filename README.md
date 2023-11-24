@@ -8295,6 +8295,7 @@ By implementing state restoration, you can make sure the user doesn't perceive a
 - Here’s how it works. While the user is using your app, you'll track key pieces of information in an `NSUserActivity`'s `userInfo` dictionary. When your scene is sent to the background, iOS will request an `NSUserActivity` instance to be used the next time the scene is connected. When the scene reconnects, you will be provided with the same NSUserActivity instance, which you can use to rebuild the app's state so that the user can continue what they were doing.
 
 #### Part 1. ​Handle the Order
+
 - The most important thing to preserve in your app is the user's order. All your other model objects are fetched directly from the web service on demand, but orders need to be stored locally. Here’s how to persist an order model object.
 - **Add Data Persistence for the Order**
   - You'll be using `NSUserActivity`'s `userInfo` dictionary to track information regarding your app's state. The dictionary's values can be of the following types: `Array`, `Data`, `Date`, `Dictionary`, `NSNumber`, `Set`, `String`, or `URL`. Notice that you cannot include custom types — or even `Codable` types. To get around this limitation, you'll store the `Order` as an encoded JSON Data object, created the same way as when you send an `Order` to the server.
@@ -8338,3 +8339,26 @@ By implementing state restoration, you can make sure the user doesn't perceive a
       ```
 
   - Now it's time to get into the state restoration APIs.
+
+#### Part 2. Opt In to State Restoration in the Scene Delegate
+
+- Adopting state restoration for your scenes starts with two methods, `stateRestorationActivity(for:)` and `scene(_:restoreInteractionStateWith:)`. 
+  - The first is called when your scene enters the background; it is invoked by UIKit, which is requesting an `NSUserActivity` to pass back to you when your scene reconnects. 
+  - The second method is called after your scene connects and the storyboard and views are loaded, but before the first transition to the foreground. The `restoreInteractionStateWith` parameter will contain the `NSUserActivity` instance that you provided from the first method. You'll then use that to rebuild the app's state.
+- Implement the two methods in `SceneDelegate`. In the first method, return the `userActivity` from the `MenuController`'s shared instance. In the second method, check the provided `NSUserActivity` for an order. If an order is present, assign it to the `MenuController`'s shared instance.
+
+  - ```swift
+      func stateRestorationActivity(for scene: UIScene) -> NSUserActivity? {
+          return MenuController.shared.userActivity
+      }
+       
+      func scene(_ scene: UIScene, restoreInteractionStateWith​   stateRestorationActivity: NSUserActivity) {
+          if let restoredOrder = stateRestorationActivity.order {
+              MenuController.shared.order = restoredOrder
+          }
+      }
+    ```
+
+- At this point, the Order is preserved across app terminations — an excellent help to your users! Try it out by running the app, adding items to the order, then returning to the Home screen. (In Simulator, you can return to the Home screen by pressing Command+Shift+H, using the Device > Home menu option, or tapping the Home button.) After you've returned to the Home screen, stop the app using Xcode and re-launch it.
+- Do you see your restored order? Great! But what about the user interface? You were placed back on the categories list rather than the screen you were last on. You'll work on resolving this issue next.
+- Note: If you do not first go to the Home screen, the `stateRestorationActivity(for:)` method will not be called, and you won't see proper state restoration. Keep this in mind while debugging your app's state restoration feature. Also, if your app crashes, the state restoration information may be thrown away; this helps ensure that the app does not continue crashing on re-launch due to a bad state.
