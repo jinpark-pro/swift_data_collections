@@ -8373,3 +8373,153 @@ By implementing state restoration, you can make sure the user doesn't perceive a
 - There is an entire class, `UIStoryboard`, that allows you to interact with storyboards programmatically — most importantly, to initialize view controllers defined within the storyboard. To do that, however, you need an identifier for the view controllers you're interested in. Open the Main storyboard and select the `MenuTableViewController`. In the Identity inspector, find the Storyboard ID parameter. This is the identifier you will use to initialize the scene programmatically. You need to set IDs for both MenuTableViewController and MenuItemDetailViewController — set them to “menu” and “menuItemDetail,” respectively. 
 - You may notice a Restoration ID attribute as well. While this sounds like something you'd be interested in for state restoration, it's not used in the approach you're taking here. Prior to iOS 13 and the introduction of scene - based apps, you would have used this attribute, but now state restoration is managed through `NSUserActivity`. If you find that you need to support state restoration on iOS 12 or earlier, take a look at the [developer documentation](https://developer.apple.com/documentation/uikit/view_controllers/preserving_your_app_s_ui_across_launches).
 - With identifiers set for both `MenuTableViewController` and `MenuItemDetailViewController`, you are ready to move forward. These will be the only view controllers that you will initialize programmatically. `OrderConfirmationViewController` is a bit more transient and not entirely necessary to restore; decisions like this are ones you and/or your team will weigh when developing your own apps.
+
+#### Part 4. Preserve View Controller State
+
+- As your users interact with the app, you'll need to keep track of its state, such as which screen they're viewing and the required values to re-create it. OrderApp is relatively lightweight, with few screens and required parameters for them. The table below outlines the view controllers, their required parameters, and their storyboard identifier, if any.
+- | View Controller Class | Required Parameters | Storyboard Identifier |
+  |:---|:---|:---|
+  | CategoryTableViewController | - | - |
+  | MenuTableViewController | Category:String | Menu |
+  | MenuItemDetailViewController | menuItem:MenuItem | MenuItemDetail |
+  | OrderTableViewController | - | - |
+- In `Restoration.swift`, create an enum with cases representing these four scenes.
+
+  - ```swift
+      enum StateRestorationController {
+          case categories
+          case menu(category: String)
+          case menuItemDetail(MenuItem)
+          case order
+      }
+    ```
+
+- Each controller has a case and an associated value, if required. As the user navigates, you will need to keep track of which view controller they're on. This can be done using a `String` stored in your `NSUserActivity`'s `userInfo` dictionary. Create a nested `enum` within `StateRestorationController` named `Identifier` with a `RawValue` of type `String` that can be used to store an identifier for each controller:
+
+  - ```swift
+      enum StateRestorationController {
+          enum Identifier: String {
+              case categories, menu, menuItemDetail, order
+          }
+        ...
+      }
+    ```
+
+- Each identifier should be associated with a case in `StateRestorationController`, so you'll create an `identifier` computed property that switches over `self` and returns the respective `Identifier`. This might feel redundant and strange, but it will be helpful soon. Your `StateRestorationController` enum should now look like the following:
+
+  - ```swift
+      enum StateRestorationController {
+          enum Identifier: String {
+              case categories, menu, menuItemDetail, order
+          }
+       
+          case categories
+          case menu(category: String)
+          case menuItemDetail(MenuItem)
+          case order
+       
+          var identifier: Identifier {
+              switch self {
+              case .categories: return Identifier.categories
+              case .menu: return Identifier.menu
+              case .menuItemDetail: return Identifier.menuItemDetail
+              case .order: return Identifier.order
+              }
+          }
+      }
+    ```
+
+- This enum now has enough state information about each screen to be stored in the `userInfo` dictionary on `MenuController`'s `userActivity` instance. You can use the same pattern you used for the `order` property on your `NSUserActivity` extension to create each of the following additional properties:
+  - `var controllerIdentifier: StateRestorationController.Identifier?`
+  - `var menuCategory: String?`
+  - `var menuItem: MenuItem?`
+- Before looking at the example code below, try creating the properties in your `NSUserActivity` extension with custom `get` and `set` implementations that add and read values from the `userInfo` dictionary.
+- Here is an example of what those implementations may look like:
+
+  - ```swift
+      var controllerIdentifier: StateRestorationController.Identifier? {
+          get {
+              if let controllerIdentifierString = userInfo?["controllerIdentifier"] as? String {
+                  return StateRestorationController.Identifier(rawValue: controllerIdentifierString)
+              } else {
+                  return nil
+              }
+          }
+          set {
+              userInfo?["controllerIdentifier"] = newValue?.rawValue
+          }
+      }
+       
+      var menuCategory: String? {
+          get {
+              return userInfo?["menuCategory"] as? String
+          }
+          set {
+              userInfo?["menuCategory"] = newValue
+          }
+      }
+       
+      var menuItem: MenuItem? {
+          get {
+              guard let jsonData = userInfo?["menuItem"] as? Data else {
+                  return nil
+              }
+              return try? JSONDecoder().decode(MenuItem.self, from: jsonData)
+          }
+          set {
+              if let newValue = newValue, let jsonData = try? JSONEncoder().encode(newValue) {
+                  addUserInfoEntries(from: ["menuItem": jsonData])
+              } else {
+                  userInfo?["menuItem"] = nil
+              }
+          }
+      }
+    ```
+
+- Now, as the user navigates your app, you can easily update `userActivity` on `MenuController`. Create a method on `MenuController` to assist; it should take a `StateRestorationController` parameter:
+
+  - ```swift
+      func updateUserActivity(with controller: StateRestorationController) {
+          switch controller {
+          case .menu(let category):
+              userActivity.menuCategory = category
+          case .menuItemDetail(let menuItem):
+              userActivity.menuItem = menuItem
+          case .order, .categories:
+              break
+          }
+       
+          userActivity.controllerIdentifier = controller.identifier
+      }
+    ```
+
+- This method switches over the passed-in `controller` parameter and extracts the available associated values, assigning them to the corresponding property on `userActivity`. Finally, it sets the `controllerIdentifier` property, which you'll use to determine which screen the user was last on.
+- Your last step for preserving view controller state is to call this method within each view controller at the appropriate time. The best time is when `viewDidAppear(_:)` is called. Add the following methods to each corresponding controller.
+
+  - ```swift
+      /* In CategoryTableViewController */
+      override func viewDidAppear(_ animated: Bool) {
+          super.viewDidAppear(animated)
+          MenuController.shared.updateUserActivity(with: .categories)
+      }
+       
+      /* In MenuItemDetailViewController */
+      override func viewDidAppear(_ animated: Bool) {
+          super.viewDidAppear(animated)
+          MenuController.shared.updateUserActivity(with: .menuItemDetail(menuItem))
+      }
+       
+      /* In MenuTableViewController */
+      override func viewDidAppear(_ animated: Bool) {
+          super.viewDidAppear(animated)
+          MenuController.shared.updateUserActivity(with: .menu(category: category))
+      }
+       
+      /* In OrderTableViewController */
+      override func viewDidAppear(_ animated: Bool) {
+          super.viewDidAppear(animated)
+          MenuController.shared.updateUserActivity(with: .order)
+      }
+    ```
+
+- Each implementation calls `updateUserActivity(with:)`, passing information about the view controller that appeared. `MenuController.shared.userActivity` now has the information needed to restore your app's state.
