@@ -8523,3 +8523,105 @@ By implementing state restoration, you can make sure the user doesn't perceive a
     ```
 
 - Each implementation calls `updateUserActivity(with:)`, passing information about the view controller that appeared. `MenuController.shared.userActivity` now has the information needed to restore your app's state.
+
+#### Part 5. Restore View Controller State
+
+- You're finally ready for the last piece of state restoration. Most of the complexity will lie within the `scene(_:restoreInteractionStateWith:)` method in `SceneDelegate`. In this method, you'll use information provided on the `NSUserActivity` instance to return the user to the state they are expecting.
+- As you're aware, all that information can be neatly packaged in the `StateRestorationController` enum. It would be nice if you could initialize a value of `StateRestorationController` using a provided `NSUserActivity`. Add the following custom initializer to `StateRestorationController` in the `Restoration` file.
+
+  - ```swift
+      init?(userActivity: NSUserActivity) {
+          guard let identifier = userActivity.controllerIdentifier else {
+              return nil
+          }
+       
+          switch identifier {
+          case .categories:
+              self = .categories
+          case .menu:
+              if let category = userActivity.menuCategory {
+                  self = .menu(category: category)
+              } else {
+                  return nil
+              }
+          case .menuItemDetail:
+              if let menuItem = userActivity.menuItem {
+                  self = .menuItemDetail(menuItem)
+              } else {
+                  return nil
+              }
+          case .order:
+              self = .order
+          }
+      }
+    ```
+
+- The initializer checks the `userActivity` for a `controllerIdentifier` — the last screen the user was on. Then, if one is present, the initializer switches over the value and extracts the relevant properties. Notice the assignment to `self` in each case; in failable enum initializers, you either assign `self` to a value or return `nil`.
+- Now you can use this initializer in the `scene(_:restoreInteractionStateWith:)` method in `SceneDelegate`. While you're there, add a guard-let statement to check a few other important preconditions before you fill out the rest of the method. (Unless otherwise mentioned, each of the code segments below should be appended to your implementation of `scene(_:restoreInteractionStateWith:)`.)
+
+  - ```swift
+      func scene(_ scene: UIScene, restoreInteractionStateWith stateRestorationActivity: NSUserActivity) {
+          if let restoredOrder = stateRestorationActivity.order {
+              MenuController.shared.order = restoredOrder
+          }
+       
+          guard
+              let restorationController = ​StateRestorationController(userActivity:​ stateRestorationActivity),
+              let tabBarController = window?.rootViewController as?​ UITabBarController,
+                  tabBarController.viewControllers?.count == 2,
+              let categoryTableViewController =​ (tabBarController.viewControllers?[0] as?​ UINavigationController)?.topViewController as?​ CategoryTableViewController
+          else {
+              return
+          }
+      }
+    ```
+
+- The `guard` statement is checking a number of things. 
+  - First, it tries to initialize `StateRestorationController` using `stateRestorationActivity`. 
+  - Next, it verifies that `rootViewController` is a `UITabBarController` and has two tabs. In state restoration, it's important to verify that things are as you expect, as you do not want to attempt to restore an invalid state. 
+  - Finally, the first tab is verified to be a navigation controller whose `topViewController` is `CategoryTableViewController` — and, if so, the reference is captured.
+- Now you have an instance of `StateRestorationController` and references to the `tabBarController` and `categoryTableViewController`. Next, you'll switch over `restorationController` to determine which screen should be displayed. If you recall, `CategoryTableViewController` is displayed by default, and `OrderTableViewController` is already loaded in the second tab. You will not need to initialize them programmatically. `MenuTableViewController` and `MenuItemDetailViewController`, however, both need to be initialized and presented. Using the `UIStoryboard` APIs and your storyboard IDs, you will initialize and present both when their case is matched.
+- Below your guard-let statement, initialize a reference to your storyboard.
+  - `let storyboard = UIStoryboard(name: "Main", bundle: nil)`
+- This API simply takes the filename of your storyboard. If one does not match, your app will crash — so it's important to get it right.
+- Begin the switch statement. The `.categories` and `.order` cases are straightforward: for `.categories` you don't need to do anything, and for `.order` you only need to switch the selected tab.
+
+  - ```swift
+      switch restorationController {
+          case .categories:
+              break
+          case .order:
+              tabBarController.selectedIndex = 1
+      }
+    ```
+
+- For `.menu`, you will extract the associated category value and then use the `UIStoryboard` method `instantiateViewController(identifier:creator:)`. This method takes an identifier (your storyboard ID) and has a creator closure, where you'll initialize your view controller. Also notice that the closure is passed that much-needed `NSCoder` instance!
+
+  - ```swift
+      case .menu(let category):
+          let menuTableViewController = storyboard.instantiateViewController(identifier: restorationController.identifier.rawValue, creator: { (coder) in
+              return MenuTableViewController(coder: coder, category: category)
+          })
+          categoryTableViewController.navigationController?.pushViewController(menuTableViewController, animated: true)
+    ```
+
+- You pass `restorationController.identifier.rawValue` as the `identifier`, and the method uses the provided closure to create and return an instance of `MenuTableViewController` — similar to your `@IBSegueAction` implementations. That instance is then pushed onto `categoryTableViewController`'s navigation stack.
+- The last case to cover is `.menuItemDetail`. It will be handled similarly to `.menu`, except that you first need to push a `MenuTableViewController`. Remember that you can't get to an item's detail without first selecting it from the menu.
+
+  - ```swift
+      case .menuItemDetail(let menuItem):
+          let menuTableViewController = storyboard.instantiateViewController(identifier: StateRestorationController.Identifier.menu.rawValue, creator: { (coder) in
+              return MenuTableViewController(coder: coder, category: menuItem.category)
+          })
+       
+          let menuItemDetailViewController = storyboard.instantiateViewController(identifier: restorationController.identifier.rawValue) { (coder) in
+              return MenuItemDetailViewController(coder: coder, menuItem: menuItem)
+          }
+       
+          categoryTableViewController.navigationController?.pushViewController(menuTableViewController, animated: false)
+          categoryTableViewController.navigationController?.pushViewController(menuItemDetailViewController, animated: false)
+      }
+    ```
+
+- First, you initialize a `MenuTableViewController` using `StateRestorationController.Identifier.menu.rawValue` as the identifier. In the creator closure, you pass `menuItem.category` for the category. Finally, you initialize `MenuItemDetailViewController` using `menuItem` and push both of them to `categoryTableViewController`'s navigation controller.
+- Whew! That was a lot of work — but consider how much time and frustration you'll save among all your users. You may even save a few orders that otherwise would have been abandoned!
