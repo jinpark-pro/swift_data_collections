@@ -8669,3 +8669,128 @@ Interested in learning more about state restoration? Check out [Preserving Your 
 - Add a label to the center of the cell and add constraints to center it horizontally and vertically. Create a new Cocoa Touch class, subclassing `UICollectionViewCell`, named `BasicCollectionViewCell`. Set the cell's class to `BasicCollectionViewCell` using the Identity inspector in the Main storyboard. You'll need an outlet for the label in `BasicCollectionViewCell`.
 - It can be tricky to get the assistant editor to display `BasicCollectionViewCell.swift`. Start by selecting the Cell(Content View) in the Document Outline or on the canvas, then open the assistant editor. You'll see the code for your collection view controller. In the navigation bar above the assistant editor, click "BasicCollectionViewController.swift," then select "BasicCollectionViewCell.swift" from the dropdown menu. (Alternatively, there is a previous/next control on the right-hand side of the navigation bar that you can use to switch between the two files.) Finally, Control-drag from the label to the assistant editor to create an @IBOutlet named label.
 - At this point, you have a few key items in place: Your collection view controller scene is using your custom subclass, `BasicCollectionViewController`, and your cell is designed, has a subclass, and has a reuse identifier.
+
+#### 3.1.2 Collection View Layouts
+
+- One of the main differences between collection views and table views is how layout is handled. A table view computes its own layout as a linear list of cells in one of several formats. A collection view relies on a separate layout instance that determines how cells are placed and sized within it. This separation of responsibility is an extra complication, but it allows for great flexibility in presenting data. When you create a new collection view in a storyboard, it comes with a flow layout instance by default. You can find the layout object in the Document Outline as Collection View Flow Layout. Its type is `UICollectionViewFlowLayout`, which is a subclass of `UICollectionViewLayout` — both of which are provided by `UIKit`.
+- The preferred method, however, is to use a compositional layout. Compositional layouts, which allow for more flexibility than flow layouts, are composed in code by combining sections, groups, and items into the layout you need. You'll learn more about how to put these elements together in different ways in a future lesson. For now, you'll start with a simple implementation.
+- **Simple Compositional Layout**
+  - Open `BasicCollectionViewController` and, under viewDidLoad, add a new method called `generateLayout`.
+
+    - ```swift
+        private func generateLayout() -> UICollectionViewLayout {
+         
+        }
+      ```
+
+  - You'll compose your layout inside this method and return the layout back to the caller.
+  - A compositional layout consists of three main parts. The outermost part is a section, which you can relate to the sections in a table view — it typically maps to the top-level structure of the data you're displaying. A section holds groups, which are containers for cells or other groups. Groups are most commonly used to present their elements in a linear layout, either vertically or horizontally. An item is contained within a group. It's the lowest level of a compositional layout, and, like a table view cell, typically corresponds to one model object.
+    - <img src="./resources/collectionView.png" alt="Collection View" width="200" />
+  - The first thing you need to do is define your item. Each item in this app will be displayed in the same way, so you'll only need one item definition. Add the following to your generateLayout method:
+
+    - ```swift
+        let itemSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1.0),
+            heightDimension: .fractionalHeight(1.0)
+        )
+         
+        let item = NSCollectionLayoutItem(layoutSize: itemSize)
+      ```
+
+  - Here, the item's size is set to the full width and height of the group, and then an `NSCollectionLayoutItem` is created from the `NSCollectionLayoutSize` object. Next, add the following below the item definition to define a group:
+
+    - ```swift
+        let groupSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1.0),
+            heightDimension: .absolute(70.0)
+        )
+        
+        /*
+        // hotizontal(layoutSize:subitem,count:) was deprecated in iOS 16.0
+        let group = NSCollectionLayoutGroup.horizontal(
+            layoutSize: groupSize,
+            subitem: item,
+            count: 1
+        )
+        */
+        let group = NSCollectionLayoutGroup.horizontal(
+            layoutSize: groupSize,
+            repeatingSubitem: item,
+            count: 1
+        )
+      ```
+
+  - This defines a group size, where the width is equal to the full width of the section and the height is 70 points. This group represents a row in your list of items, so the group definition creates a horizontal `NSCollectionLayoutGroup` with the size that was just defined. The group is set to contain one item per group.
+  - Next, add the following after the group definition to create a section holding the group and a layout to contain the section. Finally, return the layout.
+
+    - ```swift
+        let section = NSCollectionLayoutSection(group: group)
+         
+        let layout = UICollectionViewCompositionalLayout(section: section)
+         
+        return layout
+      ```
+
+  - There's one more step required: You need to tell the collection view to use the new layout. Add the following to the bottom of viewDidLoad: `collectionView.setCollectionViewLayout(generateLayout(), animated: false)`
+  - This, as you might expect, sets the layout for the collection view to the layout created by `generateLayout`. viewDidLoad should have only the call to super and the line you just added; remove all other comments and statements.
+
+    - ```swift
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            collectionView.setCollectionViewLayout(generateLayout(), animated: false)
+        }
+      ```
+
+  - Be sure to remove the call to `collectionView.register(_:forCellWithReuseIdentifier:)`, since a prototype cell has already been set up in the storyboard.
+- **Collection View Data Source**
+  - To see your layout in action, first add a variable of type [String] near the top of your `BasicCollectionViewController` file, under the definition for `reuseIdentifier` and above the class definition. Add some values to the array. This example uses the list of U.S. states.
+
+    - ```swift
+        private let items = [
+            "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"
+        ]
+      ```
+
+  - The variable is marked `private` because it doesn't need to be accessed outside the type it's defined in.
+  - Now that you have some model data, it's time to set up the required methods to implement `UICollectionViewDataSource`. This process will look familiar to you from working with table views. Since you subclassed `UICollectionViewController`, your view controller already adopts the `UICollectionViewDataSource` protocol and there are base definitions of the methods you need already in the file.
+  - First, locate the definition for `numberOfSections(in:)`. If you check the method definition through Quick Help (by Option-clicking the method name), you'll see that user Discussion it says, "if you do not implement this method, the collection view uses a default value of 1." Since your collection view will only have one section, remove the definition for the `numberOfSections(in:)` method.
+  - Next is the `collectionView(_:numberOfItemsInSection:)` method. Remove the comment with the #warning and change the method to return the count of the items array you created above. Since there's only one section in your collection view, you'll return the total number of items that the collection will contain.
+
+    - ```swift
+        override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+            return items.count
+        }
+      ```
+
+  - The last data source method you need to implement is `collectionView(_:cellForItemAt:)`. The cells for your collection view are going to be `BasicCollectionViewCells`, not generic `UICollectionViewCells`, so add a type cast to `BasicCollectionViewCell` to the definition of cell on the first line. Next, remove the “Configure the cell” comment. Assign the cell's label text to the value of the current entry in your items array. Your subscript will use the `indexPath` passed in to the function and reference its item property. (For table views, you've used the row property of `IndexPath`; they're synonyms for the same value, so this is a style choice to make your code align to collection view terminology.)
+  - Your method definition should look like this:
+
+    - ```swift
+        override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! BasicCollectionViewCell
+         
+            cell.label.text = items[indexPath.item]
+
+            return cell
+        }
+      ```
+
+  - Build and run your app in Simulator and see how you did.
+- **Cell Spacing**
+  - The cells in the collection have expanded to fill the available space, which is what was configured above. That's not very readable, so now you'll create some space around the cells.
+  - In generateLayout, first define a `CGFloat` constant above the `groupSize` definition called spacing. This will ensure that the item spacing is even and easily adjusted. Set its value to 10 points: `let spacing: CGFloat = 10`
+  - Immediately after the definition for group, set the `contentInsets` property as follows:
+
+    - ```swift
+        group.contentInsets = NSDirectionalEdgeInsets(
+            top: spacing,
+            leading: spacing,
+            bottom: 0,
+            trailing: spacing
+        )
+      ```
+
+  - The `contentInsets` property is of type `NSDirectionalEdgeInsets`. Each property of the `NSDirectionalEdgeInsets` struct sets the space between its edge and the next object in that direction — in this case, the leading and trailing edge of the layout itself. (The `contentInsets` property is also present on `NSCollectionLayoutItem`; it's a handy layout tool at every level of the hierarchy.)
+- **Rotation**
+  - Try rotating Simulator while the app is running (with the button in its menu bar or by pressing Command plus the left or right arrow key). Notice that the cells automatically adjust for the screen's new width. You'll see variations on this for different devices and different screen sizes and orientations. A flow layout provides some basic built-in adaptive behavior, but compositional layout is much more capable of automatically preserving the intent of your layout (for example, one column of items) without requiring custom code to react to environment changes such as device orientation.
+  - Adjusting your layout to better handle the device size will be covered in a future lesson.
