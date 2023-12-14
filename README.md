@@ -8794,3 +8794,102 @@ Interested in learning more about state restoration? Check out [Preserving Your 
 - **Rotation**
   - Try rotating Simulator while the app is running (with the button in its menu bar or by pressing Command plus the left or right arrow key). Notice that the cells automatically adjust for the screen's new width. You'll see variations on this for different devices and different screen sizes and orientations. A flow layout provides some basic built-in adaptive behavior, but compositional layout is much more capable of automatically preserving the intent of your layout (for example, one column of items) without requiring custom code to react to environment changes such as device orientation.
   - Adjusting your layout to better handle the device size will be covered in a future lesson.
+
+#### Lab - Emoji Dictionary
+
+- In this lab, you will revisit a project from your previous lesson on table views: EmojiDictionary. This time, though, you will implement it using a collection view rather than a table view.
+
+##### Step 1 Review Starter Project
+
+- This lab has a starter project with the basic navigation and editing features already set up, so you can focus on the collection view elements themselves. Open the starter project and walk through the code so you understand what's already there and how things fit together. Once you've done that and feel comfortable, move on to step 2.
+
+##### Step 2 Cell Setup
+
+- Open the Main storyboard and select the collection view in the Emoji Dictionary Scene. In the Attributes inspector, at the top, change Items from 0 to 1 to add a new item to the collection view. Click the newly added cell (directly in the scene or via the Document Outline). At the top of the Attributes inspector, under Collection Reusable View, set the Identifier to `Item`.
+- Drag a `label` from the Object library to the new cell and change its text to “😀” and the font to `System 24.0`. Next, drag another `label` from the Object library and place it to the right of the first label. Set its text to “Name Label” and the font to `Title 3`. Drag one more label from the Object library and place it below the second label. Change its text to “Description Label” and the font to `Subhead`.
+- Select the Name Label and Description Label and, using the Embed In tool, embed them in a stack view. With the new stack view still selected, Command-click the emoji label to select it as well. Using the Embed In tool, embed the selected views in another stack view.
+- With the outermost stack view selected, add top and bottom constraints equal to 11. Add a leading constraint equal to 18 and trailing constraint equal to 20. Using the Attributes inspector, make sure Alignment and Distribution are both set to Fill and that the spacing is 8.
+- Select the vertical stack view inside the horizontal stack view and set the Alignment to Fill, Distribution to Fill Equally, and Spacing to 0.
+- To keep the emoji label and the vertical stack view from being separated, select the emoji label and, using the Size inspector, change the Horizontal Content Hugging Priority to 252. For storyboard purposes, select the cell and drag its right border so it is 400 points wide (the actual width of the item is calculated by the layout).
+With the cell still selected, open the Identity inspector and change the class to EmojiCollectionViewCell. Switch to the Connections inspector and connect the outlets for nameLabel, descriptionLabel, and symbolLabel to their appropriate UI elements in the item.
+- Finally, using the Connections inspector, drag from the connector next to “selection” to the navigation controller on the storyboard. For the segue type, choose Present Modally.
+
+##### Step 3 Complete the View Controller
+
+- With everything wired up, open `EmojiCollectionViewController` and locate the definition for `viewDidLoad`. Under the call to super, define an item size for each cell in the collection view. Each item should be the full size of its container.
+
+  - ```swift
+      let item = NSCollectionLayoutItem(
+          layoutSize: NSCollectionLayoutSize(
+              widthDimension: .fractionalWidth(1),
+              heightDimension: .fractionalHeight(1)
+          )
+      )
+    ```
+
+- As in the `BasicCollectionView` app, in `EmojiDictionary` each row in the collection is represented by a group. You'll want the group to be set to a fixed height of 70 and the full width of its container. Each group will contain one item.
+
+  - ```swift
+      @available(iOS 16.0, *)
+      class EmojiCollectionViewController: UICollectionViewController {
+
+          override func viewDidLoad() {
+
+              let group = NSCollectionLayoutGroup.horizontal(layoutSize: NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .absolute(70)), repeatingSubitem: item, count: 1)
+    ```
+
+- Finally, each group is encapsulated into a section and the section is used to set the final compositional layout.
+
+  - ```swift
+      let section = NSCollectionLayoutSection(group: group)
+       
+      collectionView.collectionViewLayout = UICollectionViewCompositionalLayout(section: section)
+    ```
+
+- **Update/Insert Changes**
+  - Find the definition for `unwindToEmojiTableView`. Depending on the state of the data from the collection view and the source view controller of the segue (which will be `AddEditEmojiTableViewController`), an emoji definition may have changed or been added.
+  - If the `indexPathsForSelectedItems` property of the collection view has data, this means an item was selected and edited, so the item's definition and the displayed details both need to be updated to reflect the changes.
+  - If there are no selected index paths, a new emoji was created, and its definition needs to be added to your collection of emoji. You'll also need a new row added to the collection view for it.
+  - Try to add this logic yourself, adding any code beneath the guard statement. You can remove the comment. When you're done, check your work against the code below.
+
+    - ```swift
+        if let path = collectionView.indexPathsForSelectedItems?.first {
+            emojis[path.row] = emoji
+            collectionView.reloadItems(at: [path])
+        } else {
+            let newIndexPath = IndexPath(row: emojis.count, section: 0)
+            emojis.append(emoji)
+            collectionView.insertItems(at: [newIndexPath])
+        }
+      ```
+
+- **Handle Deletes**
+  - With a table view, there are built-in mechanisms to handle row deletion. A collection view doesn't have this feature, but it does allow you to attach a context menu to items, which can be used for a similar purpose. These context menus are the same as those used throughout iOS 13, so they should be familiar to your users.
+  - To create a context menu for an item, you must implement the `collectionView(_ :contextMenuConfigurationForItemAt:point:)` method from `UICollectionViewDelegate` (which, as noted, is a protocol that a `UICollectionViewController` already adopts).
+  - Add the following implementation at the bottom of the class definition:
+
+    - ```swift
+        override func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
+            let config = UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { (elements) -> UIMenu? in
+                let delete = UIAction(title: "Delete") { (action) in
+                    self.deleteEmoji(at: indexPath)
+                }
+         
+                return UIMenu(title: "", image: nil, identifier: nil, options: [], children: [delete])
+            }
+         
+            return config
+        }
+      ```
+
+  - This defines a `UIContextMenuConfiguration` that contains a `UIMenu` with a single action.
+  - To enable deletions, the `deleteEmoji` method must be defined. Deleting an emoji removes it from the emoji collection and then removes it from the collection view. Put this definition below the delegate method defined above.
+
+    - ```swift
+        func deleteEmoji(at indexPath: IndexPath) {
+            emojis.remove(at: indexPath.row)
+            collectionView.deleteItems(at: [indexPath])
+        }
+      ```
+
+  - Build and run your app. Check to make sure everything displays correctly and that adding, editing, and deleting emoji all work properly. Nice work!
