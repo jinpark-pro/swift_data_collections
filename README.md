@@ -8893,3 +8893,63 @@ With the cell still selected, open the Identity inspector and change the class t
       ```
 
   - Build and run your app. Check to make sure everything displays correctly and that adding, editing, and deleting emoji all work properly. Nice work!
+
+### Lesson 3.2 Swift Generics
+
+- One important design principle of the Swift programming language is progressive disclosure — the practice of revealing concepts over time as the user grows in experience and confidence, rather than all at once. For example, you can use Swift as a beginner without understanding anything about protocols, even though you're using protocols every time you use even basic types such as `Int` or `String`.
+- Generics are another example of progressive disclosure. They're a powerful feature of Swift, but to use them you have to be comfortable with language fundamentals. Like any new concept, generics can seem confusing at first, but you've mastered all the concepts you need to start exploring them. By the end of this unit, you'll be using generics to make your projects easier to read and maintain.
+- Generic types and methods allow you to write abstract code that can be used with multiple concrete types — and that helps you avoid duplication. You may not have realized it, but you've been using generics since the very beginning of this course. Many standard types in Swift use generics behind the scenes to provide consistent APIs and functionality while avoiding duplication.
+
+#### Generic Types
+
+- One example of a generic type is `Array`. As you're aware, an array can contain values of any single type, such as `Int` or `String`. Swift does not define separate types for an array of `Ints`, an array of `Strings`, and so on. (If you think about it, such a design would prevent you from using arrays with your own custom types without first creating versions of Array to handle them.) But when you create, say, an array of `Int`s, you can use all the features offered by Array on it — and all the features offered by `Int` on its contents. How does that work? You're ready to find out.
+- When you define an array, you either provide it with literal values or specify what type of data it will contain. When you define an array using existing or literal values, the compiler is able to infer the type of data that the array will contain (in the code below, [Int] for ints and [String] for strings):
+
+  - ```swift
+      let ints = [1, 2, 3, 4]
+      let strings = ["Hello", "World!"]
+       
+      /* When you create an empty array, you provide the type information explicitly: */
+      let ints = [Int]()
+      let strings = [String]()
+    ```
+
+- This kind of code uses what's referred to as “syntactic sugar” — options for writing code that make it easier to write or read. Without the syntactic sugar, those array definitions would look like this:
+
+  - ```swift
+      let ints = Array<Int>()
+      let strings = Array<String>()
+    ```
+
+- In Swift, when you see angle brackets <> with a type name between them, you're dealing with a generic. In fact, if you look at the definition of Array, you'll see the following: `struct Array<Element> { }`
+- What is Element? It doesn't refer to any specific, concrete type. There's no Element in the Swift language, and it can't be initialized. Instead, it's a type parameter. When you declare an array, you're effectively replacing that identifier with a concrete type, such as `Int`.
+- The benefit of Array being a generic type is that you can create arrays that hold any Swift type. The team that created Swift could implement all the functions of an array without knowing anything about the type the array contains. Additionally, once the compiler knows that an array contains a specific type, it can prevent you from making mistakes like the following:
+
+  - ```swift
+      var numbers = ["1", "2", "3"]
+      numbers.append(4) // ❗️Cannot convert value of type 'Int' to expected argument type 'String'
+    ```
+
+- This differs from the approach of some other languages — notably Objective-C, whose NSArray class is defined to contain NSObjects, the base of the inheritance hierarchy (roughly equivalent to AnyObject in Swift). One direct result of this approach is that Objective-C arrays can be heterogeneous, containing items of completely unrelated types. This renders the static type checking above impossible; the equivalent Objective-C code is completely legal.
+- As a human reading the definition of `numbers` above, you might see the values as being numerical, but they're actually `Strings`. The compiler ensures that you can't insert mismatched types in an array, which also guarantees that you'll be returned the proper type when accessing a value. Swift can sometimes feel overly restrictive compared to the more lax approach of Objective-C, and there may be times when heterogeneous arrays seem to be a good fit for a problem. But there are many advantages to Swift's strictness, such as safer code and behind-the-scenes performance optimizations. Xcode can also lend a hand in hinting at what operations and methods are available to the contained types through its autocompletion features — something it can't do with code that uses `NSArray`.
+- Another generic type you've become familiar with is `Dictionary`. A `Dictionary` has keys associated with values, and the types of both are defined when the dictionary is initialized:
+
+  - ```swift
+      let wordsByLength = [
+          1: ["a", "i"],
+          2: ["hi", "by", "go"],
+          3: ["the", "but", "now", "how"],
+          4: ["then", "just", "when", "cool"]
+      ]
+    ```
+
+- The Dictionary above has keys of type `Int` and values of type [String]; the compiler infers this based on the values provided. If you were to create this as an empty dictionary and add values to it over time, you would need to explicitly define the types:
+
+  - ```swift
+      var wordsByLength = [Int: [String]]() // Using syntactic sugar
+      var wordsByLength = Dictionary<Int, Array<String>>() // Fully defined format
+    ```
+
+- The declaration of the Dictionary type looks like this: `struct Dictionary<Key, Value> where Key : Hashable { }`
+- Instead of the `Element` in the `Array` definition, `Dictionary` has two type parameters: `Key` and `Value`. They're placed together in the angle brackets, separated by commas, signifying that a dictionary instance will define two types to fulfill those roles. As you'd expect, Swift can handle generics with arbitrary numbers of type parameters using a comma - delimited list — though it's rare for there to be more than a handful.
+- Another difference from the `Array` definition is the where clause. `where Key : Hashable` states that the type used for `Key` must adopt the `Hashable` protocol. The compiler enforces this rule and will not allow you to declare a dictionary whose key is not `Hashable`. This constraint allows the implementation of `Dictionary` to rely on this information: Any type used for Key is guaranteed to have the capabilities defined in the `Hashable` protocol. Generics and protocols complement each other and help you write cleaner and more reusable code.
