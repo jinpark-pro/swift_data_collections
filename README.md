@@ -8953,3 +8953,335 @@ With the cell still selected, open the Identity inspector and change the class t
 - The declaration of the Dictionary type looks like this: `struct Dictionary<Key, Value> where Key : Hashable { }`
 - Instead of the `Element` in the `Array` definition, `Dictionary` has two type parameters: `Key` and `Value`. They're placed together in the angle brackets, separated by commas, signifying that a dictionary instance will define two types to fulfill those roles. As you'd expect, Swift can handle generics with arbitrary numbers of type parameters using a comma - delimited list — though it's rare for there to be more than a handful.
 - Another difference from the `Array` definition is the where clause. `where Key : Hashable` states that the type used for `Key` must adopt the `Hashable` protocol. The compiler enforces this rule and will not allow you to declare a dictionary whose key is not `Hashable`. This constraint allows the implementation of `Dictionary` to rely on this information: Any type used for Key is guaranteed to have the capabilities defined in the `Hashable` protocol. Generics and protocols complement each other and help you write cleaner and more reusable code.
+
+#### Generic Functions
+
+- Just like generic types, generic functions can work with any type (unless they're constrained by a protocol). An example of this is the `max(_:_:)` function. This function takes two parameters that are the same type and returns whichever is greater: `max(1, 10) // Returns 10`
+- The function works for any type that adopts the Comparable protocol. Here is its method signature: `func max<T>(_ x: T, _ y: T) -> T where T : Comparable { }`
+- The `max(_:_:)` function has the identifier `T` in the angle brackets after its name. Both arguments are declared to be of type `T`, as is the return value. Like the Element identifier in `Array` and the `Key` and `Value` identifiers in `Dictionary`, `T` is not a concrete type. It's a type parameter that is resolved with an actual type at each call site. Using the same identifier for the arguments and return type means that all of them must be of the same type. The only limitation to the type represented by `T` is that it must be Comparable; this is defined in the where clause.
+- In the example above, `Int` takes the place of `T`—both arguments and the return value are all `Int`s. You can imagine this method written only for `Int`, like: `func max(_ x: Int, _ y: Int) -> Int { }`
+- If it were written this way, there would need to be a similar function written for `Double`, `CGFloat`, `String`, and any other type that can be compared. And if you defined custom types that were `Comparable`, you'd also need to implement your own version of `max(_:_:)` for each of those. By using generics, the `max(_:_:)` function is available to use with any `Comparable` type.
+- What might this function's implementation look like?
+
+  - ```swift
+      func max<T>(_ x: T, _ y: T) -> T where T : Comparable {
+          if y >= x {
+              return y
+          } else {
+              return x
+          }
+      }
+    ```
+
+- Since `T` is required to be Comparable, and the `>=` operator is a requirement of the `Comparable` protocol, you can use the `>=` operator on it just like you would with `Int`.
+- **Naming Type Parameters**
+  - The name of the type parameter `T` doesn't mean anything in particular; “T” is just a typical shorthand notation for “Type.” When possible, it's best to name your type parameters using a significant word or phrase in upper camel case, the way type names are written. This helps convey the meaning of the type parameters and makes your code easier to understand and work with. Array<Element> and Dictionary<Key, Value> follow this rule.
+  - Sometimes, though, there's no good name for the placeholder. The `max(_:_:)` function is like that. How would you describe the role of the type that is passed into it? It's just a type. In those cases, it's OK to use the placeholder name `T` and move forward through the alphabet if you need more (such as MyType<T, U, V>).
+- **Protocols and Associated Types**
+  - It's also possible to create a generic protocol. Much like a generic type or function, with a placeholder identifier that gets filled in with a concrete type, a generic protocol is defined with an associated type that needs to be filled in. The associated type can then be used in the properties or methods the protocol defines.
+  - Suppose you wanted to create a protocol to define the role of sending an API request and decoding the response. Your protocol would need a variable to hold on to the request and a method for handling the response. That method would take in data, but what should it return? Consider the following example:
+
+    - ```swift
+        protocol APIRequest {
+            associatedtype Response
+         
+            var urlRequest: URLRequest { get }
+            func decodeResponse(data: Data) throws -> Response
+        }
+      ```
+
+  - Note the new keyword, `associatedtype`. This keyword requires that any type adopting the `APIRequest` protocol define a concrete type for the `Response` placeholder, which will be the return type of the protocol's decodeResponse method.
+  - In a previous lesson, you fetched information and images from NASA's Astronomy Picture of the Day API. The web service returned data in JSON — a typical format for data from web services — which you then modeled as Swift objects. Those objects adopted the `Codable` protocol, allowing you to initialize them using `JSONDecoder`'s `decode(_:from)` method.
+  - The two methods you wrote for that project looked like the following:
+
+    - ```swift
+        enum PhotoInfoError: Error, LocalizedError {
+            case itemNotFound
+            case imageDataMissing
+        }
+         
+        func fetchPhotoInfo() async throws -> PhotoInfo {
+            var urlComponents = URLComponents(string: "https://api.nasa.gov/planetary/apod")!
+            urlComponents.queryItems = [
+                "api_key": "DEMO_KEY"
+            ].map { URLQueryItem(name: $0.key, value: $0.value) }
+         
+            let (data, response) = try await URLSession.shared.data(from: urlComponents.url!)
+         
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                throw PhotoInfoError.itemNotFound
+            }
+         
+            let jsonDecoder = JSONDecoder()
+            let photoInfo = try jsonDecoder.decode(PhotoInfo.self, from: data)
+            return(photoInfo)
+        }
+         
+        func fetchImage(from url: URL) async throws -> UIImage {
+            var urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: true)
+            urlComponents?.scheme = "https"
+            let (data, response) = try await URLSession.shared.data(from: urlComponents!.url!)
+         
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                throw PhotoInfoError.imageDataMissing
+            }
+         
+            guard let image = UIImage(data: data) else {
+                throw PhotoInfoError.imageDataMissing
+            }
+         
+            return image
+        }
+
+  - Notice the similar process in the two methods above:
+    1. An instance of `URLComponents` is created.
+    2. A data request is made for the URL constructed with `URLComponents`.
+    3. If the request succeeds, the response is decoded into the expected type (if it can be) and returned. If either the data request or the decoding fails, an error is thrown.
+  - When you notice patterns like this, you might find that you can write a generic solution to cover multiple cases. (You might recall that `Task` itself is generic!) The benefit of a generic solution is that you reduce lines of code — and therefore the number of potential bugs. If one piece of logic contains a bug, any copy of that logic will contain the same bug. It is very hard as a software developer to recall every place logic was copied, so if you can consolidate the logic, you can simplify your debugging.
+  - When thinking about the protocol, there are a couple of unknowns:
+    - The URL and any request-specific information
+    - The desired result type in the completion handler
+  - While the contents of the request will be different, `URLRequest` itself is a fixed type. However, you'll also need to know the type that will be returned. That's where associated types come in.
+
+    - ```swift
+        protocol APIRequest {
+            associatedtype Response
+         
+            var urlRequest: URLRequest { get }
+            func decodeResponse(data: Data) throws -> Response
+        }
+      ```
+
+  - Types that adopt APIRequest would be required to provide a URLRequest, which can be used to create the data task, as well as a `decodeResponse(data:)` method that returns the desired response type. Notice that the Response type parameter is the return type for this method.
+  - It's time to write some code to try it for yourself. Create a new iOS playground and add the `APIRequest` protocol definition above to it. Be sure to import `UIKit`.
+  - Before creating a type that adopts this protocol, it would be best to write a method that uses it, to ensure that you have all the necessary pieces. Recall that protocols can sometimes be used as stand-ins for types. Consider a `sendRequest` method that would send a request and pass the result to an object that adopts `APIRequest`.
+  - What argument should a method like that receive? An instance of `APIRequest`. And rather than providing a concrete type as the return type, you'd use the associated type for the `APIRequest` — that is, `APIRequest.Response`.
+  - To do this, you'll need to write a generic function with a type parameter, using syntax similar to the definition of `max(_:_:)` you saw earlier. The type parameter will need to be constrained to the `APIRequest` protocol. Swift offers two ways to do this. You could use a where clause, like `max(_:_:)` does: `func sendRequest<Request>(_ request: Request) async throws -> Request.Response where Request: APIRequest`
+  - Or you can follow the type parameter with a colon and the protocol name, similar to how you define that a type adopts a protocol: `func sendRequest<Request: APIRequest>(_ request: Request) async throws -> Request.Response`
+  - Notice that the where clause is removed and <Request> is replaced with <Request: APIRequest>. Both syntax versions work the same way, and you can choose which one you prefer. But it's good to know that both exist so you'll recognize them when you encounter them.
+  - Breaking it down, the method is named `sendRequest(_:)` and is generic, with a Request placeholder that must adopt `APIRequest`. The method returns `Request.Response`, meaning that the concrete type defined for the passed - in `Request`'s associated type for `Response` will be returned. This might feel like an unnecessary complication, but you'll see the benefit soon.
+  - On to the method's implementation. Add this to your playground:
+
+    - ```swift
+        enum APIRequestError: Error {
+            case itemNotFound
+        }
+        func sendRequest<Request: APIRequest>(_ request: Request) async throws -> Request.Response {
+            let (data, response) = try await URLSession.shared.data(for: request.urlRequest)
+         
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                throw APIRequestError.itemNotFound
+            }
+         
+            let decodedResponse = try request.decodeResponse(data: data)
+            return(decodedResponse)
+        }
+      ```
+
+  - This method is modeled after the `fetchPhotoInfo()` method above, but `PhotoInfo` is nowhere to be seen within it. The passed-in request argument provides the necessary pieces by way of the `APIRequest` protocol. Looking at this method in isolation, you can't tell anything about the `PhotoInfo` struct (or even that there is a `PhotoInfo` struct), which makes this code reusable in a way that `fetchPhotoInfo()` is not.
+  - You now have a generic method that is able to send a request and return a concrete type that adopts `APIRequest` – but you don't have any such types. Implementing a type that conforms to APIRequest for the `PhotoInfo` struct might look like the following:
+
+    - ```swift
+        struct PhotoInfo: Codable {
+            var title: String
+            var description: String
+            var url: URL
+            var copyright: String?
+         
+            enum CodingKeys: String, CodingKey {
+                case title
+                case description = "explanation"
+                case url
+                case copyright
+            }
+        }
+         
+        struct PhotoInfoAPIRequest: APIRequest {
+            var apiKey: String
+         
+            var urlRequest: URLRequest {
+                var urlComponents = URLComponents(string: "https://api.nasa.gov/planetary/apod")!
+                urlComponents.queryItems = [
+                    URLQueryItem(name: "date", value: "2021-07-15"),
+                    URLQueryItem(name: "api_key", value: apiKey)
+                ]
+
+                return URLRequest(url: urlComponents.url!)
+            }
+         
+            func decodeResponse(data: Data) throws -> PhotoInfo {
+                let photoInfo = try JSONDecoder().decode(PhotoInfo.self, from: data)
+                return photoInfo
+            }
+        }
+      ```
+
+  - This is a relatively simple, boilerplate implementation — which is great. When you find yourself writing boilerplate code, which is easier to reason about, you're often in a good position to avoid introducing new bugs. The `urlRequest` property is a simple computed property that uses the instance's apiKey property. The `decodeResponse(data:)` implementation is also straightforward (and should feel familiar — you've written this exact code already).
+  - What about the protocol requirement for `associatedtype` `Response`? How is that satisfied? When you define the return type of `decodeResponse(data:)` as `PhotoInfo`, you're implicitly filling in a concrete type for the `Response` placeholder. Swift can now infer that `Response` for `PhotoInfoAPIRequest` is `PhotoInfo`. You can also explicitly satisfy the requirement by including typealias `Response` = `PhotoInfo` in the implementation.
+  - Add the `PhotoInfo` and `PhotoInfoAPIRequest` definitions to your playground, and you'll be able to use all of these pieces together to make the request:
+
+    - ```swift
+        let photoInfoRequest = PhotoInfoAPIRequest(apiKey: "DEMO_KEY")
+        Task {
+            do {
+                let photoInfo = try await sendRequest(photoInfoRequest)
+                print(photoInfo)
+            } catch {
+                print(error)
+            }
+        }
+      ```
+
+  - Run the playground and look at the console for the result. You should have the information about a photo, just like you saw when you worked with the APOD API before. Great work! You've successfully created a protocol with an associated type, a generic method that utilizes the protocol, and a concrete type that implements the protocol, and you've used them to fetch data from a web service. This is complex programming that will enable you to write reusable code in your future projects.
+  - Arguably the most satisfying part of this web service is fetching and viewing the actual image. Looking back at the definition of `fetchImage(from:)`, see if you can write an `ImageAPIRequest` implementation that can be used to fetch the image from the `PhotoInfoAPIRequest` response. Place the implementation right below `PhotoInfoAPIRequest`. You will also need to define an Error to throw in the event the image cannot be created using the provided Data instance; creating a nested enum to use would be a good approach.
+  - Try it on your own before referencing the following solution.
+
+    - ```swift
+        struct ImageAPIRequest: APIRequest {
+            enum ResponseError: Error {
+                case invalidImageData
+            }
+         
+            let url: URL
+         
+            var urlRequest: URLRequest {
+                return URLRequest(url: url)
+            }
+         
+            func decodeResponse(data: Data) throws -> UIImage {
+                guard let image = UIImage(data: data) else {
+                    throw ResponseError.invalidImageData
+                }
+         
+                return image
+            }
+        }
+      ```
+
+  - Good work! Since this request conforms to APIRequest, it can also be used with the `sendRequest(_:)` method and is a great example of code reuse.
+  - Calling this requires the `URL` from `PhotoInfo`, so you will need to initiate the `ImageAPIRequest` when `PhotoInfoAPIRequest` is successful. Initiate an `ImageAPIRequest` using the url property from the returned `PhotoInfo` instance when successful and send it.
+
+    - ```swift
+        let photoInfoRequest = PhotoInfoAPIRequest(apiKey: "DEMO_KEY")
+        Task {
+            do {
+                let photoInfo = try await sendRequest(photoInfoRequest)
+                print(photoInfo)
+                let imageRequest = ImageAPIRequest(url: photoInfo.url)
+                let image = try await sendRequest(imageRequest)
+                image
+            } catch {
+                print(error)
+            }
+        }
+      ```
+
+  - Run the playground. To see the picture, you can click the Quick Look button in the results sidebar next to the line where image is called.
+  - Excellent work! You've sent a request for two completely different types of data using the same method. As you can see, generics and protocols with associated types can do some pretty powerful things.
+
+    - ```swift
+        import UIKit
+
+        protocol APIRequest {
+            associatedtype Response
+            
+            var urlRequest: URLRequest { get }
+            func decodeResponse(data: Data) throws -> Response
+        }
+
+        enum APIRequestError: Error {
+            case itemNotFound
+        }
+
+        func sendRequest<Request: APIRequest>(_ request: Request) async throws -> Request.Response {
+            let (data, response) = try await URLSession.shared.data(for: request.urlRequest)
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                throw APIRequestError.itemNotFound
+            }
+            
+            let decodeResponse = try request.decodeResponse(data: data)
+            return(decodeResponse)
+        }
+
+        struct PhotoInfo: Codable {
+            var title: String
+            var description: String
+            var url: URL
+            var copyright: String?
+            
+            enum CodingKeys: String, CodingKey {
+                case title
+                case description = "explanation"
+                case url
+                case copyright
+            }
+        }
+
+        struct PhotoInfoAPIRequest: APIRequest {
+            var apiKey: String
+            
+            var urlRequest: URLRequest {
+                var urlComponents = URLComponents(string: "https://api.nasa.gov/planetary/apod")!
+                urlComponents.queryItems = [
+                    URLQueryItem(name: "date", value: "2021-07-15"),
+                    URLQueryItem(name: "api_key", value: apiKey)
+                ]
+                
+                return URLRequest(url: urlComponents.url!)
+            }
+            
+            func decodeResponse(data: Data) throws -> PhotoInfo {
+                let photoInfo = try JSONDecoder().decode(PhotoInfo.self, from: data)
+                
+                return photoInfo
+            }
+        }
+
+        let photoInfoRequest = PhotoInfoAPIRequest(apiKey: "DEMO_KEY")
+        Task {
+            do {
+                let photoInfo = try await sendRequest(photoInfoRequest)
+                print(photoInfo)
+            } catch {
+                print(error)
+            }
+        }
+
+        struct ImageAPIRequest: APIRequest {
+            enum ResponseError: Error {
+                case invalidImageData
+            }
+            
+            let url: URL
+            
+            var urlRequest: URLRequest {
+                return URLRequest(url: url)
+            }
+            
+            func decodeResponse(data: Data) throws -> UIImage {
+                guard let image = UIImage(data: data) else {
+                    throw ResponseError.invalidImageData
+                }
+                
+                return image
+            }
+        }
+
+        let photoInfoReuqest = PhotoInfoAPIRequest(apiKey: "DEMO_KEY")
+        Task {
+            do {
+                let photoInfo = try await sendRequest(photoInfoRequest)
+                print(photoInfo)
+                let imageRequest = ImageAPIRequest(url: photoInfo.url)
+                let image = try await sendRequest(imageRequest)
+                image
+            } catch {
+                print(error)
+            }
+        }
+      ```
