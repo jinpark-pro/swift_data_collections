@@ -9285,3 +9285,76 @@ With the cell still selected, open the Identity inspector and change the class t
             }
         }
       ```
+
+#### Lab Life-Form Search
+
+- In this lab, you will build an app that allows users to search for life-forms and display available taxonomy information and photos. You will build on what you have learned in this lesson and previous lessons to create an app that uses the Encyclopedia of Life (www.eol.org) data services API to search its database and look up information about the life-forms found.
+- As you may know, the classification of life on Earth is a complex science and changes frequently as new life-forms are discovered. This complexity is reflected in the results from the EOL data services API. Using the techniques discussed in this and previous lessons, you'll use `Codable` protocol conformance to help convert the results into simpler data structures that meet your specific needs. You'll be using various API endpoints from the EOL classic API that return different types of data. This will give you a good opportunity to use your newfound knowledge of generics to streamline your implementation.
+- Create a new project using the iOS App template and name it "Life-FormSearch." When creating the project, make sure the interface option is set to "Storyboard.
+
+##### User Interface Design
+
+- The app will display two types of data: a list of results from a search of the EOL database and certain details associated with a search result when the user selects it. You are free to use any design that you like, but the description of the app will probably lead you to a screen showing the list of search results and a detail screen that is shown with a push transition when the user selects a returned result.
+- As you've learned, the system search bar provides a consistent interface for performing a search in iOS apps, and a table view is a great way to display a list of results. The detail screen will show an image fetched from the EOL database and a specific subset of the scientific classification of the result. A view controller with a specific set of visual elements (image view and labels) to populate is a reasonable solution for this purpose. You can use stack views to help organize your views and, if you desire, embed the stack view in a scroll view to support smaller devices. Here is an example of one way to present the information to the user:
+
+  - <img src="./resources/Life-Form Search.png" alt="Life-Form Search" width="200" />
+
+- You'll notice that the search results display a common name (or in some cases a list of common names) and a scientific name for the items found in a search. Both of these fields are available in the EOL Search API.
+
+  - <img src="./resources/Life-Form Search Detail.png" alt="Life-Form Search Detail" width="200" />
+
+- The detail screen is showing an image (not all results will have an image available), the classification information - including the scientific name, kingdom, phylum, class, order, family, and genus (again, not all results will contain full classification results) - and the source of the information. You will need to use three API endpoints beyond the search API to collect this information:
+  1. The `pages` API provides basic information along with a list of references to an image or images and the classification options (as mentioned, classification of life is a complex science, and different sources can report different classifications).
+  2. The `hierarchy_entries` API provides the details of a specific classification scheme.
+  3. The `pages` API results include a URL to fetch an item's image.
+- You can look at all the details of the EOL classic API at https://eol.org/docs/what-is-eol/classic-apis. To simplify your task, the details of how you'll want to use each of these API endpoints are provided below.
+- You might also find it useful to "pretty print" the JSON results using the extension to Data that you used in the JSON Serialization lesson to help visualize the results returned from each API request. Here's an extension to Data for that purpose.
+
+  - ```swift
+      extension Data {
+          func prettyPrintedJSONString() {
+              guard
+                  let jsonObject = try? JSONSerialization.jsonObject(with:​ self, options: []),
+                  let jsonData = try? JSONSerialization.data(withJSONObject:​ jsonObject, options: [.prettyPrinted]),
+                  let prettyJSONString = String(data: jsonData,​               encoding: .utf8) else {
+                      print("Failed to read JSON Object.")
+                      return
+              }
+              print(prettyJSONString)
+          }
+      }
+    ```
+
+##### Search API
+
+- The EOL classic API for searching that you'll use in this project results is a URL in the form: https://eol.org/api/search/1.0.json?q=Yellow%20Tang&page=1
+- You can construct this URL using `URLComponents(string:)` with "https://eol.org/api/search/1.0.json" and add the query terms with `URLQueryItem(name:value:)` as you did in the `iTunesSearch` lab.
+- The JSON returned from the search will have the form:
+
+  - ```json
+      {
+        "itemsPerPage" : 50,
+        "results" : [
+          {
+            "id" : 46577088,
+            "title" : "Zebrasoma flavescens",
+            "content" : "Yellow tang; yellow tang; Yellow Tang",
+            "link" : "https:\/\/eol.org\/pages\/46577088"
+          },
+          {
+            "id" : 46577087,
+            "title" : "Zebrasoma xanthurum",
+            "content" : "Yellow tang; Yellow Tang",
+            "link" : "https:\/\/eol.org\/pages\/46577087"
+          },
+          {
+            "id" : 46577097,
+            "title" : "Ctenochaetus cyanocheilus",
+            "content" : "Indo-pacific yellow tang",
+            "link" : "https:\/\/eol.org\/pages\/46577097"
+          }
+        ],
+        "totalResults" : 3,
+        "startIndex" : 1
+      }
+    ```
