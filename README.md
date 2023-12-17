@@ -9358,3 +9358,74 @@ With the cell still selected, open the Identity inspector and change the class t
         "startIndex" : 1
       }
     ```
+
+### Lesson 3.3 Dynamic Data
+
+- Now that you understand how generics work, you're ready to use them in practice. Many `UIKit` APIs don't use generics because they were written before Swift was the dominant language in iOS development. Some modern, Swift-only APIs take advantage of generics. They add an extra level of elegance to your code and empower features that would have be difficult or impossible before.
+- In this lesson, you'll learn your first API that uses generics: `UICollectionViewDiffableDataSource`. You'll learn how it can reduce the work needed to supply data to a collection view, giving you standard features — such as animation of changes — for free.
+- Because users will become frustrated scrolling through a large list or grid of items, apps that display large data sets need to provide affordances for navigating their content. Sections with headers are an example of a navigation affordance, since they give users organizational cues as they scroll.
+- Apps often provide an additional affordance by allowing users to filter large collections through searching. Searching hands the reins to the user—they control what's visible by specifying the criteria they're interested in. Searching is particularly important for apps that access remote data sources, because it's often the only way to pare down huge amounts of content into a digestible form.
+- A search bar is one way to filter data. By tapping in the search bar, a user can enter one or more terms, and the collection is filtered as the user types. `UIKit` provides a standard API for searching named `UISearchController`. It's easy to integrate into an existing table or collection view. In this lesson, you'll add a search controller to your existing Basic Collection Views app that displays states. You can use the starting point from your resources for this lesson or continue with the code you wrote yourself.
+
+#### Adding a Search Controller
+
+- The existing API for navigation stacks includes a simple hook for integrating a search controller with little effort. Because your view controller is already embedded in a navigation controller, you can quickly add the search bar interface. In `BasicCollectionViewController`, add the following instance property: `let searchController = UISearchController()`
+- This initializes a new instance of a `UISearchController` that you can use, but it'll need to be configured and added to your view. You'll notice that there are no arguments passed to the initializer. If you were to look at the API documentation, you'd see that there's an initializer that accepts a `searchResultsController` argument. By passing `nil` or by using the initializer without arguments, you're telling the search controller that you'll be displaying results in the same view that you're searching.
+- When the layout of your search results is the same as the original layout, it makes sense to go this route. If you'll be displaying search results with a different layout, you'll want to provide a separate view controller that displays the search results. The search controller will automatically handle showing and dismissing your custom view controller for search results.
+- To configure the search controller, add the following to the beginning of `viewDidLoad()`, after the call to super.
+
+  - ```swift
+      navigationItem.searchController = searchController
+      searchController.obscuresBackgroundDuringPresentation = false
+      searchController.searchResultsUpdater = self
+      navigationItem.hidesSearchBarWhenScrolling = false
+    ```
+
+- The first line assigns the search controller to the `navigationItem`, which lets the `UINavigationController` know to add a search bar to the navigation bar when your view controller is displayed. Next, you set the `obscuresBackgroundDuringPresentation` property to `false`. The default value of that property is `true`, which is the correct behavior if you provide a separate view controller to display the search results. When the property is `true`, your main view is dimmed or obscured as soon as the user taps the search bar to enter text — signifying that new content will be replacing the existing content. If you're not using a separate view controller for search results, you should set this property to false so that the search results are displayed in place without a view controller transition.
+- The third line informs the `searchController` that `self` will be the `searchResultsUpdater` — the delegate that will handle the actual filtering logic. After you enter this code, you'll see a compiler error: “Cannot assign value of type 'BasicCollectionViewController' to type 'UISearchResultsUpdating?'.” To resolve the error, update the declaration for `BasicCollectionViewController` to adopt the protocol `UISearchResultsUpdating`.
+- The fourth line ensures that the search bar will always be available at the top of the screen. The default is for the search bar to only be visible when the `collectionView` is scrolled to the top of the screen. The use of this option will depend on how search is used in any particular app: `class BasicCollectionViewController: UICollectionViewController, UISearchResultsUpdating {`
+- Of course, this causes another error: “Type 'BasicCollectionViewController' does not conform to protocol 'UISearchResultsUpdating'.” Click the red circle icon and use Xcode's Fix feature to add protocol stubs. This will insert a new method at the top of the class; you can move it further down, if you prefer. `func updateSearchResults(for searchController: UISearchController) {}`
+- This method is where you'll implement the logic to filter the items property and display matching results to the user. The method is called anytime the search controller deems it necessary to update the search results. If you build and run the app now, you'll see the added search bar — but typing into it doesn't change what the collection view displays. Consider for a moment what needs to happen when the user types something into the search bar: The collection view needs to refresh itself to only display results that match the user's query. Here's one strategy to achieve this:
+  1. Create a copy of the original data for use as search results.
+  2. Filter the duplicate data so that it only contains data that matches the search query.
+  3. Refresh the collection view to show the filtered results.
+- Start by adding a new instance variable named `filteredItems` that's a copy of items. `var filteredItems: [String] = items`
+- `filteredItems` is the property you'll use to store filtered results. It'll also replace items as the basis for the collection view's data. Change the references to items in the collection view data source and delegate methods to `filteredItems`.
+
+  - ```swift
+      override func collectionView(_ collectionView: UICollectionView,
+        numberOfItemsInSection section: Int) -> Int {
+          return filteredItems.count
+      }
+
+      override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+          let cell =
+            collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! BasicCollectionViewCell
+       
+          cell.label.text = filteredItems[indexPath.item]
+       
+          return cell
+      }
+    ```
+
+- Now you need to respond to the user's search by implementing `updateSearchResults(for:)`:
+
+  - ```swift
+      func updateSearchResults(for searchController: UISearchController) {
+          if let searchString = searchController.searchBar.text, 
+              searchString.isEmpty == false {
+              filteredItems = items.filter { (item) -> Bool in
+                  item.localizedCaseInsensitiveContains(searchString)
+              }
+          } else {
+              filteredItems = items
+          }
+
+          collectionView.reloadData()
+      }
+    ```
+
+- This implementation attempts to unwrap the text of the provided `searchController`'s `searchBar`. If text is present, the filter method is used to remove items that don't match the search string.
+- The `localizedCaseInsensitiveContains(:)` method searches within a string, ignoring any letter case differences — so “a” is a match for both “a” and “A.” For example, the query “al” will match “Alabama,” “Alaska,” and “California.” The results of the filter function are assigned to `filteredItems`. If there's no search text, the `filteredItems` array is set back to items, so that the entire data set is displayed.
+- Finally, `reloadData()` is called on the collection view to request that it re-query its data source.
+- Build and run the app and try searching. You should see the collection view results update to match the search string.
