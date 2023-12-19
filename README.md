@@ -9429,3 +9429,178 @@ With the cell still selected, open the Identity inspector and change the class t
 - The `localizedCaseInsensitiveContains(:)` method searches within a string, ignoring any letter case differences — so “a” is a match for both “a” and “A.” For example, the query “al” will match “Alabama,” “Alaska,” and “California.” The results of the filter function are assigned to `filteredItems`. If there's no search text, the `filteredItems` array is set back to items, so that the entire data set is displayed.
 - Finally, `reloadData()` is called on the collection view to request that it re-query its data source.
 - Build and run the app and try searching. You should see the collection view results update to match the search string.
+
+#### Handling Data Changes
+
+- You've successfully added a powerful feature for your users with very little code! While the feature is functional and complete, it could be better. When the user enters a search string, the data set changes, but it's a bit abrupt. What if you could update the data with a smooth animation?
+- Both collection and table views offer APIs that allow you to smoothly animate changes to their data. `UICollectionView` offers the `performBatchUpdates(_:completion:)` method, which you supply with a closure that inserts, deletes, reloads, and moves cells using `IndexPaths`. While this API is powerful, it's often challenging to calculate the difference between one version of your data set and another.
+- Consider the following update to a data set.
+  - | Index | Original | Updated |
+    |---|---|---|
+    | 1 | Cat | Monkey |
+    | 2 | Dog | Giraffe |
+    | 3 | Elephant | Horse |
+    | 4 | Fish | Fish |
+    | 5 | Horse | Sugar Glider |
+    | 6 | Giraffe | |
+    | 7 | Monkey | |
+- The following events have occurred:
+  - Index 1 Removed
+  - Index 2 Removed
+  - Index 3 Removed
+  - Index 4 No Change
+  - Index 5 Moved to 3
+  - Index 6 Moved to 2
+  - Index 7 Moved to 1
+  - “Sugar Glider” inserted at 5
+- It's difficult to hand-code an algorithm to describe all the changes to a data set — and all too easy to fail to account for some cases. And using `performBatchUpdates(_:completion:)` also requires you to apply the updates in a particular order or risk runtime exceptions.
+- Thankfully, there's a less error-prone API to assist with this task.
+
+#### Diffable Data Sources
+
+- When you display data in a collection or table view that doesn't change as the user is viewing it, the data source protocol methods you're already familiar with might be all that you need. However, if your data will be changing as the user is viewing it, you might find that diffable data sources are a better alternative. “Diffable” is a way of saying that this kind of data source is able to perform the complicated series of operations that describe the difference between the between two sets of data. “Performing a diff” and “diffing” are common terms of art that developers use to describe this process.
+- `UICollectionViewDiffableDataSource` is a concrete class that implements `UICollectionViewDataSource` and provides a streamlined, closure-based API to use as your collection view's data source. To use a diffable data source, you encapsulate your data in an instance of `NSDiffableDataSourceSnapshot` and provide it to a diffable data source instance. (For table views, you can use the analogous `UITableViewDiffableDataSource`.)
+- You'll start by refactoring `BasicCollectionViewController` to use `UICollectionViewDiffableDataSource`. The first step is to create an enum that will identify the sections in the `collectionView`; in this case, you'll just have a single section and call it main. Add the following to the top of the `BasicCollectionViewController` class: `enum Section: CaseIterable { case main }`
+- Next, add an implicitly unwrapped variable on `BasicCollectionViewController` for the data source that uses the Section type you just defined.
+  - `var dataSource: UICollectionViewDiffableDataSource<Section, String>!`
+- Notice that `UICollectionViewDiffableDataSource` is a generic class. Option-click the type name to view its documentation inline.
+- A diffable data source requires two concrete types: `SectionIdentifierType` and `ItemIdentifierType`. You can probably infer that these two types are used to represent the sections and items in your data set. This gives you a lot more flexibility than using `IndexPaths`, because you can use types that more natively express how your data is organized and provide those values to uniquely identify sections and the items within them.
+- The only requirement for `SectionIdentifierType` and `ItemIdentifierType` is that they both adopt the `Hashable` protocol. Section and String are both `Hashable`, and they're already used for your sections and items, so you'll use them in this example. (As you learn more about diffable data sources, you'll use additional custom types for these identifiers.)
+- One of the most important roles of the `UICollectionViewDataSource` protocol is providing cells to be displayed. Your existing code implements this by overriding the protocol method directly. When initializing `UICollectionViewDiffableDataSource`, you instead provide a closure that returns a cell instance. The diffable data source's internal implementation of the `collectionView(_:cellForItemAt:)` method uses that closure.
+- Go ahead and create a new method that initializes your diffable data source.
+
+  - ```swift
+      func createDataSource() {
+          dataSource = UICollectionViewDiffableDataSource<Section, String>(collectionView: collectionView, cellProvider: { (collectionView, indexPath, item) -> UICollectionViewCell? in
+              let cell =
+                collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! BasicCollectionViewCell
+       
+              cell.label.text = item
+       
+              return cell
+          })
+       
+      }
+    ```
+
+- The initializer takes the collection view as an argument and a `cellProvider` closure that does almost exactly what your existing `collectionView(_:cellForItemAt:)` method does. One important difference is that in addition to an `IndexPath`, you're also passed the actual item, so you don't need to look it up.
+- Look back at the closure that you passed to the initializer of the diffable data source. Where does the diffable data source get the data it's passing to you?
+`NSDiffableDataSourceSnapshot` represents the collection view's contents at a moment in time. To tell the diffable data source what its contents are, you apply a snapshot to it. When the diffable data source is asked to provide cells to the collection view, the items in a snapshot are passed to your cell provider closure.
+- What makes diffable data sources so powerful is that you can apply snapshots whenever you want, and the associated collection or table view refreshes its contents automatically. And the diffable data source handles the complicated series of operations that describe the difference between the previous snapshot and the current one — so you get smooth animations for free.
+- You can use any kind of data to represent the contents of a collection view in a snapshot, as long as it's `Hashable`. For complex or memory-consuming data, it's common to use a separate view model that concisely describes what's displayed and then create view model instances that reflect your actual data set to store in a snapshot.
+- Because your data model is simple, you'll put it directly into the snapshots you build. You'll be applying a snapshot to the data source initially with the value of `filteredItems`, and you'll continue doing this while the user changes their search query.
+- Creating a snapshot is straightforward. Since you'll need to apply snapshots in multiple methods, you'll create a computed property that you can reference as needed. Add the following property on `BasicCollectionViewController` to represent an up-to-date snapshot of filtered data:
+
+  - ```swift
+      var filteredItemsSnapshot: NSDiffableDataSourceSnapshot<Section, String> {
+          var snapshot = NSDiffableDataSourceSnapshot<Section, String>()
+       
+          snapshot.appendSections([.main])
+          snapshot.appendItems(filteredItems)
+       
+          return snapshot
+      }
+    ```
+
+- A snapshot is defined by its sections and items — the two generic parameters in its type declaration. First you initialize an empty snapshot. Next you add your sections, first appending the section, then appending the items for each one. (There's a second, optional argument for `appendItems(_:toSection:)` that you can leave blank if you just want to append the items to the most recently added section.) Of course, you are only using a single section in this `collectionView` so you just need to add the section and then the items.
+- Back in the `createDataSource()` method, apply a snapshot to the data source after it's been initialized. That'll ensure that you have data to display when your view controller first appears.
+  - `dataSource.apply(filteredItemsSnapshot)`
+- Next, call `createDataSource()` at the end of your `viewDidLoad()` implementation. Now you can remove your `UICollectionViewDataSource` protocol method implementations, as the diffable data source will take on the responsibility. Delete the following methods in `BasicCollectionViewController`:
+  - numberOfSections(in:)
+  - collectionView(_:numberOfItemsInSection:)
+  - collectionView(_:cellForItemAt:)
+  - collectionView(_:viewForSupplementaryElementOfKind:at:)
+- Build and run the app to see the diffable data source populate your collection view's contents. Unfortunately, you'll notice that the search functionality is now broken. There's one small change that you'll need to make to fix it.
+- Take a look at the implementation of `updateSearchResults(for:)` and see if you can figure out what needs to be changed. Prior to using a diffable data source, you simply updated `filteredItems` and then called `reloadData()`. Now, rather than calling `reloadData()`, you'll apply a new snapshot.
+- Replace the call to `reloadData()` with the following.
+  - `dataSource.apply(filteredItemsSnapshot, animatingDifferences: true)`
+- By passing true for `animatingDifferences`, you enable the real magic of diffable data sources. With no extra effort, you'll get the smooth animation you're after as the user changes their search query. Build and run again to see the result.
+- Excellent work! Your app now uses pleasing animations as the data is filtered, and you've learned a couple powerful new APIs.
+
+  - ```swift
+      class BasicCollectionViewController: UICollectionViewController, UISearchResultsUpdating {
+          enum Section: CaseIterable {
+              case main
+          }
+          var dataSource: UICollectionViewDiffableDataSource<Section, String>!
+          
+          func createDataSource() {
+              dataSource = UICollectionViewDiffableDataSource<Section, String>(collectionView: collectionView, cellProvider: { (collectionView, indexPath, item) -> UICollectionViewCell? in
+                  let cell = collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! BasicCollectionViewCell
+                  cell.label.text = item
+                  
+                  return cell
+              })
+              dataSource.apply(filteredItemsSnapshot)
+          }
+          
+          var filteredItemsSnapshot: NSDiffableDataSourceSnapshot<Section, String> {
+              var snapshot = NSDiffableDataSourceSnapshot<Section, String>()
+              
+              snapshot.appendSections([.main])
+              snapshot.appendItems(filteredItems)
+              
+              return snapshot
+          }
+          func updateSearchResults(for searchController: UISearchController) {
+              if let searchString = searchController.searchBar.text,
+                searchString.isEmpty == false {
+                  filteredItems = items.filter { (item) -> Bool in
+                      item.localizedCaseInsensitiveContains(searchString)
+                  }
+              } else {
+                  filteredItems = items
+              }
+              dataSource.apply(filteredItemsSnapshot, animatingDifferences: true)
+          }
+          
+          let searchController = UISearchController()
+          
+          override func viewDidLoad() {
+              super.viewDidLoad()
+              
+              navigationItem.searchController = searchController
+              searchController.obscuresBackgroundDuringPresentation = false
+              searchController.searchResultsUpdater = self
+              navigationItem.hidesSearchBarWhenScrolling = false
+              
+              collectionView.setCollectionViewLayout(generateLayout(), animated: false)
+              createDataSource()
+          }
+
+          private func generateLayout() -> UICollectionViewLayout {
+              let itemSize = NSCollectionLayoutSize(
+                  widthDimension: .fractionalWidth(1.0),
+                  heightDimension: .fractionalHeight(1.0)
+              )
+              
+              let item = NSCollectionLayoutItem(layoutSize: itemSize)
+              
+              let spacing: CGFloat = 10.0
+
+              let groupSize = NSCollectionLayoutSize(
+                  widthDimension: .fractionalWidth(1.0),
+                  heightDimension: .absolute(70.0)
+              )
+              
+              let group = NSCollectionLayoutGroup.horizontal(
+                  layoutSize: groupSize,
+                  subitem: item,
+                  count: 1
+              )
+
+              group.contentInsets = NSDirectionalEdgeInsets(
+                  top: spacing,
+                  leading: spacing,
+                  bottom: 0,
+                  trailing: spacing
+              )
+
+              let section = NSCollectionLayoutSection(group: group)
+
+              let layout = UICollectionViewCompositionalLayout(section: section)
+              
+              return layout
+          }
+      }
+    ```
