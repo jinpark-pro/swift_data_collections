@@ -9604,3 +9604,19 @@ With the cell still selected, open the Identity inspector and change the class t
           }
       }
     ```
+
+#### Lab - Itunes Search (Part 4)
+
+- The purpose of this lab is to use your new knowledge of collection views, search controllers, and diffable data sources to update the solution from iTunes Search (Part 3). You'll start with a refactored version of the solution, which is available in the resources folder. The solution has been refactored to use a custom container view controller, enabling you to switch between two view controllers' views. (Standard `UIKit` container view controllers include `UINavigationController` and `UITabBarController`.) It has also been updated to use a search controller rather than a search bar.
+
+##### Step 1 Review Provided Refactoring
+
+- In the refactored solution for iTunes Search, open the Main storyboard.
+- Notice the changes: Rather than a single table view controller, there's a navigation controller whose root view controller has embed segues to the table view controller and to a new collection view controller. The root view controller sitting in the middle is the container view controller.
+- The container view controller has two subviews that contain the table view controller's view and the collection view controller's view. In the Document Outline, you'll see these as “Table Container View” and “Collection Container View.” The container view controller has view properties for each of the other two view controllers, which are set when the embed segues are performed.
+- There's also a segmented control at the bottom, which toggles the isHidden property for both container views. Initially, the table container view is visible and the collection container view is hidden. The user can toggle the segmented control to view the results as a list or a grid.
+- Open `StoreItemListTableViewController` and notice that the class implementation has mostly been removed. It has been moved to `StoreItemContainerViewController`. The container view controller is responsible for fetching the `StoreItem` results and populating both the table and collection view data sources. Because the data will be the same for both the table view and the collection view, it makes sense to maintain it in one view controller. Using view controller containment is a great way to solve this type of problem.
+- In `StoreItemContainerViewController`, you'll find that `UISearchController` is now being used in place of `UISearchBar`. It's configured to always be visible and to display its scope bar — a built-in segmented control you'll use to let the user select the type of media they're searching for.
+- The Task used to fetch the items using the search terms is now saved in a variable so that it can be cancelled if the result will no longer be useful. This will happen each time the search terms change before the web request has completed. The do/catch statement has also been updated to ignore the errors that are thrown when a `URLSession` request is cancelled before it completes.
+- One major difference is that `UISearchController` will invoke the `updateSearchResults(for:)` method anytime the search bar content changes or becomes active. Because you don't want to send a request to the iTunes Search Service with every keystroke, you'll “debounce” the user input by only issuing network requests after the user has stopped typing for a brief period. Within `updateSearchResults(for:)` you'll find two unfamiliar methods: `cancelPreviousPerformRequests(withTarget:selector:object:)` and `perform(_:with:afterDelay:)`. With every keystroke, you queue up a new request and cancel previous ones — until the user stops typing for 0.3 seconds. Debouncing is a common technique for search controls that interact with a web service.
+- Now that you're familiar with the major components of the provided refactor, you're ready to begin making changes.
